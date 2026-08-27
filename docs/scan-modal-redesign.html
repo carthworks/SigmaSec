@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Launch scan — redesigned</title>
+<style>
+  :root{
+    --bg:#070B12; --panel:#0E1420; --panel-2:#131A28; --line:#1E2634; --line-2:#2C3547;
+    --tx:#EDF1F8; --tx-2:#A3AEC2; --tx-3:#6E7A8F;
+    --indigo:#7C6CF6; --indigo-2:#9C8FFF;
+    --red:#FF7A75; --amber:#F0B95E; --green:#4FD9A4;
+    --r:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#050810;color:var(--tx);font-size:14px;line-height:1.55;
+    font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:36px 20px;display:flex;justify-content:center}
+  .mono{font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace}
+  :focus-visible{outline:2px solid var(--indigo-2);outline-offset:2px;border-radius:4px}
+
+  .modal{width:100%;max-width:600px;background:var(--panel);border:1px solid var(--line-2);
+    border-radius:16px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.9)}
+
+  .mhd{padding:22px 26px 18px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:16px}
+  .mhd h2{font-size:20px;font-weight:600;letter-spacing:-.02em}
+  .mhd p{font-size:13.5px;color:var(--tx-2);margin-top:3px}
+  .x{margin-left:auto;background:none;border:0;color:var(--tx-3);cursor:pointer;font-size:20px;line-height:1;padding:2px 4px}
+  .x:hover{color:var(--tx)}
+
+  .body{padding:22px 26px;max-height:66vh;overflow-y:auto}
+  .fld{margin-bottom:22px}
+  label.lb{display:block;font-size:13px;font-weight:500;margin-bottom:7px}
+  .hint{font-size:12.5px;color:var(--tx-3);margin-top:7px}
+
+  .tin{position:relative}
+  .tin input{width:100%;background:#0A0F19;border:1px solid var(--line-2);border-radius:9px;
+    padding:11px 108px 11px 14px;color:var(--tx);font:inherit;font-size:14px;font-family:ui-monospace,Menlo,monospace}
+  .tin input::placeholder{font-family:"Inter",sans-serif;color:var(--tx-3)}
+  .tin input:focus{border-color:var(--indigo);background:#0C121D}
+  .detected{position:absolute;right:9px;top:50%;transform:translateY(-50%);
+    font-size:11px;padding:3px 9px;border-radius:6px;background:#0F2A20;color:var(--green);
+    display:flex;align-items:center;gap:5px}
+  .detected::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+  .quick{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+  .quick button{background:var(--panel-2);border:1px solid var(--line);border-radius:20px;
+    padding:4px 11px;font:inherit;font-size:12px;color:var(--tx-2);cursor:pointer}
+  .quick button:hover{border-color:var(--line-2);color:var(--tx)}
+
+  /* scanners */
+  .sc{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .srow{display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border-bottom:1px solid var(--line)}
+  .srow:last-child{border-bottom:0}
+  .srow.off{opacity:.42}
+  .srow input[type=checkbox]{width:16px;height:16px;margin-top:2px;accent-color:var(--indigo);flex:none;cursor:pointer}
+  .srow input:disabled{cursor:not-allowed}
+  .srow .txt{flex:1;min-width:0}
+  .srow b{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .srow small{display:block;font-size:12.5px;color:var(--tx-2);margin-top:2px}
+  .est{font-size:11.5px;color:var(--tx-3);white-space:nowrap;margin-top:2px}
+  .na{font-size:10.5px;background:#1A2130;color:var(--tx-3);padding:1px 7px;border-radius:5px;font-weight:500}
+  .rec{font-size:10.5px;background:#1B1738;color:var(--indigo-2);padding:1px 7px;border-radius:5px;font-weight:500}
+
+  details{border:1px solid var(--line);border-radius:var(--r);background:var(--panel-2)}
+  summary{padding:12px 15px;cursor:pointer;font-size:13.5px;font-weight:500;list-style:none;display:flex;align-items:center;gap:9px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"›";color:var(--tx-3);font-size:17px;transition:transform .15s}
+  details[open] summary::before{transform:rotate(90deg)}
+  summary .cnt{margin-left:auto;font-size:12px;color:var(--tx-3);font-weight:400}
+  .dbody{padding:4px 15px 15px;border-top:1px solid var(--line)}
+  .drow{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .drow:last-child{border-bottom:0}
+  .drow input[type=checkbox]{width:15px;height:15px;margin-top:2px;accent-color:var(--indigo);flex:none}
+  .drow b{font-size:13px;font-weight:500;display:block}
+  .drow small{font-size:12.5px;color:var(--tx-2)}
+  .dbody input[type=text]{width:100%;background:#0A0F19;border:1px solid var(--line);border-radius:7px;
+    padding:8px 11px;color:var(--tx);font:inherit;font-size:13px;margin-top:8px;
+    font-family:ui-monospace,Menlo,monospace}
+
+  /* danger zone */
+  .danger{border:1px solid #4A2320;border-radius:var(--r);background:rgba(255,122,117,.05);padding:15px}
+  .danger .hd{display:flex;align-items:flex-start;gap:11px}
+  .danger input[type=checkbox]{width:16px;height:16px;margin-top:2px;accent-color:var(--red);flex:none}
+  .danger b{font-size:13.5px;font-weight:600;color:var(--red)}
+  .danger p{font-size:12.5px;color:var(--tx-2);margin-top:4px}
+  .attest{margin-top:13px;padding-top:13px;border-top:1px solid #3A1E1C;display:flex;gap:11px;align-items:flex-start}
+  .attest input{width:16px;height:16px;margin-top:2px;accent-color:var(--red);flex:none}
+  .attest label{font-size:12.5px;color:var(--tx-2)}
+
+  /* schedule */
+  .seg{display:flex;background:#0A0F19;border:1px solid var(--line-2);border-radius:8px;overflow:hidden;width:fit-content}
+  .seg button{background:none;border:0;border-right:1px solid var(--line);color:var(--tx-2);
+    padding:7px 15px;font:inherit;font-size:13px;cursor:pointer}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:#1D2436;color:var(--tx);font-weight:500}
+
+  /* footer */
+  .mft{padding:16px 26px;border-top:1px solid var(--line);background:#0A0F19;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .summ{font-size:12.5px;color:var(--tx-2)}
+  .summ b{color:var(--tx);font-weight:600}
+  .acts{margin-left:auto;display:flex;gap:10px}
+  .btn{padding:9px 18px;border-radius:8px;font:inherit;font-size:14px;font-weight:500;
+    border:1px solid transparent;cursor:pointer}
+  .btn.g{background:var(--panel-2);border-color:var(--line-2);color:var(--tx)}
+  .btn.g:hover{border-color:#3E4A63}
+  .btn.p{background:var(--indigo);color:#fff;display:flex;align-items:center;gap:8px}
+  .btn.p:hover{background:#6C5AF0}
+
+  h3.sec{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx-3);
+    font-weight:600;margin-bottom:10px}
+</style>
+
+<div class="modal" role="dialog" aria-labelledby="mt" aria-modal="true">
+  <div class="mhd">
+    <div>
+      <h2 id="mt">Launch scan</h2>
+      <p>Pick a target. We'll select the scanners that apply.</p>
+    </div>
+    <button class="x" aria-label="Close">×</button>
+  </div>
+
+  <div class="body">
+
+    <!-- TARGET -->
+    <div class="fld">
+      <label class="lb" for="tgt">Target</label>
+      <div class="tin">
+        <input id="tgt" type="text" value="github.com/carthworks/LibraDigit_web" spellcheck="false">
+        <span class="detected">Git repository</span>
+      </div>
+      <div class="quick">
+        <button type="button">↻ Rescan a previous target</button>
+        <button type="button">＋ Pick from Assets (20)</button>
+      </div>
+      <p class="hint">A domain, container image, or Git repository. We detect the type and enable the scanners that can read it.</p>
+    </div>
+
+    <!-- SCANNERS -->
+    <div class="fld">
+      <h3 class="sec">Scanners</h3>
+      <div class="sc">
+        <div class="srow">
+          <input type="checkbox" id="s1" checked>
+          <div class="txt">
+            <label for="s1"><b>Trivy <span class="rec">Recommended</span></b></label>
+            <small>Vulnerable dependencies in lockfiles and manifests.</small>
+          </div>
+          <span class="est">~2 min</span>
+        </div>
+        <div class="srow">
+          <input type="checkbox" id="s2" checked>
+          <div class="txt">
+            <label for="s2"><b>Gitleaks <span class="rec">Recommended</span></b></label>
+            <small>Credentials and API keys across full commit history.</small>
+          </div>
+          <span class="est">~4 min</span>
+        </div>
+        <div class="srow">
+          <input type="checkbox" id="s3" checked>
+          <div class="txt">
+            <label for="s3"><b>Opengrep <span class="rec">Recommended</span></b></label>
+            <small>Static analysis of your own code. Feeds reachability scoring.</small>
+          </div>
+          <span class="est">~3 min</span>
+        </div>
+        <div class="srow off">
+          <input type="checkbox" id="s4" disabled>
+          <div class="txt">
+            <label for="s4"><b>Nuclei <span class="na">Needs a live URL</span></b></label>
+            <small>Web and network surface. Add a deployed endpoint to enable.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCESS -->
+    <div class="fld">
+      <details>
+        <summary>Repository access <span class="cnt">GitHub App connected</span></summary>
+        <div class="dbody">
+          <div class="drow">
+            <div>
+              <b>carthworks organisation</b>
+              <small>Read access to 12 repositories · connected 14 Jun 2026</small>
+            </div>
+            <button class="btn g" style="margin-left:auto;padding:5px 12px;font-size:12.5px">Manage</button>
+          </div>
+          <p class="hint" style="margin-top:10px">Private repositories require a connected app or a deploy key. Public targets need no access.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- SCOPE -->
+    <div class="fld">
+      <details>
+        <summary>Scope and exclusions <span class="cnt">Defaults</span></summary>
+        <div class="dbody">
+          <div class="drow">
+            <input type="checkbox" id="e1" checked>
+            <div><label for="e1"><b>Skip test and fixture directories</b></label>
+            <small class="mono" style="font-size:11.5px">**/test/**, **/fixtures/**, **/vendor/**</small></div>
+          </div>
+          <div class="drow">
+            <input type="checkbox" id="e2" checked>
+            <div><label for="e2"><b>Default branch only</b></label>
+            <small>Uncheck to scan all branches. Adds roughly 4x runtime.</small></div>
+          </div>
+          <div class="drow">
+            <input type="checkbox" id="e3">
+            <div><label for="e3"><b>Full commit history for secrets</b></label>
+            <small>Slower, but finds credentials that were committed then removed.</small></div>
+          </div>
+          <label class="lb" style="margin-top:14px;font-size:12.5px">Additional exclude patterns</label>
+          <input type="text" placeholder="docs/**, *.min.js" spellcheck="false">
+        </div>
+      </details>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="fld">
+      <h3 class="sec">When to run</h3>
+      <div class="seg">
+        <button class="on" type="button">Once, now</button>
+        <button type="button">On every pull request</button>
+        <button type="button">Daily</button>
+        <button type="button">Weekly</button>
+      </div>
+      <p class="hint">Continuous scanning catches regressions. One-off scans go stale within days.</p>
+    </div>
+
+    <!-- DANGER -->
+    <div class="fld" style="margin-bottom:6px">
+      <h3 class="sec">Active testing</h3>
+      <div class="danger">
+        <div class="hd">
+          <input type="checkbox" id="ex">
+          <div>
+            <label for="ex"><b>Active exploit validation</b></label>
+            <p>Sends real exploit probes to confirm findings are genuinely exploitable. Reduces false positives sharply, but generates live traffic and may trigger alerts, rate limits, or WAF blocks on the target.</p>
+          </div>
+        </div>
+        <div class="attest">
+          <input type="checkbox" id="auth">
+          <label for="auth">I own this target or have written authorisation to test it. Unauthorised active testing may be unlawful.</label>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mft">
+    <span class="summ"><b>3 scanners</b> · about <b>9 minutes</b> · results appear in Findings</span>
+    <div class="acts">
+      <button class="btn g" type="button">Cancel</button>
+      <button class="btn p" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
+        Run 3 scanners
+      </button>
+    </div>
+  </div>
+</div>

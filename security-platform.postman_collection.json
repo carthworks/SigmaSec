@@ -1,0 +1,293 @@
+{
+  "info": {
+    "_postman_id": "8b52f102-18da-430c-be4e-0a5624ef8411",
+    "name": "AI-Augmented Security Posture Intelligence Platform",
+    "description": "Collection covering Authentication, Scans, and Findings endpoints for the platform.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Get Access Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "admin@cybersigma.io",
+                  "description": "User email identifier",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "AdminSecure2026!",
+                  "description": "User password",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/token",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "auth",
+                "token"
+              ]
+            },
+            "description": "Retrieves OAuth2 access token for subsequent authorized API calls."
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/auth/me",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns current logged in user metadata, role assignments, and tenant organization details."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scans Orchestrator",
+      "item": [
+        {
+          "name": "List Scans",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/scans",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "scans"
+              ]
+            },
+            "description": "Returns all scans belonging to the user's organization."
+          }
+        },
+        {
+          "name": "Launch New Scan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"https://api.mycorp.com\",\n  \"scan_types\": [\"vuln\", \"sca\"],\n  \"active_validation\": true,\n  \"docker_image\": \"nginx:1.24\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/scans",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "scans"
+              ]
+            },
+            "description": "Creates a scan record and schedules Celery task adapters execution."
+          }
+        },
+        {
+          "name": "Get Scan Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/scans/:id",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "scans",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "f0aa5092-a8d0-43c4-a937-4c925c243929",
+                  "description": "UUID of the scan"
+                }
+              ]
+            },
+            "description": "Retrieves metadata coordinates for a single scan."
+          }
+        },
+        {
+          "name": "Get Scan Progress (SSE Stream)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/scans/:id/progress",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "scans",
+                ":id",
+                "progress"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "f0aa5092-a8d0-43c4-a937-4c925c243929"
+                }
+              ]
+            },
+            "description": "Establishes a Server-Sent Events (SSE) connection pushing live execution percentages."
+          }
+        },
+        {
+          "name": "Get Scan Findings",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ACCESS_TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/scans/:id/findings",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "scans",
+                ":id",
+                "findings"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "f0aa5092-a8d0-43c4-a937-4c925c243929"
+                }
+              ]
+            },
+            "description": "Returns all vulnerability findings captured for the specified scan."
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "ACCESS_TOKEN",
+      "value": "your_oauth_token_here",
+      "type": "string"
+    }
+  ]
+}

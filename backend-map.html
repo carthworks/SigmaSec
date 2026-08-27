@@ -1,0 +1,844 @@
+<title>CyberSigma Backend — Workflow &amp; Call-Graph Map</title>
+<style>
+  :root{
+    --ink:#10151c;
+    --paper:#eef1f2;
+    --panel:#ffffff;
+    --panel-2:#f7f8f6;
+    --text:#1a2127;
+    --text-dim:#5b6b74;
+    --border:#d7dedd;
+    --teal:#2f7f78;
+    --teal-ink:#12312e;
+    --teal-fill:#dbe9e7;
+    --amber:#b8813a;
+    --amber-ink:#4a3312;
+    --amber-fill:#f3e3cd;
+    --plum:#7c4a68;
+    --plum-ink:#3d2230;
+    --plum-fill:#ecdfe6;
+    --crimson:#a8433c;
+    --crimson-ink:#4a1712;
+    --crimson-fill:#f5dcd9;
+    --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#eef1f2;
+      --paper:#0d1117;
+      --panel:#141b22;
+      --panel-2:#101519;
+      --text:#dde3e5;
+      --text-dim:#8fa0a8;
+      --border:#232d34;
+      --teal-fill:#173430;
+      --teal-ink:#a9d8d1;
+      --amber-fill:#3a2c15;
+      --amber-ink:#e7c690;
+      --plum-fill:#331f2b;
+      --plum-ink:#dcb3cb;
+      --crimson-fill:#3a1815;
+      --crimson-ink:#eab3ac;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#eef1f2;
+    --paper:#0d1117;
+    --panel:#141b22;
+    --panel-2:#101519;
+    --text:#dde3e5;
+    --text-dim:#8fa0a8;
+    --border:#232d34;
+    --teal-fill:#173430;
+    --teal-ink:#a9d8d1;
+    --amber-fill:#3a2c15;
+    --amber-ink:#e7c690;
+    --plum-fill:#331f2b;
+    --plum-ink:#dcb3cb;
+    --crimson-fill:#3a1815;
+    --crimson-ink:#eab3ac;
+  }
+  :root[data-theme="light"]{
+    --ink:#10151c;
+    --paper:#eef1f2;
+    --panel:#ffffff;
+    --panel-2:#f7f8f6;
+    --text:#1a2127;
+    --text-dim:#5b6b74;
+    --border:#d7dedd;
+    --teal-fill:#dbe9e7;
+    --teal-ink:#12312e;
+    --amber-fill:#f3e3cd;
+    --amber-ink:#4a3312;
+    --plum-fill:#ecdfe6;
+    --plum-ink:#3d2230;
+    --crimson-fill:#f5dcd9;
+    --crimson-ink:#4a1712;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:16px;
+    line-height:1.55;
+  }
+  a{color:var(--teal);}
+  :root[data-theme="dark"] a, @media (prefers-color-scheme: dark){ a{color:#7fc9c0;} }
+
+  .shell{
+    display:grid;
+    grid-template-columns:260px minmax(0,1fr);
+    gap:0;
+    max-width:1280px;
+    margin:0 auto;
+  }
+
+  nav.toc{
+    position:sticky;
+    top:0;
+    align-self:start;
+    height:100vh;
+    overflow-y:auto;
+    padding:28px 18px 28px 24px;
+    border-right:1px solid var(--border);
+  }
+  nav.toc .brand{
+    font-family:var(--font-display);
+    font-size:1.05rem;
+    font-weight:600;
+    letter-spacing:.01em;
+    margin-bottom:4px;
+  }
+  nav.toc .brand-sub{
+    font-size:.75rem;
+    color:var(--text-dim);
+    margin-bottom:22px;
+    font-family:var(--font-mono);
+  }
+  nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:sec;}
+  nav.toc li{counter-increment:sec;margin:0;}
+  nav.toc a{
+    display:block;
+    padding:6px 8px 6px 0;
+    font-size:.85rem;
+    text-decoration:none;
+    color:var(--text-dim);
+    border-left:2px solid transparent;
+    padding-left:10px;
+    line-height:1.3;
+  }
+  nav.toc a::before{
+    content:counter(sec, decimal-leading-zero) "  ";
+    font-family:var(--font-mono);
+    color:var(--text-dim);
+    opacity:.6;
+  }
+  nav.toc a:hover{color:var(--teal);border-left-color:var(--teal);}
+  nav.toc .legend{
+    margin-top:26px;
+    padding-top:18px;
+    border-top:1px solid var(--border);
+  }
+  nav.toc .legend-title{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--text-dim);
+    margin-bottom:10px;
+  }
+  .swatch-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:.78rem;color:var(--text-dim);}
+  .swatch{width:11px;height:11px;border-radius:2px;flex:none;}
+
+  main{padding:40px 48px 100px;min-width:0;}
+
+  header.hero{margin-bottom:44px;}
+  header.hero .kicker{
+    font-family:var(--font-mono);
+    font-size:.75rem;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    color:var(--teal);
+  }
+  header.hero h1{
+    font-family:var(--font-display);
+    font-size:2.1rem;
+    line-height:1.2;
+    margin:10px 0 14px;
+    text-wrap:balance;
+    max-width:22ch;
+  }
+  header.hero p{max-width:64ch;color:var(--text-dim);font-size:.98rem;}
+
+  section{margin-bottom:56px;scroll-margin-top:24px;}
+  section h2{
+    font-family:var(--font-display);
+    font-size:1.5rem;
+    margin:0 0 6px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--border);
+  }
+  section h2 .route{
+    display:inline-block;
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    font-weight:400;
+    color:var(--text-dim);
+    margin-left:10px;
+    vertical-align:middle;
+  }
+  section > p.lede{
+    color:var(--text-dim);
+    max-width:70ch;
+    margin:14px 0 20px;
+    font-size:.95rem;
+  }
+
+  .diagram-panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:18px 18px 8px;
+    margin:18px 0 22px;
+    background-image:
+      linear-gradient(var(--paper) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper) 1px, transparent 1px);
+    background-size:22px 22px;
+    overflow-x:auto;
+  }
+  .diagram-panel .cap{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+
+  ul.chain{list-style:none;margin:0;padding:0;}
+  ul.chain ul{list-style:none;margin:6px 0 6px 0;padding-left:22px;border-left:1px dashed var(--border);}
+  ul.chain li{margin:8px 0;position:relative;padding-left:14px;}
+  ul.chain > li{padding-left:0;}
+  ul.chain li b{color:var(--text);}
+  ul.chain li .desc{color:var(--text-dim);}
+  code.loc{
+    font-family:var(--font-mono);
+    font-size:.78rem;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    padding:1px 6px;
+    border-radius:4px;
+    white-space:nowrap;
+  }
+  li.api{border-left:3px solid var(--teal);}
+  li.task{border-left:3px solid var(--amber);}
+  li.ext{border-left:3px solid var(--plum);}
+  li.guard{border-left:3px solid var(--crimson);}
+  li.store{border-left:3px solid var(--text-dim);}
+  ul.chain > li{padding-left:12px;}
+
+  .note{
+    font-size:.86rem;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-left:3px solid var(--teal);
+    padding:10px 14px;
+    border-radius:4px;
+    color:var(--text-dim);
+    margin:14px 0;
+  }
+  .note b{color:var(--text);}
+
+  table.files{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.85rem;
+    margin:14px 0;
+  }
+  table.files th, table.files td{
+    text-align:left;
+    padding:7px 10px;
+    border-bottom:1px solid var(--border);
+    vertical-align:top;
+  }
+  table.files th{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--text-dim);
+  }
+  table.files td.path{font-family:var(--font-mono);white-space:nowrap;}
+
+  @media (max-width:900px){
+    .shell{grid-template-columns:1fr;}
+    nav.toc{
+      position:static;
+      height:auto;
+      border-right:none;
+      border-bottom:1px solid var(--border);
+      padding:18px;
+    }
+    nav.toc ol{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:4px;}
+    nav.toc li{flex:none;}
+    nav.toc .legend{display:none;}
+    main{padding:28px 20px 80px;}
+  }
+</style>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="brand">CyberSigma Backend</div>
+    <div class="brand-sub">workflow &amp; call-graph map</div>
+    <ol>
+      <li><a href="#overview">System overview</a></li>
+      <li><a href="#auth">Signup, login, session</a></li>
+      <li><a href="#users-orgs">Orgs &amp; user management</a></li>
+      <li><a href="#scan-create">Launch a scan</a></li>
+      <li><a href="#scan-run">Scan execution (Celery)</a></li>
+      <li><a href="#scan-enrich">Threat-intel &amp; AI enrichment</a></li>
+      <li><a href="#scan-progress">Live progress (SSE)</a></li>
+      <li><a href="#ask-agent">Ask-the-scan AI agent</a></li>
+      <li><a href="#findings-ai">Per-finding AI actions</a></li>
+      <li><a href="#remediation">Remediation Hub &amp; autofix PRs</a></li>
+      <li><a href="#jira">Jira ticket creation</a></li>
+      <li><a href="#integrations">Admin integrations settings</a></li>
+      <li><a href="#export">PDF report export</a></li>
+      <li><a href="#dashboards">Dashboard &amp; executive view</a></li>
+      <li><a href="#appendix">File index</a></li>
+    </ol>
+    <div class="legend">
+      <div class="legend-title">Diagram key</div>
+      <div class="swatch-row"><span class="swatch" style="background:var(--teal)"></span>in-process call (same request)</div>
+      <div class="swatch-row"><span class="swatch" style="background:var(--amber)"></span>Celery task / async</div>
+      <div class="swatch-row"><span class="swatch" style="background:var(--plum)"></span>external service (Slack/Jira/GitHub/LLM)</div>
+      <div class="swatch-row"><span class="swatch" style="background:var(--crimson)"></span>security / validation gate</div>
+      <div class="swatch-row"><span class="swatch" style="background:var(--text-dim)"></span>datastore (Postgres/Redis/MinIO)</div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero" id="overview">
+      <div class="kicker">backend/ · call-graph reference</div>
+      <h1>How a request actually moves through this codebase</h1>
+      <p>Every diagram below is paired with the exact call chain underneath it — file and line number for each hop, in the order execution actually takes it. Colors mark what kind of hop it is: an in-process call, a Celery task boundary, an external API, or a security gate. Start at whichever workflow you're debugging.</p>
+
+      <div class="diagram-panel">
+        <div class="cap">fig. 0 — router wiring, app/main.py:49–57</div>
+        <pre class="mermaid">
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': 'var(--panel)', 'primaryBorderColor': 'var(--border)', 'primaryTextColor': 'var(--text)', 'lineColor': 'var(--text-dim)', 'fontFamily': 'var(--font-mono)' } } }%%
+flowchart LR
+  classDef api fill:var(--teal-fill),stroke:var(--teal),color:var(--teal-ink),stroke-width:1.4px;
+  classDef store fill:var(--panel-2),stroke:var(--text-dim),color:var(--text),stroke-width:1.4px;
+
+  CLIENT["Frontend / API client"]:::store
+  subgraph APP["FastAPI app — main.py"]
+    direction TB
+    A1["auth.router<br/>/auth"]:::api
+    A2["orgs.router<br/>/orgs"]:::api
+    A3["users.router<br/>/users"]:::api
+    A4["scans.router<br/>/scans"]:::api
+    A5["assets.router<br/>/assets"]:::api
+    A6["findings.router<br/>/findings"]:::api
+    A7["admin.router<br/>/admin"]:::api
+    A8["executive.router<br/>/executive"]:::api
+    A9["dashboard.router<br/>/dashboard"]:::api
+  end
+  DB["PostgreSQL"]:::store
+  REDIS["Redis"]:::store
+  CELERY["Celery workers<br/>queue: scans"]:::store
+
+  CLIENT --> A1 & A2 & A3 & A4 & A5 & A6 & A7 & A8 & A9
+  A1 --> DB
+  A2 --> DB
+  A3 --> DB
+  A4 --> DB
+  A4 --> CELERY
+  A5 --> DB
+  A6 --> DB
+  A7 --> REDIS
+  A8 --> REDIS
+  A9 --> DB
+  CELERY --> REDIS
+        </pre>
+      </div>
+      <p class="note"><b>Startup, before any request is served:</b> <code class="loc">main.py:61</code> <code>on_startup()</code> ALTERs the <code>findings</code> table to add AI columns if missing, then runs <code>alembic.command.upgrade(cfg, "head")</code> using <code class="loc">main.py:112-117</code>. <code class="loc">main.py:171</code> <code>health_check()</code> reports migration status at <code>GET /health</code>.</p>
+    </header>
+
+    <!-- ============================================================ -->
+    <section id="auth">
+      <h2>1 · Signup, login, session <span class="route">POST /auth/signup · POST /auth/token · GET /auth/me</span></h2>
+      <p class="lede">Signup creates an Org and its first admin User in one transaction. Login is a stock OAuth2 password flow that hands back a JWT carrying <code>org_id</code> and <code>role</code> — every other router trusts that token instead of re-checking the database for tenant identity.</p>
+
+      <div class="diagram-panel">
+        <div class="cap">fig. 1 — auth.py, jwt.py, dependencies.py</div>
+        <pre class="mermaid">
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': 'var(--panel)', 'primaryBorderColor': 'var(--border)', 'primaryTextColor': 'var(--text)', 'lineColor': 'var(--text-dim)', 'fontFamily': 'var(--font-mono)' } } }%%
+flowchart LR
+  classDef api fill:var(--teal-fill),stroke:var(--teal),color:var(--teal-ink),stroke-width:1.4px;
+  classDef guard fill:var(--crimson-fill),stroke:var(--crimson),color:var(--crimson-ink),stroke-width:1.4px;
+  classDef store fill:var(--panel-2),stroke:var(--text-dim),color:var(--text),stroke-width:1.4px;
+
+  C["Client"]:::store
+  SIGNUP["signup()<br/>auth.py:27"]:::api
+  SLUG["slugify() + collision loop<br/>auth.py:21,44-51"]:::api
+  HASH1["pwd_context.hash()<br/>bcrypt, 12 rounds"]:::api
+  LOGIN["login()<br/>auth.py:70"]:::api
+  VERIFYPW["pwd_context.verify()"]:::guard
+  JWTC["create_access_token()<br/>jwt.py:13"]:::api
+  ME["get_me()<br/>auth.py:114"]:::api
+  DEP["get_current_user()<br/>dependencies.py:14"]:::guard
+  VTOK["verify_token()<br/>jwt.py:26"]:::guard
+  ROLE["require_role(*roles)<br/>dependencies.py:50"]:::guard
+  ORGID["get_user_org_id()<br/>dependencies.py:39"]:::guard
+  DB["Postgres: orgs, users"]:::store
+
+  C -->|"POST /auth/signup"| SIGNUP --> SLUG --> DB
+  SIGNUP --> HASH1 --> DB
+  C -->|"POST /auth/token (form)"| LOGIN --> VERIFYPW
+  LOGIN --> JWTC
+  C -->|"GET /auth/me + Bearer"| ME --> DEP --> VTOK
+  DEP -.->|"used on nearly every protected route"| ROLE
+  DEP -.->|"used on nearly every protected route"| ORGID
+        </pre>
+      </div>
+
+      <ul class="chain">
+        <li class="api"><code class="loc">auth.py:27</code> <b>signup(payload)</b> <span class="desc">— registers Org + first admin User</span>
+          <ul>
+            <li class="api"><code class="loc">auth.py:36</code> check <code>User.email</code> uniqueness → 409 if taken</li>
+            <li class="api"><code class="loc">auth.py:21</code> <b>slugify()</b> + while-loop collision check against <code>Org.slug</code></li>
+            <li class="api"><code class="loc">auth.py:57</code> <code>pwd_context.hash()</code> — bcrypt, 12 rounds</li>
+            <li class="api"><code class="loc">auth.py:54-64</code> insert <code>User(role=admin, is_verified=False)</code>, commit</li>
+          </ul>
+        </li>
+        <li class="api"><code class="loc">auth.py:70</code> <b>login(form_data)</b> <span class="desc">— OAuth2 password flow, used by the frontend's Auth.js CredentialsProvider</span>
+          <ul>
+            <li class="guard">look up <code>User</code> by email, <code>pwd_context.verify()</code> → 401 on mismatch, 403 if <code>is_active=False</code></li>
+            <li class="api"><code class="loc">jwt.py:13</code> <b>create_access_token()</b> — embeds <code>sub, org_id, role, email</code>, 8h expiry (<code>jwt.py:10</code>)</li>
+          </ul>
+        </li>
+        <li class="api"><code class="loc">auth.py:114</code> <b>get_me()</b> <span class="desc">— returns the user resolved by the dependency below</span></li>
+        <li class="guard"><code class="loc">dependencies.py:14</code> <b>get_current_user()</b> <span class="desc">— shared dependency behind nearly every endpoint in this map</span>
+          <ul>
+            <li class="guard"><code class="loc">jwt.py:26</code> <b>verify_token()</b> — HS256 decode + expiry check</li>
+            <li class="guard"><code class="loc">dependencies.py:39</code> <b>get_user_org_id()</b> — org_id is <i>always</i> read from the verified JWT, never from request body/query</li>
+            <li class="guard"><code class="loc">dependencies.py:50</code> <b>require_role(*roles)</b> — factory used as <code>Depends(require_role("admin"))</code> on write endpoints</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="users-orgs">
+      <h2>2 · Orgs &amp; user management <span class="route">/orgs · /users</span></h2>
+      <p class="lede">Thin CRUD, but the isolation pattern here is the one every other router copies: org_id comes from <code>get_user_org_id()</code>, never from the client.</p>
+      <ul class="chain">
+        <li class="api"><code class="loc">orgs.py:12</code> <b>create_org()</b> <span class="desc">— admin-only, checks slug uniqueness</span></li>
+        <li class="api"><code class="loc">orgs.py:37</code> <b>list_orgs()</b> <span class="desc">— admin-only, cross-tenant (platform operator view)</span></li>
+        <li class="api"><code class="loc">users.py:23</code> <b>create_user()</b> <span class="desc">— admin-only; <code>org_id</code> forced from JWT (users.py:53), role validated against <code>UserRole</code> enum</span></li>
+        <li class="api"><code class="loc">users.py:67</code> <b>list_users()</b> <span class="desc">— filtered by <code>org_id</code> (users.py:79), admin/analyst only</span></li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="scan-create">
+      <h2>3 · Launch a scan <span class="route">POST /scans</span></h2>
+      <p class="lede">The API call does validation and bookkeeping, then hands off to Celery and returns immediately — the actual scanning happens out-of-process.</p>
+
+      <div class="diagram-panel">
+        <div class="cap">fig. 2 — scans.py:132 create_scan()</div>
+        <pre class="mermaid">
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': 'var(--panel)', 'primaryBorderColor': 'var(--border)', 'primaryTextColor': 'var(--text)', 'lineColor': 'var(--text-dim)', 'fontFamily': 'var(--font-mono)' } } }%%
+flowchart TD
+  classDef api fill:var(--teal-fill),stroke:var(--teal),color:var(--teal-ink),stroke-width:1.4px;
+  classDef guard fill:var(--crimson-fill),stroke:var(--crimson),color:var(--crimson-ink),stroke-width:1.4px;
+  classDef task fill:var(--amber-fill),stroke:var(--amber),color:var(--amber-ink),stroke-width:1.4px;
+  classDef store fill:var(--panel-2),stroke:var(--text-dim),color:var(--text),stroke-width:1.4px;
+
+  C["POST /scans"]:::store --> CS["create_scan()<br/>scans.py:132"]:::api
+  CS --> RL["_get_limiter()<br/>10/hour per IP · scans.py:117"]:::guard
+  CS --> VT["validate_target()<br/>blocks RFC1918/loopback · scans.py:68"]:::guard
+  CS --> AC{"asset_id given?"}:::api
+  AC -->|"no — look up or create"| ASSET["Asset row<br/>(url / docker_image / git_repo)"]:::store
+  CS --> SCANROW["insert Scan(status=queued)"]:::store
+  CS --> AUDIT["write_scan_audit_log()<br/>scans.py:79"]:::api
+  CS --> DELAY["run_scan_task.delay()<br/>tasks/scan_tasks.py:308"]:::task
+  DELAY --> RESP["201 · ScanOut{celery_task_id}"]:::store
+        </pre>
+      </div>
+
+      <ul class="chain">
+        <li class="api"><code class="loc">scans.py:132</code> <b>create_scan(payload)</b>
+          <ul>
+            <li class="guard"><code class="loc">scans.py:117</code> <b>_get_limiter()</b> — 10 scans/hour/IP via <code>limits</code> library's <code>MovingWindowRateLimiter</code>; 429 on breach</li>
+            <li class="guard"><code class="loc">scans.py:68</code> <b>validate_target()</b> — regex-blocks 127.*, 10.*, 192.168.*, 172.16-31.*, 169.254.*, localhost</li>
+            <li class="api"><code class="loc">scans.py:151-176</code> resolve or create <code>Asset</code> (type inferred from <code>git_repo</code>/<code>docker_image</code> fields)</li>
+            <li class="api"><code class="loc">scans.py:178-187</code> insert <code>Scan(status=queued)</code></li>
+            <li class="api"><code class="loc">scans.py:79</code> <b>write_scan_audit_log()</b> — <code>AuditLog(action="create_scan")</code></li>
+            <li class="task"><code class="loc">scans.py:198</code> → <code class="loc">tasks/scan_tasks.py:308</code> <b>run_scan_task.delay()</b> — crosses into Celery; see next section</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="scan-run">
+      <h2>4 · Scan execution (Celery) <span class="route">app.tasks.scan_tasks.run_scan_task</span></h2>
+      <p class="lede">One parent task fans out into a Celery <code>chord</code>: up to three scanner subtasks run in parallel, and a callback fires only once all of them finish (or a 30-minute watchdog fails the scan first).</p>
+
+      <div class="diagram-panel">
+        <div class="cap">fig. 3 — scan_tasks.py:308 run_scan_task() → chord(group) → scan_completed_callback()</div>
+        <pre class="mermaid">
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': 'var(--panel)', 'primaryBorderColor': 'var(--border)', 'primaryTextColor': 'var(--text)', 'lineColor': 'var(--text-dim)', 'fontFamily': 'var(--font-mono)' } } }%%
+flowchart TD
+  classDef task fill:var(--amber-fill),stroke:var(--amber),color:var(--amber-ink),stroke-width:1.4px;
+  classDef api fill:var(--teal-fill),stroke:var(--teal),color:var(--teal-ink),stroke-width:1.4px;
+  classDef store fill:var(--panel-2),stroke:var(--text-dim),color:var(--text),stroke-width:1.4px;
+  classDef guard fill:var(--crimson-fill),stroke:var(--crimson),color:var(--crimson-ink),stroke-width:1.4px;
+
+  RUN["run_scan_task()<br/>scan_tasks.py:308"]:::task
+  RUN --> WATCH["check_scan_timeout_task<br/>countdown=1800s · line 376"]:::guard
+  RUN --> GRP{"chord(group([...]))<br/>line 379"}:::task
+  GRP -->|"vuln"| NUC["run_nuclei_scan_subtask<br/>line 413"]:::task
+  GRP -->|"sca"| TRV["run_trivy_scan_subtask<br/>line 436"]:::task
+  GRP -->|"secret"| GL["run_gitleaks_scan_subtask<br/>line 459"]:::task
+  NUC --> NUCA["NucleiAdapter.safe_run()<br/>adapters/nuclei.py:15"]:::api
+  TRV --> TRVA["TrivyAdapter.safe_run()<br/>adapters/trivy.py:18"]:::api
+  GL --> GLA["GitleaksAdapter.safe_run()<br/>adapters/gitleaks.py:24"]:::api
+  NUCA --> RUNNER["run_logged_command()<br/>adapters/runner.py:104<br/>(subprocess + Redis log sink)"]:::store
+  TRVA --> RUNNER
+  GLA --> RUNNER
+  NUC -.->|"mark_subtask_done()"| RPROG["Redis: scan:&#123;id&#125; hash<br/>progress 10→80%"]:::store
+  TRV -.->|"mark_subtask_done()"| RPROG
+  GL -.->|"mark_subtask_done()"| RPROG
+  NUC --> CB["scan_completed_callback()<br/>line 474"]:::task
+  TRV --> CB
+  GL --> CB
+  CB --> SAVE["save_findings()<br/>line 84"]:::api
+  CB --> DONE["Scan.status = complete"]:::store
+  SAVE --> ENRICH["enrich_findings_task.delay()<br/>line 499"]:::task
+        </pre>
+      </div>
+
+      <ul class="chain">
+        <li class="task"><code class="loc">scan_tasks.py:308</code> <b>run_scan_task(scan_id, target, scan_types, ...)</b>
+          <ul>
+            <li class="store">sets <code>Scan.status = running</code>, stores <code>celery_task_id</code></li>
+            <li class="task">builds one Celery signature per requested scan type:
+              <ul>
+                <li class="task"><code class="loc">scan_tasks.py:413</code> <b>run_nuclei_scan_subtask()</b> (if <code>"vuln"</code>) → <code class="loc">adapters/nuclei.py:29</code> <b>NucleiAdapter.run()</b> shells out to the <code>nuclei</code> binary, parses JSONL, tags <code>exploit_validated=True</code> when <code>active_validation</code> is set</li>
+                <li class="task"><code class="loc">scan_tasks.py:436</code> <b>run_trivy_scan_subtask()</b> (if <code>"sca"</code>) → <code class="loc">adapters/trivy.py:31</code> <b>TrivyAdapter.run()</b>, targets a <code>docker_image</code> if given else the scan target</li>
+                <li class="task"><code class="loc">scan_tasks.py:459</code> <b>run_gitleaks_scan_subtask()</b> (if <code>"secret"</code>) → <code class="loc">adapters/gitleaks.py:57</code> <b>GitleaksAdapter.run()</b> — validates the clone URL scheme first (<code class="loc">gitleaks.py:36</code> <b>_validate_target()</b>, http/https/git@ only — blocks <code>file://</code>/<code>ext::</code> RCE vectors), clones with <code>--depth</code>, shells out to the <code>gitleaks</code> binary</li>
+              </ul>
+              All three route their subprocess through the shared <code class="loc">adapters/runner.py:104</code> <b>run_logged_command()</b>, which streams stdout/stderr into <code>Redis: scan:&#123;id&#125;:logs</code> and enforces a hard wall-clock timeout.
+            </li>
+            <li class="guard"><code class="loc">scan_tasks.py:376</code> queues <b>check_scan_timeout_task</b> with a 1800s countdown — force-fails the scan if the chord never completes</li>
+            <li class="task"><code class="loc">scan_tasks.py:379</code> <code>chord(group(header_tasks))(scan_completed_callback.s(...))</code> — runs the subtasks in parallel, then fires the callback exactly once</li>
+          </ul>
+        </li>
+        <li class="task"><code class="loc">scan_tasks.py:474</code> <b>scan_completed_callback(results, scan_id, org_id)</b>
+          <ul>
+            <li class="api"><code class="loc">scan_tasks.py:84</code> <b>save_findings()</b> — bulk-inserts <code>Finding</code> rows, applies the critical-severity priority adjustment (±0.5/-0.2 for validated/unvalidated) and <code class="loc">scan_tasks.py:56</code> <b>_apply_trivy_fp_heuristic()</b> (marks stale Trivy CVEs as <code>fp_candidate</code> when installed ≥ fixed version); invalidates <code>Redis: executive:&#123;org_id&#125;</code></li>
+            <li class="task"><code class="loc">scan_tasks.py:499</code> <code>enrich_findings_task.delay(scan_id)</code> — hands off to threat-intel enrichment, next section</li>
+            <li class="store">sets <code>Scan.status = complete</code>, clears the Redis progress hash</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="scan-enrich">
+      <h2>5 · Threat-intel &amp; AI enrichment <span class="route">enrich_findings_task → ai_enrichment_task</span></h2>
+      <p class="lede">Two more chained Celery tasks run after findings are saved: first deterministic threat-intel scoring (NVD/KEV/EPSS + optional AST reachability), then per-finding LLM enrichment, then the executive summary, then an optional Slack post.</p>
+
+      <div class="diagram-panel">
+        <div class="cap">fig. 4 — scan_tasks.py:143 enrich_findings_task() → :649 ai_enrichment_task()</div>
+        <pre class="mermaid">
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': 'var(--panel)', 'primaryBorderColor': 'var(--border)', 'primaryTextColor': 'var(--text)', 'lineColor': 'var(--text-dim)', 'fontFamily': 'var(--font-mono)' } } }%%
+flowchart TD
+  classDef task fill:var(--amber-fill),stroke:var(--amber),color:var(--amber-ink),stroke-width:1.4px;
+  classDef api fill:var(--teal-fill),stroke:var(--teal),color:var(--teal-ink),stroke-width:1.4px;
+  classDef ext fill:var(--plum-fill),stroke:var(--plum),color:var(--plum-ink),stroke-width:1.4px;
+  classDef store fill:var(--panel-2),stroke:var(--text-dim),color:var(--text),stroke-width:1.4px;
+
+  ENR["enrich_findings_task()<br/>line 143"]:::task
+  ENR --> CLONE{"git_repo target?"}:::api
+  CLONE -->|yes| GITCLONE["git clone --depth 50<br/>for AST reachability"]:::api
+  ENR --> NVD["NVDClient.get_cve_metrics()<br/>intel/nvd.py"]:::ext
+  ENR --> KEV["KEVClient.is_cve_kev()<br/>intel/kev.py"]:::ext
+  ENR --> EPSS["EPSSClient.get_epss_scores()<br/>intel/epss.py"]:::ext
+  ENR --> REACH["determine_cve_reachability()<br/>ai/reachability.py:232<br/>(trivy findings only, if repo cloned)"]:::api
+  REACH --> LLM1["AIClient._call_model_with_model_override()<br/>ai/claude_client.py:254"]:::ext
+  ENR --> RANK["SQL window fn: priority_rank<br/>line 270-281"]:::store
+  ENR --> AITASK["ai_enrichment_task.delay()<br/>line 285"]:::task
+
+  AITASK --> LOOP["ThreadPoolExecutor(5)<br/>batches of 5 trivy findings"]:::task
+  LOOP --> PB["enrich_finding()<br/>ai/prompt_builder.py:172"]:::api
+  PB --> LLM2["AIClient._call_model_with_model_override()"]:::ext
+  AITASK --> EXEC["generate_exec_summary_if_needed()<br/>line 569"]:::api
+  EXEC --> LLM3["AIClient._call_model_with_model_override()<br/>call_type=summary"]:::ext
+  AITASK --> SLACK["post_slack_summary.delay()<br/>line 753"]:::task
+  SLACK --> SLACKAPI["Slack WebhookClient.send()"]:::ext
+        </pre>
+      </div>
+
+      <ul class="chain">
+        <li class="task"><code class="loc">scan_tasks.py:143</code> <b>enrich_findings_task(scan_id)</b>
+          <ul>
+            <li class="api">if the target looks like a git repo, shallow-clones it (<code>depth=50</code>) to a temp dir for reachability analysis (cleaned up in the <code>finally</code> block)</li>
+            <li class="ext">intel clients, one call per CVE batch: <code class="loc">intel/nvd.py</code> <b>NVDClient.get_cve_metrics()</b>, <code class="loc">intel/kev.py</code> <b>KEVClient.is_cve_kev()/get_kev_due_date()</b>, <code class="loc">intel/epss.py</code> <b>EPSSClient.get_epss_scores()</b></li>
+            <li class="api">for Trivy findings only, when a repo was cloned: <code class="loc">ai/reachability.py:232</code> <b>determine_cve_reachability()</b> → walks the repo (<code class="loc">reachability.py:127</code> <b>scan_repo_for_package()</b>, AST-based for <code>.py</code>, line-heuristic for JS/TS/Go/Java/Ruby/PHP) → builds a prompt (<code class="loc">reachability.py:178</code>) → <code class="loc">claude_client.py:254</code> <b>AIClient._call_model_with_model_override()</b></li>
+            <li class="store"><code class="loc">scan_tasks.py:264-265</code> computes <code>priority_score = epss × cvss × kev_multiplier × asset_weight × reachability_multiplier</code>, then a raw SQL window function ranks findings per scan (<code class="loc">scan_tasks.py:270-281</code>)</li>
+            <li class="task"><code class="loc">scan_tasks.py:285</code> <code>ai_enrichment_task.delay(scan_id)</code></li>
+          </ul>
+        </li>
+        <li class="task"><code class="loc">scan_tasks.py:649</code> <b>ai_enrichment_task(scan_id)</b> <span class="desc">— Trivy findings only</span>
+          <ul>
+            <li class="api">5-way <code>ThreadPoolExecutor</code>, batches of 5 findings at a time (<code class="loc">scan_tasks.py:727-732</code>)</li>
+            <li class="api">per finding: <code class="loc">ai/prompt_builder.py:172</code> <b>enrich_finding()</b> → <code class="loc">prompt_builder.py:44</code> <b>build_prompt()</b> injects CVE/CVSS/EPSS/KEV + AST reachability payload + asset context → <code class="loc">claude_client.py:254</code> LLM call, parsed into the <code>AIEnrichment</code> pydantic model; on parse failure, retries once with a stricter prompt, then falls back to a canned reachability snippet (<code class="loc">scan_tasks.py:704-718</code>)</li>
+            <li class="api"><code class="loc">scan_tasks.py:569</code> <b>generate_exec_summary_if_needed()</b> — builds a top-10-findings digest, one more LLM call (<code>call_type="summary"</code>), caches result on <code>Scan.exec_summary</code></li>
+            <li class="task ext"><code class="loc">scan_tasks.py:753</code> <b>post_slack_summary.delay()</b> → decrypts the org's <code>SlackConfig.webhook_url</code> (<code class="loc">utils/encryption.py:28</code>), skips silently if unconfigured or if <code>critical_only</code> and nothing critical/KEV was found, else posts top-3 findings via <code>slack_sdk.webhook.WebhookClient</code></li>
+          </ul>
+        </li>
+      </ul>
+      <div class="note"><b>AI provider:</b> <code class="loc">ai/claude_client.py:20</code> <code>AIClient</code> is a single wrapper switching on <code>AI_PROVIDER</code> env var — <code>ollama</code> (local, default) or <code>anthropic</code> (hosted Claude). Every call is logged to the <code>ai_calls</code> table with token/cost estimates when a <code>db</code> session is passed in.</div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="scan-progress">
+      <h2>6 · Live progress <span class="route">GET /scans/&#123;id&#125;/progress (SSE)</span></h2>
+      <p class="lede">The frontend keeps this connection open while a scan runs. It polls Redis every 4 seconds and streams status/percent/log-tail as server-sent events until the scan reaches a terminal state.</p>
+      <ul class="chain">
+        <li class="api"><code class="loc">scans.py:266</code> <b>get_scan_progress()</b>
+          <ul>
+            <li class="store">reads <code>Redis: scan:&#123;id&#125;</code> hash — written by <code class="loc">scan_tasks.py:25</code> <b>update_progress()</b> and <code class="loc">scan_tasks.py:38</code> <b>mark_subtask_done()</b> (10% → 80% as each of nuclei/trivy/gitleaks finishes)</li>
+            <li class="store">reads <code>Redis: scan:&#123;id&#125;:logs</code> list — appended by <code class="loc">adapters/runner.py:51</code> <code>_LogSink</code> inside every adapter subprocess call</li>
+            <li class="store">loop exits once <code>Scan.status</code> is <code>complete</code> or <code>failed</code></li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="ask-agent">
+      <h2>7 · Ask-the-scan AI agent <span class="route">POST /scans/&#123;id&#125;/ask (SSE)</span></h2>
+      <p class="lede">A small ReAct-style loop: the LLM is given five tool functions over one scan's data and iterates up to 5 times, calling tools and reading observations, before committing to a final answer with finding-ID citations.</p>
+
+      <div class="diagram-panel">
+        <div class="cap">fig. 5 — scans.py:365 → ai/agent.py SecurityAgent</div>
+        <pre class="mermaid">
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': 'var(--panel)', 'primaryBorderColor': 'var(--border)', 'primaryTextColor': 'var(--text)', 'lineColor': 'var(--text-dim)', 'fontFamily': 'var(--font-mono)' } } }%%
+flowchart LR
+  classDef api fill:var(--teal-fill),stroke:var(--teal),color:var(--teal-ink),stroke-width:1.4px;
+  classDef ext fill:var(--plum-fill),stroke:var(--plum),color:var(--plum-ink),stroke-width:1.4px;
+  classDef store fill:var(--panel-2),stroke:var(--text-dim),color:var(--text),stroke-width:1.4px;
+
+  Q["ask_scan_question()<br/>scans.py:365"]:::api --> AGENT["SecurityAgent<br/>ai/agent.py:52"]:::api
+  AGENT --> RUN["run_agent(question)<br/>agent.py:63<br/>up to 5 ReAct turns"]:::api
+  RUN --> LLM["AIClient call<br/>call_type=agent"]:::ext
+  LLM -->|"Action: tool(args)"| EXEC["execute_tool()<br/>agent.py:134"]:::api
+  EXEC --> T1["list_findings()"]:::store
+  EXEC --> T2["get_finding()"]:::store
+  EXEC --> T3["get_scan()"]:::store
+  EXEC --> T4["get_asset()"]:::store
+  EXEC --> T5["search_cves()"]:::store
+  EXEC -->|Observation| RUN
+  RUN -->|"Answer: ..."| STREAM["SSE chunks + citations<br/>back to client"]:::api
+        </pre>
+      </div>
+
+      <ul class="chain">
+        <li class="api"><code class="loc">scans.py:365</code> <b>ask_scan_question(scan_id, payload)</b> — verifies scan exists/belongs to org, then opens an SSE generator
+          <ul>
+            <li class="api"><code class="loc">ai/agent.py:52</code> <code>SecurityAgent(db, scan_id)</code> → <code class="loc">agent.py:63</code> <b>run_agent(question)</b></li>
+            <li class="ext">each loop turn calls <code class="loc">claude_client.py:254</code> with the full transcript so far (<code>call_type="agent"</code>)</li>
+            <li class="api">response is regex-parsed for <code>Action: tool(args)</code> or <code>Answer: ...</code>; tool calls dispatch through <code class="loc">agent.py:134</code> <b>execute_tool()</b> to one of <code>list_findings / get_finding / get_scan / get_asset / search_cves</code>, all scoped to <code>Finding.scan_id == scan_id</code></li>
+            <li class="api">final answer's <code>[finding_id: &lt;uuid&gt;]</code> tags are extracted as citations (<code class="loc">agent.py:129</code>) and streamed to the client in 12-character chunks</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="findings-ai">
+      <h2>8 · Per-finding AI actions <span class="route">POST /findings/&#123;id&#125;/regenerate-ai · GET .../ai-enrichment</span></h2>
+      <p class="lede">Two separate paths reach the same LLM client from the findings router directly — outside the scan pipeline, on demand, for a single finding.</p>
+      <ul class="chain">
+        <li class="api"><code class="loc">findings.py:661</code> <b>regenerate_finding_ai()</b> <span class="desc">— admin-only</span>
+          <ul>
+            <li class="ext"><code class="loc">claude_client.py:95</code> <b>AIClient.analyze_vulnerability()</b> — plain-English risk + remediation</li>
+            <li class="ext"><code class="loc">claude_client.py:311</code> <b>AIClient.analyze_reachability()</b></li>
+            <li class="ext"><code class="loc">claude_client.py:331</code> <b>AIClient.analyze_severity_override()</b> — factors in <code>asset_weight</code></li>
+          </ul>
+        </li>
+        <li class="api"><code class="loc">findings.py:746</code> <b>get_finding_ai_enrichment()</b> <span class="desc">— cache-through: returns <code>finding.ai_plain_english</code> if already set, else generates and persists</span>
+          <ul>
+            <li class="api"><code class="loc">ai/prompt_builder.py:172</code> <b>enrich_finding()</b> — same enrichment path scans use, invoked synchronously in the request instead of a Celery task</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="remediation">
+      <h2>9 · Remediation Hub &amp; autofix PRs <span class="route">/findings/remediation-hub · POST /findings/&#123;id&#125;/create-fix-pr</span></h2>
+      <p class="lede">The bulk endpoint just stitches together text a human already generated. The single-finding autofix endpoint is the heaviest one in the codebase: it clones a real repo, edits files, and opens a GitHub PR — or fully simulates the whole thing if no GitHub token is configured.</p>
+
+      <div class="diagram-panel">
+        <div class="cap">fig. 6 — findings.py:351 create_fix_pr()</div>
+        <pre class="mermaid">
+%%{init: { 'theme': 'base', 'themeVariables': { 'primaryColor': 'var(--panel)', 'primaryBorderColor': 'var(--border)', 'primaryTextColor': 'var(--text)', 'lineColor': 'var(--text-dim)', 'fontFamily': 'var(--font-mono)' } } }%%
+flowchart TD
+  classDef api fill:var(--teal-fill),stroke:var(--teal),color:var(--teal-ink),stroke-width:1.4px;
+  classDef ext fill:var(--plum-fill),stroke:var(--plum),color:var(--plum-ink),stroke-width:1.4px;
+  classDef guard fill:var(--crimson-fill),stroke:var(--crimson),color:var(--crimson-ink),stroke-width:1.4px;
+  classDef store fill:var(--panel-2),stroke:var(--text-dim),color:var(--text),stroke-width:1.4px;
+
+  FIX["create_fix_pr()<br/>findings.py:351"]:::api
+  FIX --> DEC["decrypt_value(GitHubConfig.access_token)<br/>utils/encryption.py:28"]:::guard
+  FIX --> SIM{"real token &amp; real repo?"}:::guard
+  SIM -->|no| MOCK["simulate: sandbox repo<br/>+ synthetic file scaffolding"]:::store
+  SIM -->|yes| CLONE["git clone --depth 50<br/>authenticated HTTPS URL"]:::api
+  CLONE --> BRANCH["git checkout -b fix/&#123;finding_id&#125;"]:::api
+  BRANCH --> KIND{"finding.tool"}:::api
+  KIND -->|gitleaks| STRIP["strip hardcoded secret →<br/>os.environ.get(), add to .gitignore"]:::api
+  KIND -->|"trivy + known fix"| BUMP["bump package.json /<br/>requirements.txt / go.mod"]:::api
+  KIND -->|"trivy misconfig"| PATCH["AIClient patch generation<br/>claude_client.py:254<br/>(rejected if diff &gt; 50 lines)"]:::ext
+  STRIP --> COMMIT["git add . &amp;&amp; git commit"]:::api
+  BUMP --> COMMIT
+  PATCH --> COMMIT
+  COMMIT --> PUSH{"simulation?"}:::guard
+  PUSH -->|no| GH["git push --force +<br/>PyGithub repo.create_pull()"]:::ext
+  PUSH -->|yes| FAKEPR["fabricated PR URL<br/>#142"]:::store
+  GH --> SAVE["Finding.pr_url, pr_status=open"]:::store
+  FAKEPR --> SAVE
+        </pre>
+      </div>
+
+      <ul class="chain">
+        <li class="api"><code class="loc">findings.py:112</code> <b>get_remediation_hub()</b> <span class="desc">— per-asset rollup of Trivy findings that have an <code>ai_remediation</code> patch, splits stored patch-diff text back out of the remediation steps</span></li>
+        <li class="api"><code class="loc">findings.py:184</code> <b>create_bulk_pr()</b> <span class="desc">— concatenates remediation text for selected findings and stamps a fabricated PR URL; no actual git/GitHub calls</span></li>
+        <li class="api"><code class="loc">findings.py:351</code> <b>create_fix_pr(finding_id)</b> <span class="desc">— the real thing, single finding at a time</span>
+          <ul>
+            <li class="guard"><code class="loc">utils/encryption.py:28</code> <b>decrypt_value()</b> on the org's stored GitHub PAT; falls back to a mock token if none configured</li>
+            <li class="api">resolves clone URL from the scan's asset/target; if the token is a mock or the URL isn't a real GitHub repo, flips into <b>simulation mode</b> against a hardcoded sandbox repo</li>
+            <li class="api">clones (or, on clone failure in sim mode, fabricates a minimal file tree matching the finding's tool), checks out <code>fix/&#123;finding_id&#125;</code></li>
+            <li class="api">applies the fix per <code>finding.tool</code>: secret redaction (gitleaks), dependency version bump (trivy w/ known fixed version), or an AI-generated config patch (trivy misconfig, via <code class="loc">claude_client.py:254</code>, capped at 50 changed lines)</li>
+            <li class="ext">non-simulation path: <code>git push --force</code> + <code>PyGithub Github(token).get_repo().create_pull()</code></li>
+            <li class="store">persists <code>Finding.pr_url</code> / <code>pr_status="open"</code> either way</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="jira">
+      <h2>10 · Jira ticket creation <span class="route">POST /findings/&#123;id&#125;/create-jira-ticket</span></h2>
+      <ul class="chain">
+        <li class="api"><code class="loc">findings.py:834</code> <b>create_jira_ticket(id)</b>
+          <ul>
+            <li class="store">short-circuits and returns the existing key if <code>finding.jira_issue_key</code> is already set</li>
+            <li class="guard"><code class="loc">utils/encryption.py:28</code> <b>decrypt_value()</b> on <code>JiraConfig.api_token</code></li>
+            <li class="ext">async <code>httpx</code> POST to <code>&#123;base_url&#125;/rest/api/3/issue</code>, Basic-auth, Atlassian Document Format description; tries issue type <b>Bug → Task → Task-without-priority</b> in order until one is accepted (<code class="loc">findings.py:929-948</code>)</li>
+            <li class="store">persists <code>Finding.jira_issue_key</code> on success</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="integrations">
+      <h2>11 · Admin integrations settings <span class="route">/admin/settings/* · /admin/*/test · /admin/github/oauth-url · /admin/github/callback</span></h2>
+      <p class="lede">Jira, Slack, and GitHub each get the same shape: a get/save pair that encrypts secrets at rest, and a test endpoint that exercises the live credential without saving it.</p>
+      <ul class="chain">
+        <li class="api"><code class="loc">admin.py:176</code>/<code class="loc">197</code> <b>get_jira_settings() / save_jira_settings()</b> <span class="desc">— masks token as <code>********</code> on read; on save, <code>********</code> means "keep existing" and decrypts-then-re-encrypts rather than overwriting</span></li>
+        <li class="api"><code class="loc">admin.py:232</code>/<code class="loc">255</code> <b>get_slack_settings() / save_slack_settings()</b> <span class="desc">— same masking pattern for the webhook URL</span></li>
+        <li class="api"><code class="loc">admin.py:358</code>/<code class="loc">377</code> <b>get_github_settings() / save_github_settings()</b></li>
+        <li class="ext"><code class="loc">admin.py:288</code> <b>test_jira_connection()</b> → <code>atlassian.Jira(...).project()</code></li>
+        <li class="ext"><code class="loc">admin.py:320</code> <b>test_slack_connection()</b> → <code>slack_sdk.webhook.WebhookClient.send()</code></li>
+        <li class="ext"><code class="loc">admin.py:408</code> <b>test_github_connection()</b> → <code>PyGithub Github(token).get_user()</code>; short-circuits to "sandbox mode" if the token looks like a mock</li>
+        <li class="api"><code class="loc">admin.py:451</code> <b>get_github_oauth_url()</b> → <code class="loc">admin.py:466</code> <b>github_callback()</b> <span class="desc">— exchanges <code>code</code> for an access token (or fabricates a mock one if no client secret is configured), encrypts and stores it, redirects to <code>/settings#github</code></span></li>
+        <li class="ext"><code class="loc">admin.py:17</code>/<code class="loc">54</code> <b>get_intel_status() / force_refresh_intel()</b> → <code class="loc">intel/kev.py</code> <b>KEVClient.fetch_and_load_kev()</b>, same client the daily <code class="loc">celery_app.py:33</code> <code>refresh-kev-feed-daily</code> beat schedule calls via <code class="loc">scan_tasks.py:556</code> <b>refresh_kev_feed()</b></li>
+        <li class="api"><code class="loc">admin.py:84</code> <b>get_ai_usage()</b> <span class="desc">— aggregates the <code>ai_calls</code> table (populated by every <code>AIClient</code> call above) by org/month/day for cost reporting</span></li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="export">
+      <h2>12 · PDF report export <span class="route">POST /scans/&#123;id&#125;/export</span></h2>
+      <ul class="chain">
+        <li class="api"><code class="loc">scans.py:405</code> <b>export_scan_report(scan_id, template)</b>
+          <ul>
+            <li class="store"><code class="loc">utils/storage.py:65</code> <b>get_pdf()</b> — MinIO cache check by <code>&#123;org_id&#125;/&#123;scan_id&#125;.pdf</code> object metadata (template must match); returns immediately on hit</li>
+            <li class="api">on miss, ensures <code>Scan.exec_summary</code> exists via <code class="loc">scan_tasks.py:569</code> <b>generate_exec_summary_if_needed()</b> (same function scans call post-enrichment — synchronous here if it never ran)</li>
+            <li class="api"><code>reports/pdf.py</code> <b>ScanReport(scan, findings, template).generate()</b> — ReportLab-built PDF, executive or technical layout</li>
+            <li class="store"><code class="loc">utils/storage.py:36</code> <b>upload_pdf()</b> — writes back to MinIO for next time</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="dashboards">
+      <h2>13 · Dashboard &amp; executive view <span class="route">GET /dashboard/summary · GET /executive</span></h2>
+      <p class="lede">Both are read-only aggregations over Findings/Scans/Assets for the current org — no writes, no Celery. <code>/executive</code> is the one with a real Redis cache; <code>/dashboard/summary</code> computes fresh every call and backfills several metrics with presentation-friendly minimums when live data is thin.</p>
+      <ul class="chain">
+        <li class="api"><code class="loc">dashboard.py:38</code> <b>get_dashboard_summary()</b> <span class="desc">— posture score, KEV/EPSS funnel, "do this next" queue, MTTR, trend line; several fields have hardcoded floors (e.g. <code>reachable_count</code> defaults to 86) so the UI never renders an empty state</span></li>
+        <li class="api"><code class="loc">executive.py:154</code> <b>get_executive_summary()</b>
+          <ul>
+            <li class="store">checks <code>Redis: executive:&#123;org_id&#125;</code> first (5 min TTL, set at <code class="loc">executive.py:37</code>) — this is the cache <code class="loc">scan_tasks.py:135</code> <b>save_findings()</b> invalidates whenever new findings land</li>
+            <li class="api"><code class="loc">executive.py:112</code> <b>_compute_posture_score()</b> — 100 minus weighted critical/high deductions, plus a capped bonus for findings fixed in the last 7 days</li>
+            <li class="store">pulls the exec paragraph straight from the latest completed <code>Scan.exec_summary</code> — no new LLM call on this path</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="appendix">
+      <h2>Appendix · file index</h2>
+      <p class="lede">Every backend file referenced above, grouped by role.</p>
+      <table class="files">
+        <tr><th>Path</th><th>Role</th></tr>
+        <tr><td class="path">app/main.py</td><td>FastAPI app, router wiring, startup migrations, health check</td></tr>
+        <tr><td class="path">app/routers/auth.py</td><td>signup, login, /me</td></tr>
+        <tr><td class="path">app/routers/orgs.py</td><td>org CRUD (admin/platform)</td></tr>
+        <tr><td class="path">app/routers/users.py</td><td>user CRUD, org-scoped</td></tr>
+        <tr><td class="path">app/routers/assets.py</td><td>asset CRUD, per-asset findings, bulk owner update</td></tr>
+        <tr><td class="path">app/routers/scans.py</td><td>scan create/list/get, SSE progress, ask-agent, PDF export</td></tr>
+        <tr><td class="path">app/routers/findings.py</td><td>finding list/update/tags, remediation hub, autofix PR, Jira ticket, per-finding AI</td></tr>
+        <tr><td class="path">app/routers/admin.py</td><td>intel status, AI usage, Jira/Slack/GitHub settings + test + OAuth</td></tr>
+        <tr><td class="path">app/routers/dashboard.py</td><td>unified dashboard summary (read-only)</td></tr>
+        <tr><td class="path">app/routers/executive.py</td><td>CISO posture snapshot, Redis-cached</td></tr>
+        <tr><td class="path">app/auth/jwt.py</td><td>JWT create/verify/decode (HS256)</td></tr>
+        <tr><td class="path">app/auth/dependencies.py</td><td><code>get_current_user</code>, <code>get_user_org_id</code>, <code>require_role</code></td></tr>
+        <tr><td class="path">app/tasks/scan_tasks.py</td><td>all Celery tasks: orchestration, per-scanner subtasks, enrichment, exec summary, Slack, KEV refresh</td></tr>
+        <tr><td class="path">app/celery_app.py</td><td>Celery app config, <code>scans</code> queue, daily KEV beat schedule</td></tr>
+        <tr><td class="path">app/adapters/base.py</td><td><code>BaseAdapter</code> — <code>safe_run()</code> wrapper, fingerprint hashing</td></tr>
+        <tr><td class="path">app/adapters/runner.py</td><td>shared subprocess runner + Redis log streaming</td></tr>
+        <tr><td class="path">app/adapters/nuclei.py</td><td>Nuclei adapter (web vuln scanning)</td></tr>
+        <tr><td class="path">app/adapters/trivy.py</td><td>Trivy adapter (SCA / image / fs / repo)</td></tr>
+        <tr><td class="path">app/adapters/gitleaks.py</td><td>Gitleaks adapter (secret scanning), URL-scheme validation</td></tr>
+        <tr><td class="path">app/ai/claude_client.py</td><td><code>AIClient</code> — Ollama/Anthropic wrapper, AI-call logging</td></tr>
+        <tr><td class="path">app/ai/prompt_builder.py</td><td><code>enrich_finding()</code> — the main per-finding LLM enrichment prompt + schema</td></tr>
+        <tr><td class="path">app/ai/reachability.py</td><td>AST/heuristic repo scanning + LLM reachability classification</td></tr>
+        <tr><td class="path">app/ai/agent.py</td><td><code>SecurityAgent</code> — ReAct tool-calling loop for "ask the scan"</td></tr>
+        <tr><td class="path">app/intel/nvd.py, kev.py, epss.py</td><td>threat-intel clients (CVSS/KEV/EPSS)</td></tr>
+        <tr><td class="path">app/reports/pdf.py</td><td><code>ScanReport</code> — ReportLab PDF generation</td></tr>
+        <tr><td class="path">app/utils/storage.py</td><td>MinIO (S3-compatible) PDF cache</td></tr>
+        <tr><td class="path">app/utils/encryption.py</td><td>Fernet encrypt/decrypt for stored integration secrets</td></tr>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: "base" });
+</script>

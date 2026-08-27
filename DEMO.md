@@ -1,0 +1,149 @@
+# 5-Minute Demo Script
+
+> **Audience:** Prospective customers, investors, or engineering leads  
+> **Setup required:** Platform running locally or on staging (`http://localhost:3000`), a pre-completed scan of `http://testphp.vulnweb.com` already in the DB, and valid Jira credentials saved in Settings.  
+> **Goal:** Show the full "threat-to-ticket" loop in under 5 minutes.
+
+---
+
+## Pre-Demo Checklist
+
+- [ ] Clear browser history / open a fresh Incognito window
+- [ ] Backend API running on port `8000` (`docker compose ps` → all healthy)
+- [ ] At least one scan in `complete` status with findings in the DB
+- [ ] Jira credentials configured in Settings → Integrations → Jira
+- [ ] Zoom/screencast recording started, presenter notes hidden
+
+---
+
+## 🎬 Script
+
+### ⏱ 0:00 – 0:45 · Login & Dashboard
+
+**What to do:**
+1. Open `http://localhost:3000` in the browser.
+2. Enter demo credentials (email: `admin@demo.io`, password: `demo1234`).
+3. Click **Sign In**.
+
+**What to say:**
+> "This is the SigmaSec security platform. Notice the real-time topbar — it shows API latency, connected scanner agents, and active scan status. All live."
+
+**Show:**
+- Dashboard KPI cards: Total Findings, Critical Count, CISA KEV count, Avg Priority Score
+- The pulsing shield icon in the sidebar
+- The agent status: "Agents: 3/3 Connected"
+
+---
+
+### ⏱ 0:45 – 1:30 · Launch a New Scan
+
+**What to do:**
+1. Click **Scans** in the sidebar.
+2. Click **Launch Scan** (top-right button).
+3. In the dialog:
+   - Target: `http://testphp.vulnweb.com`
+   - Enable: **Vulnerability Assessment** ✓
+   - Enable: **Active Exploit Validation** ✓
+4. Click **Run Scan**.
+
+**What to say:**
+> "We're kicking off a Nuclei vulnerability scan with active exploit validation — meaning the platform will actively confirm exploitability, not just report theoretical CVEs. The scan runs as a Celery background task. The topbar will update to 'Scanning...' in a moment."
+
+**Show:**
+- The topbar scan activity badge turning indigo with a spinner
+- The new scan appearing in the table with `queued` status
+
+> **Tip:** If scan takes too long, navigate to the **pre-completed** scan from the list (e.g., `testphp.vulnweb.com - complete`).
+
+---
+
+### ⏱ 1:30 – 2:30 · Findings Table
+
+**What to do:**
+1. Click on the completed scan row in the table.
+2. Or navigate to **Findings** in the sidebar for the org-wide view.
+
+**What to show:**
+- The EPSS probability bar on a finding row
+- The red **EXPLOITED IN WILD** badge next to a KEV-listed CVE
+- Click the **KEV Only** quick filter — show the table narrowing down
+- Click **High EPSS (>70%)** filter — show EPSS-sorted results
+- Add a tag to a finding: click a row, add tag `sprint-1`
+
+**What to say:**
+> "Every finding is enriched with three independent risk signals: NVD CVSS severity, CISA KEV status — meaning actually exploited in the wild — and FIRST EPSS, the probability of exploitation in the next 30 days. Our composite priority score multiplies these signals against your asset's business criticality. The result is a ranked list — not a noisy dump."
+
+---
+
+### ⏱ 2:30 – 3:30 · AI Finding Detail
+
+**What to do:**
+1. Click any **Critical** finding row to open the detail sheet.
+2. Show the **Summary** tab first.
+3. Switch to the **Remediation** tab.
+4. Switch to the **Reachability** tab (if the scan was a Git target).
+
+**What to show:**
+- Claude's plain-English explanation of the vulnerability
+- The step-by-step remediation plan
+- The EPSS percentile progress bar (green/amber/red)
+- The CISA KEV due date badge (if KEV-listed)
+- The "Confirmed Exploitable" green badge (if active validation ran)
+
+**What to say:**
+> "This is Claude Sonnet powering the analysis — not a template, not a copy-paste from NVD. It understands context: what the asset does, what the vulnerability class is, and what the realistic impact is for your stack. It then writes a remediation plan specific to your finding."
+
+---
+
+### ⏱ 3:30 – 4:15 · Create a Jira Ticket
+
+**What to do:**
+1. While still in the finding detail sheet, scroll to the bottom.
+2. Click **Create Jira Ticket**.
+3. Wait for the ticket badge to appear (e.g., `SEC-42`).
+4. Click the badge to open the Jira issue in a new tab.
+
+**What to say:**
+> "One click — finding is now a Jira ticket in your project backlog. The ticket is pre-populated with the CVE ID, severity, EPSS score, and the AI remediation plan. No copy-pasting, no context switching."
+
+**Show:**
+- The green Jira badge appearing in the drawer
+- The Jira issue in a new tab with the full description pre-filled
+
+---
+
+### ⏱ 4:15 – 5:00 · Export PDF Report
+
+**What to do:**
+1. Click **Reports** in the sidebar.
+2. Select the **Executive Summary** template.
+3. Click **Download PDF**.
+4. Show the PDF opening in the browser.
+
+**What to say:**
+> "And here's the last step — a compliance-ready PDF. Our CISO view gives an executive summary: posture score, week-over-week trend, top risks, and a plain-English summary paragraph — all auto-generated by Claude. This is what you hand to your board or auditor."
+
+**Show:**
+- The PDF with the org logo, posture score, and AI executive summary
+- The findings table in the PDF, sorted by priority
+
+---
+
+## 🔚 Closing Talking Points
+
+- **Under 5 minutes:** launch → findings → AI detail → Jira → PDF
+- **No manual triage:** priority score replaces spreadsheets
+- **Built for developers:** keyboard navigation (J/K/Esc in findings), tag system, autofix PRs
+- **Multi-tenant from day 1:** strict org isolation, RBAC (Admin / Analyst / Viewer)
+
+---
+
+## 🛠 Troubleshooting
+
+| Issue | Fix |
+|---|---|
+| Login fails | Check `NEXTAUTH_SECRET` in `.env.local` and backend running on `8000` |
+| No findings showing | Ensure a scan is in `complete` status; check Celery worker is running |
+| Jira ticket fails | Verify credentials in Settings → Integrations → Jira → Test Connection |
+| PDF download is empty | Make sure at least one scan has been completed; check MinIO is running |
+| Active scan not showing in topbar | Wait 15s — topbar polls every 15 seconds |

@@ -1,0 +1,42 @@
+# Title
+
+> Optional description goes here
+
+Optional details go here
+
+## Section name
+
+- [Link title](https://link_url): Optional link details
+
+## Optional
+
+- [Link title](https://link_url)
+
+---
+
+- **Model:** deepseek-r1:latest
+- **Model ID:** deepseek-r1:latest
+- **Quantization:** Q4_K_M
+- **Context length:** 8192
+- **Description:** DeepSeek R1 is a large language model with 120 billion parameters. It is a text-to-text model that can be used for a variety of natural language processing tasks. It is available in both English and Chinese.
+- **Max Tokens:** 8192
+
+
+---
+
+- **Model:** qwen2.5:7b
+- **Model ID:** qwen2.5:7b
+- **Quantization:** Q4_K_M
+- **Context length:** 8192
+- **Description:** DeepSeek R1 is a large language model with 120 billion parameters. It is a text-to-text model that can be used for a variety of natural language processing tasks. It is available in both English and Chinese.
+- **Max Tokens:** 8192
+
+---
+
+- **Model:** deepseek-r1:latest
+- **Model ID:** deepseek-r1:latest
+- **Quantization:** Q4_K_M
+- **Context length:** 8192
+- **Description:** DeepSeek R1 is a large language model with 120 billion parameters. It is a text-to-text model that can be used for a variety of natural language processing tasks. It is available in both English and Chinese.
+- **Max Tokens:** 8192
+

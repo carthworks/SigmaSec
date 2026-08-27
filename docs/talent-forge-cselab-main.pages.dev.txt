@@ -1,0 +1,23 @@
+https://forms.gle/RpAJwYnX3DgSkM8B8
+
+And if this resonates, the waitlist is live: [https://forms.gle/RpAJwYnX3DgSkM8B8]
+
+https://talent-forge-cselab-main.pages.dev/
+
+Hi all 👋 My friend  and I are building an AI-powered security platform — it unifies scanners like Nuclei, Trivy & Gitleaks and tells teams *which vulnerabilities to fix first* (using CISA KEV + EPSS + AI analysis).
+
+Before we build further, we need honest input from people in security/DevOps/engineering.
+
+📋 2-min survey: [https://forms.gle/RpAJwYnX3DgSkM8B]
+🗳️ LinkedIn poll: [https://lnkd.in/p/gDthdAuv]
+
+No signup needed. Brutal honesty welcome — and please forward to anyone in cybersecurity! 🙏
+
+
+==============
+
+We’re building an AI platform to unify security scanners (Nuclei, Trivy, Gitleaks) and prioritize vulnerabilities using CISA KEV and EPSS. 
+
+Is scanner noise a major bottleneck for your team, and what features would make this tool a "must-have"? Please vote in the poll or share your feedback below. 
+
+Join our waitlist here: [URL]

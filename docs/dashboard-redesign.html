@@ -1,0 +1,403 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security Platform — Dashboard (proposed)</title>
+<style>
+  :root{
+    --bg:#070B12; --panel:#0E1420; --panel-2:#131A28; --line:#1D2534; --line-2:#2A3346;
+    --tx:#E7EBF3; --tx-2:#8C97AB; --tx-3:#5C6679;
+    --indigo:#7C6CF6; --indigo-dim:#3A2F8F;
+    --red:#F0524D; --amber:#E0A03C; --green:#33C48D; --blue:#4C9BF5;
+    --r:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--tx); font-size:14px; line-height:1.5;
+    font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;font-size:12px}
+  .shell{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100vh}
+
+  /* ---------- sidebar ---------- */
+  aside{background:#0A0F19;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:9px;padding:2px 10px 22px}
+  .brand b{font-size:15px;font-weight:600;letter-spacing:-.01em}
+  .brand span{font-size:10px;color:var(--tx-3);border:1px solid var(--line-2);padding:1px 5px;border-radius:4px}
+  .grp{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx-3);padding:14px 10px 6px}
+  .nav a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;color:var(--tx-2);text-decoration:none;font-size:13.5px}
+  .nav a:hover{background:#141B29;color:var(--tx)}
+  .nav a.on{background:#1A1B3D;color:#B9AFFF;font-weight:500}
+  .nav .badge{margin-left:auto;font-size:11px;background:#3A1614;color:#FF8A85;padding:1px 7px;border-radius:20px}
+  .health{margin-top:auto;border-top:1px solid var(--line);padding:12px 10px 2px;font-size:12px;color:var(--tx-3);display:flex;align-items:center;gap:7px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex:none}
+
+  /* ---------- topbar ---------- */
+  header{display:flex;align-items:center;gap:16px;padding:14px 26px;border-bottom:1px solid var(--line);background:#0A0F19;position:sticky;top:0;z-index:5}
+  .range{display:flex;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .range button{background:none;border:0;color:var(--tx-2);padding:6px 13px;font:inherit;font-size:12.5px;cursor:pointer;border-right:1px solid var(--line)}
+  .range button:last-child{border-right:0}
+  .range button.on{background:#1D2436;color:var(--tx)}
+  .pill{font-size:12px;color:var(--tx-2);background:var(--panel-2);border:1px solid var(--line);padding:5px 11px;border-radius:20px}
+  .who{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .av{width:30px;height:30px;border-radius:50%;background:var(--indigo-dim);color:#CFC6FF;display:grid;place-items:center;font-size:12px;font-weight:600}
+
+  main{padding:24px 26px 60px}
+  h1{font-size:23px;font-weight:600;letter-spacing:-.02em}
+  .sub{color:var(--tx-2);font-size:13.5px;margin-top:3px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+  .card h3{font-size:14.5px;font-weight:600}
+  .chd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .chd .note{font-size:12px;color:var(--tx-3)}
+  a.more{color:var(--tx-2);font-size:12.5px;text-decoration:none}
+  a.more:hover{color:var(--tx)}
+
+  .row{display:grid;gap:14px;margin-top:20px}
+
+  /* ---------- score + funnel ---------- */
+  .score{padding:18px;display:flex;flex-direction:column;justify-content:space-between}
+  .score .n{font-size:52px;font-weight:600;letter-spacing:-.04em;line-height:1}
+  .lab{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx-3)}
+  .tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 9px;border-radius:6px;width:fit-content}
+  .t-red{background:#2C1412;color:#FF8A85}.t-amb{background:#2C2110;color:#F0BE6C}
+  .t-grn{background:#0F2A20;color:#5FDCAE}.t-ind{background:#1B1738;color:#B9AFFF}
+
+  .funnel{padding:18px}
+  .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end;margin-top:14px}
+  .steps .n{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+  .steps small{display:block;font-size:12px;color:var(--tx-2);margin-top:4px}
+  .steps .drop{font-size:11px;color:var(--tx-3);margin-top:2px}
+  .bar{display:flex;height:7px;border-radius:4px;overflow:hidden;margin-top:16px;background:#161D2B}
+  .bar i{display:block}
+
+  /* ---------- action queue ---------- */
+  .q li{list-style:none;display:grid;grid-template-columns:78px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .q li:last-child{border-bottom:0}
+  .q li:hover{background:#121A28}
+  .sev{font-size:10.5px;font-weight:600;letter-spacing:.05em;padding:3px 0;border-radius:5px;text-align:center}
+  .s-kev{background:#3A1210;color:#FF9691}.s-exp{background:#3A2A0E;color:#F5C578}.s-sec{background:#132B3F;color:#7FC0FF}
+  .ttl{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .why{font-size:12px;color:var(--tx-2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .why b{color:#C8B9FF;font-weight:500}
+  .act{display:flex;align-items:center;gap:9px;white-space:nowrap}
+  .btn{font:inherit;font-size:12px;padding:5px 11px;border-radius:7px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--tx);cursor:pointer}
+  .btn.pri{background:#2A2270;border-color:#4136A8;color:#D6CFFF}
+  .btn:hover{border-color:#3C4762}
+  .sla{font-size:11.5px;color:#F5C578}
+
+  /* ---------- workflow strip ---------- */
+  .strip{display:flex;align-items:stretch;padding:0}
+  .strip div{flex:1;padding:13px 18px;border-right:1px solid var(--line)}
+  .strip div:last-child{border-right:0}
+  .strip b{font-size:19px;font-weight:600;display:block;letter-spacing:-.02em}
+  .strip small{font-size:12px;color:var(--tx-2)}
+
+  /* ---------- lists ---------- */
+  .scan{padding:12px 16px;border-bottom:1px solid var(--line)}
+  .scan:last-child{border-bottom:0}
+  .scan .top{display:flex;align-items:center;gap:9px}
+  .scan .nm{font-size:13.5px;font-weight:500}
+  .chip{font-size:11px;color:var(--tx-2);border:1px solid var(--line-2);padding:1px 7px;border-radius:5px}
+  .scan .met{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:12px;color:var(--tx-2)}
+  .k{font-weight:600}
+  .k.r{color:#FF8A85}.k.a{color:#F0BE6C}.k.b{color:#7FC0FF}
+  .scan .bot{font-size:11.5px;color:var(--tx-3);margin-top:5px}
+
+  .repo{font-size:11.5px;color:var(--tx-3);padding:10px 16px 6px;letter-spacing:.02em}
+  .fix{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--line)}
+  .fix:last-child{border-bottom:0}
+  .fix .nm{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fix .meta{font-size:11.5px;color:var(--tx-3);margin-top:2px}
+  .st{font-size:11px;padding:2px 8px;border-radius:5px;white-space:nowrap}
+  .st-pr{background:#0F2A20;color:#5FDCAE}.st-jira{background:#132B3F;color:#7FC0FF}.st-rev{background:#2C2110;color:#F0BE6C}
+
+  .intel{padding:14px 16px;display:grid;gap:12px}
+  .src{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+  .src .nm{font-size:13px}
+  .src .d{font-size:11.5px;color:var(--tx-3);margin-top:2px}
+  .track{height:5px;background:#161D2B;border-radius:3px;overflow:hidden;margin-top:7px;grid-column:1/-1}
+  .track i{display:block;height:100%}
+
+  footer{margin-top:22px;display:flex;align-items:center;gap:22px;padding:11px 16px;border:1px solid var(--line);border-radius:var(--r);background:#0A0F19;font-size:12px;color:var(--tx-3);flex-wrap:wrap}
+  footer span{display:flex;align-items:center;gap:6px}
+
+  svg text{font-size:10.5px;fill:#5C6679;font-family:inherit}
+  @media(max-width:1180px){.shell{grid-template-columns:1fr}aside{display:none}}
+</style>
+
+<div class="shell">
+
+<aside>
+  <div class="brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C6CF6" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6z"/></svg><b>Security Platform</b><span>v0.1</span></div>
+
+  <div class="grp">Monitor</div>
+  <nav class="nav">
+    <a class="on" href="#">Dashboard</a>
+    <a href="#">Assets</a>
+    <a href="#">Scans</a>
+  </nav>
+
+  <div class="grp">Act</div>
+  <nav class="nav">
+    <a href="#">Findings <span class="badge">14</span></a>
+    <a href="#">Remediation hub</a>
+  </nav>
+
+  <div class="grp">Report</div>
+  <nav class="nav">
+    <a href="#">Executive view</a>
+    <a href="#">Reports</a>
+  </nav>
+
+  <div class="grp">Admin</div>
+  <nav class="nav">
+    <a href="#">AI usage</a>
+    <a href="#">Settings</a>
+  </nav>
+
+  <div class="health"><i class="dot"></i> All systems operational</div>
+</aside>
+
+<div>
+<header>
+  <div class="range">
+    <button>24h</button><button class="on">30 days</button><button>90 days</button><button>Custom</button>
+  </div>
+  <span class="pill">2 scans queued</span>
+  <span class="pill">3 of 3 agents connected</span>
+  <div class="who">
+    <div style="text-align:right"><div style="font-size:13px;font-weight:500">CyberSigma Admin</div><div style="font-size:11px;color:var(--tx-3)">CyberSigma</div></div>
+    <div class="av">CA</div>
+  </div>
+</header>
+
+<main>
+  <h1>Dashboard</h1>
+  <p class="sub">1,204 findings across 20 assets. 14 need a decision today.</p>
+
+  <!-- score + funnel -->
+  <div class="row" style="grid-template-columns:236px minmax(0,1fr)">
+    <div class="card score">
+      <div>
+        <div class="lab">Posture score</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:8px">
+          <span class="n">68</span><span style="color:var(--tx-3);font-size:15px">/100</span>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <span class="tag t-red">↓ 6 points this week</span>
+        <div style="font-size:12px;color:var(--tx-2);margin-top:9px;line-height:1.45">Driven by two KEV-listed findings introduced in <span class="mono" style="color:var(--tx-2)">LibraDigit_web</span> on Jul 18.</div>
+      </div>
+    </div>
+
+    <div class="card funnel">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="lab">Noise to signal — how 1,204 findings became 14</div>
+        <a class="more" href="#">How this is scored →</a>
+      </div>
+      <div class="steps">
+        <div><div class="n" style="color:var(--tx-3)">1,204</div><small>Total findings</small><div class="drop">Raw scanner output</div></div>
+        <div><div class="n" style="color:var(--tx-2)">399</div><small>Critical or high</small><div class="drop">−67% by severity</div></div>
+        <div><div class="n" style="color:#F0BE6C">86</div><small>Reachable in code</small><div class="drop">−78% by AST reachability</div></div>
+        <div><div class="n" style="color:#FF8A85">14</div><small style="color:#FF8A85">Exploitable now</small><div class="drop">KEV + EPSS + validated</div></div>
+      </div>
+      <div class="bar">
+        <i style="flex:805;background:#232C3D"></i><i style="flex:313;background:#4A3A1B"></i><i style="flex:72;background:#8C6A22"></i><i style="flex:14;background:#F0524D"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- action queue -->
+  <div class="row">
+    <div class="card">
+      <div class="chd">
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <h3>Do this next</h3>
+          <span class="note">Ranked by exploitability, reachability, and asset criticality</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="tag t-amb">3 breaching SLA</span>
+          <a class="more" href="#">View all 14 →</a>
+        </div>
+      </div>
+      <ul class="q">
+        <li>
+          <span class="sev s-kev">KEV</span>
+          <div>
+            <div class="ttl">Authentication bypass in gnutls</div>
+            <div class="why"><b>Why now:</b> on CISA KEV since Jun 2 · EPSS 0.87 · reachable from <span class="mono">auth/login_handler.py</span> · asset is internet-facing</div>
+          </div>
+          <div class="act"><span class="sla">SLA in 6h</span><button class="btn pri">Review fix PR</button><button class="btn">Assign</button></div>
+        </li>
+        <li>
+          <span class="sev s-kev">KEV</span>
+          <div>
+            <div class="ttl">Use-after-free in libxslt (xsltGetInheritedNsList)</div>
+            <div class="why"><b>Why now:</b> EPSS 0.71 · exploit validated in sandbox · reachable from the XML import parser</div>
+          </div>
+          <div class="act"><span class="sla">SLA in 2d</span><button class="btn pri">Generate fix PR</button><button class="btn">Assign</button></div>
+        </li>
+        <li>
+          <span class="sev s-sec">SECRET</span>
+          <div>
+            <div class="ttl">Live AWS access key committed to LibraDigit_web</div>
+            <div class="why"><b>Why now:</b> credential validated as active · present in 14 commits · public repository</div>
+          </div>
+          <div class="act"><span class="sla">Overdue 1d</span><button class="btn pri">Rotate and purge</button><button class="btn">Assign</button></div>
+        </li>
+        <li>
+          <span class="sev s-exp">EXPLOIT</span>
+          <div>
+            <div class="ttl">Type confusion in libxml xmlNode.psvi</div>
+            <div class="why"><b>Why now:</b> EPSS 0.44 · public PoC available · reachable, but only from an internal admin route</div>
+          </div>
+          <div class="act"><button class="btn">Open in Jira</button><button class="btn">Dismiss</button></div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- workflow strip -->
+  <div class="row">
+    <div class="card strip">
+      <div><b>4.2 days</b><small>Mean time to remediate <span style="color:#5FDCAE">↓ 1.1d</span></small></div>
+      <div><b>7</b><small>Fix PRs open</small></div>
+      <div><b>12</b><small>Jira tickets linked</small></div>
+      <div><b>3</b><small>SLA breaches</small></div>
+      <div><b>2</b><small>Accepted risks</small></div>
+      <div><b>94%</b><small>Assets scanned in last 7d</small></div>
+    </div>
+  </div>
+
+  <!-- trend + intel -->
+  <div class="row" style="grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)">
+    <div class="card">
+      <div class="chd">
+        <div><h3>Open vs remediated</h3><div class="note" style="margin-top:2px">Last 30 days</div></div>
+        <div style="display:flex;gap:14px;font-size:12px;color:var(--tx-2)">
+          <span><i class="dot" style="background:#F0524D;display:inline-block;margin-right:5px"></i>Open</span>
+          <span><i class="dot" style="background:#33C48D;display:inline-block;margin-right:5px"></i>Remediated</span>
+        </div>
+      </div>
+      <div style="padding:14px 16px 6px">
+        <svg viewBox="0 0 640 210" width="100%" height="210" preserveAspectRatio="none" aria-label="Open vulnerabilities rose sharply after two repositories were onboarded, while remediation has been climbing steadily since Jul 10.">
+          <g stroke="#1A2130" stroke-width="1">
+            <line x1="46" y1="14" x2="632" y2="14"/><line x1="46" y1="55" x2="632" y2="55"/>
+            <line x1="46" y1="96" x2="632" y2="96"/><line x1="46" y1="137" x2="632" y2="137"/>
+            <line x1="46" y1="178" x2="632" y2="178"/>
+          </g>
+          <g text-anchor="end">
+            <text x="38" y="18">800</text><text x="38" y="59">600</text>
+            <text x="38" y="100">400</text><text x="38" y="141">200</text><text x="38" y="182">0</text>
+          </g>
+          <line x1="300" y1="14" x2="300" y2="178" stroke="#3A3168" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="306" y="26" fill="#9A8FE0">Jul 4 — 2 repos onboarded</text>
+          <polyline fill="none" stroke="#F0524D" stroke-width="2" stroke-linejoin="round"
+            points="46,177 110,176 174,175 238,174 300,173 320,140 384,138 420,86 480,85 520,88 560,120 600,50 632,44"/>
+          <polyline fill="none" stroke="#33C48D" stroke-width="2" stroke-linejoin="round"
+            points="46,178 110,178 174,177 238,177 300,176 340,174 384,170 440,152 480,146 520,140 560,138 600,137 632,136"/>
+          <circle cx="632" cy="44" r="3.5" fill="#F0524D"/><circle cx="632" cy="136" r="3.5" fill="#33C48D"/>
+          <g text-anchor="middle">
+            <text x="60" y="200">Jun 22</text><text x="180" y="200">Jun 28</text><text x="300" y="200">Jul 4</text>
+            <text x="420" y="200">Jul 10</text><text x="530" y="200">Jul 16</text><text x="620" y="200">Jul 21</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chd"><h3>Intelligence coverage</h3><a class="more" href="#">Sync now</a></div>
+      <div class="intel">
+        <div class="src">
+          <div><div class="nm">CISA KEV</div><div class="d">1,647 exploited CVEs indexed · synced 3h ago</div></div>
+          <div class="tag t-red">9 matches</div>
+          <div class="track"><i style="width:64%;background:#F0524D"></i></div>
+        </div>
+        <div class="src">
+          <div><div class="nm">FIRST EPSS</div><div class="d">Scored 1,204 of 1,204 findings · synced 3h ago</div></div>
+          <div class="tag t-amb">31 above 0.5</div>
+          <div class="track"><i style="width:100%;background:#E0A03C"></i></div>
+        </div>
+        <div class="src">
+          <div><div class="nm">AST reachability</div><div class="d">Analysed 18 of 20 assets · 2 pending language support</div></div>
+          <div class="tag t-ind">86 reachable</div>
+          <div class="track"><i style="width:90%;background:#7C6CF6"></i></div>
+        </div>
+        <div class="src">
+          <div><div class="nm">Exploit validation</div><div class="d">Sandbox confirmed 6 · 3 inconclusive</div></div>
+          <div class="tag t-grn">6 confirmed</div>
+          <div class="track"><i style="width:40%;background:#33C48D"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- scans + pipeline -->
+  <div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+    <div class="card">
+      <div class="chd"><h3>Recent scans</h3><a class="more" href="#">All 24 runs →</a></div>
+      <div class="scan">
+        <div class="top">
+          <span class="nm mono" style="font-size:12.5px">carthworks/LibraDigit_web</span>
+          <span class="chip">Git repo</span>
+          <div class="met"><span><span class="k r">15</span> crit</span><span><span class="k a">126</span> high</span><span><span class="k b">198</span> med</span></div>
+        </div>
+        <div class="bot">Completed 2h ago · 3 runs today · <span style="color:#FF8A85">+9 new criticals vs previous run</span></div>
+      </div>
+      <div class="scan">
+        <div class="top">
+          <span class="nm mono" style="font-size:12.5px">akitra.com</span>
+          <span class="chip">Web app</span>
+          <div class="met"><span style="color:#5FDCAE">No new findings</span></div>
+        </div>
+        <div class="bot">Completed 2h ago · unchanged for 6 runs</div>
+      </div>
+      <div class="scan">
+        <div class="top">
+          <span class="nm mono" style="font-size:12.5px">payments-api</span>
+          <span class="chip">Container</span>
+          <div class="met"><span style="color:#F0BE6C">Running · 62%</span></div>
+        </div>
+        <div class="bot">Started 4m ago · base image ruby:3.2-alpine</div>
+      </div>
+      <div class="scan" style="text-align:center;color:var(--tx-3);font-size:12.5px;padding:16px">
+        2 more targets queued. <a class="more" href="#" style="color:#B9AFFF">Add an asset →</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chd"><h3>Remediation pipeline</h3><a class="more" href="#">Open hub →</a></div>
+      <div class="repo mono">carthworks/LibraDigit_web · 4 in flight</div>
+      <div class="fix">
+        <div><div class="nm">gnutls — authentication bypass</div><div class="meta mono">CVE-2026-42010 · SAM1-12 · patch to 3.8.4</div></div>
+        <span class="st st-pr">PR ready</span>
+      </div>
+      <div class="fix">
+        <div><div class="nm">libxslt — use-after-free</div><div class="meta mono">CVE-2024-55549 · SAM1-11 · patch to 1.1.42</div></div>
+        <span class="st st-rev">In review</span>
+      </div>
+      <div class="fix">
+        <div><div class="nm">libxml — type confusion in psvi</div><div class="meta mono">CVE-2025-49796 · SEC-232257</div></div>
+        <span class="st st-jira">Jira open</span>
+      </div>
+      <div class="fix">
+        <div><div class="nm">libXpm — denial of service</div><div class="meta mono">CVE-2026-4367 · SEC-205544</div></div>
+        <span class="st st-jira">Jira open</span>
+      </div>
+      <div class="repo mono">payments-api · 3 in flight</div>
+      <div class="fix">
+        <div><div class="nm">Hardcoded database credential</div><div class="meta mono">Secret · SAM1-13 · rotation pending</div></div>
+        <span class="st st-rev">In review</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span><i class="dot"></i> API v0.1.0</span>
+    <span><i class="dot"></i> PostgreSQL connected</span>
+    <span><i class="dot"></i> Scan engine idle · 24 runs</span>
+    <span style="margin-left:auto">Intelligence feeds synced 21 Jul, 21:06</span>
+  </footer>
+</main>
+</div>
+</div>

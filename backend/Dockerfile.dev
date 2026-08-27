@@ -1,0 +1,210 @@
+# syntax=docker/dockerfile:1
+
+# ============================================================
+# Build arguments
+# ============================================================
+
+ARG PYTHON_VERSION=3.12
+ARG NUCLEI_VERSION=3.3.8
+# NOTE: If bumping GITLEAKS_VERSION to >=8.19.0, note that the 'detect' subcommand was deprecated
+# in favor of 'git' / 'dir'. Update GitleaksAdapter in app/adapters/gitleaks.py accordingly.
+ARG GITLEAKS_VERSION=8.18.2
+
+
+# ============================================================
+# Stage 1: Python dependency builder
+# ============================================================
+
+FROM python:${PYTHON_VERSION}-slim AS python-builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    wget \
+    unzip \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download Nuclei binary
+RUN wget -q https://github.com/projectdiscovery/nuclei/releases/download/v3.2.4/nuclei_3.2.4_linux_amd64.zip \
+    && unzip nuclei_3.2.4_linux_amd64.zip \
+    && mv nuclei /usr/local/bin/nuclei \
+    && chmod +x /usr/local/bin/nuclei \
+    && rm nuclei_3.2.4_linux_amd64.zip
+
+COPY requirements.txt .
+
+RUN pip install \
+    --no-cache-dir \
+    --prefix=/install \
+    -r requirements.txt
+
+
+# ============================================================
+# Stage 2: Security tools downloader
+# ============================================================
+
+FROM debian:bookworm-slim AS tools-builder
+
+ARG TARGETARCH
+ARG NUCLEI_VERSION
+ARG GITLEAKS_VERSION
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    unzip \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tools
+
+# ------------------------------------------------------------
+# Map Docker architecture names to release architecture names
+# ------------------------------------------------------------
+
+RUN case "${TARGETARCH:-amd64}" in \
+        amd64) TOOL_ARCH="amd64" ;; \
+        arm64) TOOL_ARCH="arm64" ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac && \
+    curl --fail --location --silent --show-error \
+        --retry 3 \
+        --output nuclei.zip \
+        "https://github.com/projectdiscovery/nuclei/releases/download/v${NUCLEI_VERSION}/nuclei_${NUCLEI_VERSION}_linux_${TOOL_ARCH}.zip" && \
+    unzip nuclei.zip nuclei && \
+    chmod +x nuclei && \
+    rm nuclei.zip
+
+RUN case "${TARGETARCH:-amd64}" in \
+        amd64) TOOL_ARCH="x64" ;; \
+        arm64) TOOL_ARCH="arm64" ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac && \
+    curl --fail --location --silent --show-error \
+        --retry 3 \
+        --output gitleaks.tar.gz \
+        "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${TOOL_ARCH}.tar.gz" && \
+    tar -xzf gitleaks.tar.gz gitleaks && \
+    chmod +x gitleaks && \
+    rm gitleaks.tar.gz
+
+
+# ============================================================
+# Stage 3: Production runtime
+# ============================================================
+
+FROM python:${PYTHON_VERSION}-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PATH="/usr/local/bin:${PATH}"
+
+WORKDIR /app
+
+
+# ------------------------------------------------------------
+# Runtime dependencies + Trivy
+# ------------------------------------------------------------
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    libpq5 \
+    git \
+    nmap \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL \
+        https://aquasecurity.github.io/trivy-repo/deb/public.key \
+        | gpg --dearmor \
+        -o /etc/apt/keyrings/trivy.gpg \
+    && echo \
+        "deb [signed-by=/etc/apt/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+        > /etc/apt/sources.list.d/trivy.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends trivy \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# ------------------------------------------------------------
+# Copy Python packages
+# ------------------------------------------------------------
+
+COPY --from=python-builder /install /usr/local
+
+
+# ------------------------------------------------------------
+# Copy security tools
+# ------------------------------------------------------------
+
+COPY --from=tools-builder /tools/nuclei /usr/local/bin/nuclei
+COPY --from=tools-builder /tools/gitleaks /usr/local/bin/gitleaks
+
+
+# ------------------------------------------------------------
+# Create non-root application user
+# ------------------------------------------------------------
+
+RUN groupadd --system appgroup \
+    && useradd \
+        --system \
+        --gid appgroup \
+        --create-home \
+        appuser
+
+
+# ------------------------------------------------------------
+# Application source
+# ------------------------------------------------------------
+
+COPY --chown=appuser:appgroup . .
+
+
+# ------------------------------------------------------------
+# Prepare writable directories
+# ------------------------------------------------------------
+
+RUN mkdir -p \
+    /app/data \
+    /app/reports \
+    /app/logs \
+    /home/appuser/.cache \
+    && chown -R appuser:appgroup \
+        /app \
+        /home/appuser
+
+
+USER appuser
+
+
+# ------------------------------------------------------------
+# Verify installed tools during image build
+# ------------------------------------------------------------
+
+RUN nuclei -version \
+    && gitleaks version \
+    && trivy --version \
+    && nmap --version
+
+
+EXPOSE 8000
+
+
+# ------------------------------------------------------------
+# Container health check
+# ------------------------------------------------------------
+
+HEALTHCHECK \
+    --interval=30s \
+    --timeout=5s \
+    --start-period=20s \
+    --retries=3 \
+    CMD curl --fail http://localhost:8000/health || exit 1
+
+
+# FastAPI example
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

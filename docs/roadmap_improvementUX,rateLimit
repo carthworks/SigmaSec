@@ -1,0 +1,70 @@
+# Technical & UX Improvements Roadmap
+
+Here is a list of high-impact features and architectural improvements to elevate the platform from a Month 1 MVP into a stable, enterprise-ready SaaS product.
+
+---
+
+## 🛡️ 1. Stability & Reliability (Backend)
+
+### 📊 Celery Resource Isolation & Concurrency Control
+* **Problem**: Scans trigger resource-heavy subprocesses (Nuclei, Trivy). Multiple concurrent scans can exhaust backend memory and CPU, crashing the worker.
+* **Solution**:
+  * Implement Celery **rate limiting** and partition tasks into dedicated queues (e.g., `heavy-scans` for web apps vs `light-scans` for repo secrets).
+  * Configure Celery `--concurrency` limits and set memory autoscale thresholds.
+
+### 🔄 Database Resiliency & Alembic Robustness
+* **Problem**: Programmatic startup migrations can block application startup if the database container takes longer to accept connections.
+* **Solution**:
+  * Implement a robust **retry loop with exponential backoff** during the startup migration check (waiting up to 30 seconds for Postgres to become healthy).
+  * Separate DDL (schema changes) from DML (data updates) to ensure migration failures roll back cleanly without leaving the schema in a corrupted state.
+
+### ⚠️ Scan Sandbox Isolation
+* **Problem**: Running external binary scanners as local subprocesses poses security and stability risks if a scanner crashes, hangs, or consumes excessive memory.
+* **Solution**:
+  * Wrap scanner subprocesses in **isolated temporary Docker containers** or micro-sandboxes (using limited cgroup memory/CPU shares).
+  * Enforce strict runtime execution timeouts per scanner.
+
+---
+
+## 🎨 2. User Experience (UX & Frontend)
+
+### 📺 Live Terminal Stream for Active Scans
+* **Problem**: Users see a simple progress bar while a scan runs, creating a "black box" experience.
+* **Solution**:
+  * Build a collapsible **Live Terminal logs output component** in the Scan Details page.
+  * Stream real-time stdout/stderr from Nuclei, Trivy, and Gitleaks adapters via Server-Sent Events (SSE), mimicking a CI/CD build terminal.
+
+### 💾 Filter Presets & Smart Views
+* **Problem**: Security analysts constantly apply the same filters (e.g., "Critical KEV exploits on production targets"). Selecting these manually on every page reload is tedious.
+* **Solution**:
+  * Implement "Save Filter Preset" functionality on the `/findings` page.
+  * Create quick-access tabs for common views (e.g., "Top 10 Fixes", "Secrets Leaks", "Internet Exposed").
+
+### 💬 Agentic Security Chat Widget
+* **Problem**: Navigating complex JSON outputs to find remediation paths takes time.
+* **Solution**:
+  * Build a floating chat icon in the bottom-right corner of the interface (Day 29 / W6).
+  * Connect it to the backend Claude API, permitting natural language queries like:
+    > *"Which of my URL assets is vulnerable to SQL injection, and what are the remediation steps?"*
+
+### 📉 Posture Trends & Analytics Charts
+* **Problem**: The dashboard shows current stats but doesn't convey historical improvement.
+* **Solution**:
+  * Integrate **Recharts** to plot a dual-axis line chart tracking:
+    * **Vulnerabilities Opened vs. Closed** over a 30-day timeline.
+    * **Average Remediation Time (MTTR)**.
+
+---
+
+## 🔑 3. Month 2 Integration Highlights
+
+```mermaid
+graph TD
+    A[Raw Scan Ingestion] --> B[Threat Intel Lookup NVD/KEV/EPSS]
+    B --> C[ Claude AI Analyzer ]
+    C --> D[AST Code Reachability Check]
+    D --> E[Jira Ticket & GitHub PR Autofix]
+    E --> F[Slack Notification Alert]
+```
+
+By prioritizing the **programmatic migration checks**, **visual trend charts**, and the **Claude agentic chat**, the platform becomes a highly automated, interactive workspace for security engineers rather than just a vulnerability list.

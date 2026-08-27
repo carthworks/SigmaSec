@@ -1,0 +1,850 @@
+<title>CyberSigma Call Graphs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --font-display:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+    --font-body:"Source Sans 3",-apple-system,"Segoe UI",sans-serif;
+    --font-mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+
+    --paper:#F2F4F1;
+    --paper-raised:#FFFFFF;
+    --ink:#1B211D;
+    --ink-soft:#55605A;
+    --line:#DCE1DB;
+    --line-strong:#B9C2B7;
+    --accent:#16665C;
+    --accent-strong:#0F4A43;
+    --accent-soft:#DCEEE9;
+    --flag:#A65A1E;
+    --flag-soft:#F5E3D0;
+    --code-bg:#EAEDE7;
+    --shadow: 0 1px 2px rgba(20,30,25,0.05), 0 8px 24px -16px rgba(20,30,25,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#10140F;
+      --paper-raised:#171C17;
+      --ink:#E7ECE6;
+      --ink-soft:#9AA69E;
+      --line:#2A322A;
+      --line-strong:#3C463C;
+      --accent:#4FC2AE;
+      --accent-strong:#7DDCC9;
+      --accent-soft:rgba(79,194,174,0.14);
+      --flag:#E2954F;
+      --flag-soft:rgba(226,149,79,0.14);
+      --code-bg:#1B211A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -16px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#10140F;
+    --paper-raised:#171C17;
+    --ink:#E7ECE6;
+    --ink-soft:#9AA69E;
+    --line:#2A322A;
+    --line-strong:#3C463C;
+    --accent:#4FC2AE;
+    --accent-strong:#7DDCC9;
+    --accent-soft:rgba(79,194,174,0.14);
+    --flag:#E2954F;
+    --flag-soft:rgba(226,149,79,0.14);
+    --code-bg:#1B211A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -16px rgba(0,0,0,0.5);
+  }
+
+  *{box-sizing:border-box;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important; scroll-behavior:auto !important;} }
+
+  html, body{ max-width:100%; overflow-x:hidden; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{ color:var(--accent-strong); text-decoration-color:var(--line-strong); text-underline-offset:2px; }
+  a:hover{ color:var(--accent); }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:2px; }
+
+  code, .mono{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+
+  /* ---------- masthead ---------- */
+  .masthead{
+    max-width:1180px; margin:0 auto; padding:56px 32px 28px;
+    border-bottom:1px solid var(--line);
+  }
+  .kicker{
+    font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 14px;
+  }
+  h1{
+    font-family:var(--font-display); font-weight:700; font-size:clamp(1.9rem,4vw,2.7rem);
+    letter-spacing:-0.01em; margin:0 0 14px; text-wrap:balance; color:var(--ink);
+  }
+  .masthead p{ max-width:62ch; color:var(--ink-soft); font-size:1.05rem; margin:0 0 6px; }
+  .masthead .scope{ margin-top:18px; display:flex; flex-wrap:wrap; gap:8px 22px; font-family:var(--font-mono); font-size:0.78rem; color:var(--ink-soft); }
+  .masthead .scope b{ color:var(--ink); font-weight:600; }
+
+  /* ---------- page grid ---------- */
+  .page{ max-width:1180px; margin:0 auto; padding:36px 32px 100px; display:grid; grid-template-columns:220px minmax(0,1fr); gap:48px; align-items:start; }
+  main{ min-width:0; }
+
+  .toc{ position:sticky; top:28px; min-width:0; }
+  .toc-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; border-left:1px solid var(--line); }
+  .toc-list a{
+    display:block; padding:6px 0 6px 16px; font-family:var(--font-mono); font-size:0.82rem;
+    color:var(--ink-soft); text-decoration:none; border-left:2px solid transparent; margin-left:-1px;
+  }
+  .toc-list a:hover{ color:var(--ink); border-left-color:var(--line-strong); }
+  .toc-list li.risk a{ color:var(--flag); }
+
+  /* ---------- shared infra table ---------- */
+  .infra-table{ width:100%; border-collapse:collapse; margin:18px 0 6px; font-size:0.92rem; }
+  .infra-table th{
+    text-align:left; font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-soft); font-weight:600; padding:0 14px 10px 0; border-bottom:1px solid var(--line-strong);
+  }
+  .infra-table td{ padding:12px 14px 12px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  .infra-table td:first-child{ font-weight:600; white-space:nowrap; }
+  .infra-table code{ background:var(--code-bg); padding:1px 5px; border-radius:3px; font-size:0.85em; }
+  .table-wrap{ overflow-x:auto; }
+
+  /* ---------- section groups ---------- */
+  .group{ padding:56px 0; border-bottom:1px solid var(--line); }
+  .group:last-of-type{ border-bottom:none; }
+  .group-head{ display:flex; align-items:baseline; gap:14px; margin-bottom:8px; }
+  .group-num{ font-family:var(--font-mono); font-size:0.9rem; color:var(--accent); font-weight:600; }
+  .group-title{ font-family:var(--font-display); font-size:1.5rem; font-weight:700; margin:0; letter-spacing:-0.01em; }
+  .group-intro{ color:var(--ink-soft); max-width:68ch; margin:0 0 30px; }
+
+  #shared .group-head, #risk .group-head{ margin-bottom:8px; }
+
+  /* ---------- workflow cards ---------- */
+  .wf-grid{ display:grid; grid-template-columns:minmax(0,1fr); gap:22px; }
+  .wf{
+    min-width:0;
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:8px;
+    padding:22px 24px; box-shadow:var(--shadow);
+  }
+  .wf-head{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 12px; margin-bottom:16px; }
+  .wf-title{ font-family:var(--font-display); font-size:1.02rem; font-weight:600; margin:0; flex:0 0 auto; }
+  .wf-meta{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .endpoint{
+    font-family:var(--font-mono); font-size:0.78rem; background:var(--code-bg); color:var(--accent-strong);
+    padding:3px 9px; border-radius:4px; font-weight:600;
+  }
+  .tag{
+    font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.05em; text-transform:uppercase;
+    padding:3px 8px; border-radius:3px; line-height:1.4; white-space:nowrap;
+  }
+  .tag-role{ background:var(--accent-soft); color:var(--accent-strong); }
+  .tag-scope{ border:1px solid var(--line-strong); color:var(--ink-soft); }
+  .tag-flow{ background:var(--code-bg); color:var(--ink-soft); }
+  .tag-public{ border:1px solid var(--line-strong); color:var(--ink-soft); font-style:italic; }
+
+  /* stepper flow */
+  .flow{ display:flex; flex-direction:column; margin:4px 0 14px; }
+  .step{ display:grid; grid-template-columns:22px 1fr; column-gap:14px; }
+  .rail{ position:relative; display:flex; justify-content:center; }
+  .rail::before{ content:""; position:absolute; top:0; bottom:0; left:50%; width:2px; background:var(--line-strong); transform:translateX(-50%); }
+  .step:first-child .rail::before{ top:50%; }
+  .step:last-child .rail::before{ bottom:50%; }
+  .node{ position:relative; z-index:1; width:9px; height:9px; margin-top:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 3px var(--paper-raised); }
+  .step-body{ padding-bottom:16px; }
+  .step:last-child .step-body{ padding-bottom:2px; }
+  .loc{ display:inline-block; background:var(--code-bg); padding:2px 7px; border-radius:4px; font-size:0.86rem; color:var(--ink); overflow-wrap:break-word; word-break:break-word; }
+  .step-note{ margin:5px 0 0; color:var(--ink-soft); font-size:0.9rem; }
+
+  /* compact single-line chain */
+  .chain-wrap{ overflow-x:auto; min-width:0; margin:4px 0 12px; }
+  .chain{
+    display:block; font-family:var(--font-mono); font-size:0.86rem; background:var(--code-bg);
+    padding:10px 14px; border-radius:6px; color:var(--ink);
+    white-space:pre-wrap; overflow-wrap:break-word; word-break:break-word;
+  }
+  .chain .arrow{ color:var(--accent); }
+
+  .wf-desc{ margin:2px 0 0; color:var(--ink-soft); font-size:0.94rem; max-width:78ch; }
+
+  .flag-box{
+    margin-top:14px; padding:12px 14px; background:var(--flag-soft); border-left:3px solid var(--flag);
+    border-radius:0 6px 6px 0; font-size:0.88rem; color:var(--ink);
+  }
+  .flag-box .flag-label{
+    font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--flag); font-weight:700; display:block; margin-bottom:4px;
+  }
+
+  /* endpoint mini-table (used for simple monitor endpoints) */
+  .mini-table{ width:100%; border-collapse:collapse; font-size:0.88rem; }
+  .mini-table th{
+    text-align:left; font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-soft); padding:0 12px 8px 0; border-bottom:1px solid var(--line-strong);
+  }
+  .mini-table td{ padding:10px 12px 10px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  .mini-table code{ background:var(--code-bg); padding:1px 5px; border-radius:3px; font-size:0.83em; white-space:nowrap; }
+  .mini-table td.desc{ color:var(--ink-soft); }
+
+  /* risk table */
+  .risk-table{ width:100%; border-collapse:collapse; font-size:0.92rem; }
+  .risk-table th{
+    text-align:left; font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--flag); padding:0 16px 10px 0; border-bottom:1px solid var(--line-strong);
+  }
+  .risk-table td{ padding:14px 16px 14px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  .risk-table td:first-child{ font-weight:600; white-space:nowrap; width:1%; }
+  .risk-table code{ background:var(--code-bg); padding:1px 5px; border-radius:3px; font-size:0.85em; }
+
+  footer{ max-width:1180px; margin:0 auto; padding:0 32px 60px; color:var(--ink-soft); font-size:0.82rem; font-family:var(--font-mono); }
+
+  @media (max-width: 860px){
+    .page{ grid-template-columns:1fr; padding-top:24px; }
+    .toc{ position:static; }
+    .toc-list{ flex-direction:row; overflow-x:auto; border-left:none; border-bottom:1px solid var(--line); gap:0; padding-bottom:10px; }
+    .toc-list a{ padding:6px 12px; border-left:none; border-bottom:2px solid transparent; white-space:nowrap; }
+    .toc-list a:hover{ border-left-color:transparent; border-bottom-color:var(--line-strong); }
+    .masthead{ padding:40px 20px 24px; }
+    .wf{ padding:18px; }
+  }
+</style>
+
+<header class="masthead">
+  <p class="kicker">Backend reference · security-platform</p>
+  <h1>Every request, traced end to end</h1>
+  <p>A router-to-database map of every workflow in the CyberSigma backend — who can call it, what it touches, and where it hands off to a background task, an external API, or a model. Built by reading the actual source, not the docstrings.</p>
+  <div class="scope">
+    <span><b>32</b> workflows</span>
+    <span><b>10</b> sections</span>
+    <span>FastAPI + SQLAlchemy + Celery/Redis</span>
+  </div>
+</header>
+
+<div class="page">
+  <nav class="toc" aria-label="Sections">
+    <ol class="toc-list">
+      <li><a href="#shared">Shared infrastructure</a></li>
+      <li><a href="#auth">01 · Auth &amp; onboarding</a></li>
+      <li><a href="#users">02 · Users &amp; orgs</a></li>
+      <li><a href="#assets">03 · Assets</a></li>
+      <li><a href="#scans">04 · Scans pipeline</a></li>
+      <li><a href="#findings">05 · Findings</a></li>
+      <li><a href="#compliance">06 · Compliance &amp; reports</a></li>
+      <li><a href="#agent">07 · AI chat agent</a></li>
+      <li><a href="#dashboard">08 · Dashboard &amp; executive</a></li>
+      <li><a href="#admin">09 · Admin &amp; integrations</a></li>
+      <li class="risk"><a href="#risk">Risk notes</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <!-- SHARED INFRA -->
+    <section class="group" id="shared">
+      <div class="group-head"><h2 class="group-title">Shared infrastructure</h2></div>
+      <p class="group-intro">Nearly every workflow below passes through the same five pieces before it touches business logic. They're documented once here instead of repeated in every card.</p>
+      <div class="table-wrap">
+        <table class="infra-table">
+          <thead><tr><th>Component</th><th>Where</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td>DB session</td><td><code>database.py → get_db</code></td><td>FastAPI dependency yielding one <code>SessionLocal()</code> per request, closed in a <code>finally</code>. Pool size 10, overflow 20.</td></tr>
+            <tr><td>JWT issuance</td><td><code>auth/jwt.py → create_access_token / verify_token</code></td><td>HS256, 8h expiry, secret from <code>JWT_SECRET</code>.</td></tr>
+            <tr><td>Current user</td><td><code>auth/dependencies.py → get_current_user</code></td><td>Decodes the bearer token, loads the <code>User</code> row, 401s on invalid/inactive.</td></tr>
+            <tr><td>Tenant scoping</td><td><code>auth/dependencies.py → get_user_org_id</code></td><td>Reads <code>org_id</code> only from the JWT-derived user — never from the request body or query params. This single function is the multi-tenant isolation anchor for almost every query in the app.</td></tr>
+            <tr><td>Role gate</td><td><code>auth/dependencies.py → require_role(*roles)</code></td><td>Dependency factory; 403s if <code>current_user.role</code> isn't in the allowed set.</td></tr>
+            <tr><td>App wiring</td><td><code>main.py</code></td><td>Mounts every router, CORS, rate limiter, and a startup hook that alters the <code>findings</code> table and runs Alembic migrations.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flag-box">
+        <span class="flag-label">Security note</span>
+        <code>main.py</code> and <code>routers/scans.py</code> both expose <code>GET /test-export-debug</code> and <code>GET /restart-backend</code> with <em>no auth dependency at all</em> — the latter calls <code>os._exit(0)</code>, so any unauthenticated caller can kill the backend process.
+      </div>
+    </section>
+
+    <!-- 01 AUTH -->
+    <section class="group" id="auth">
+      <div class="group-head"><span class="group-num">01</span><h2 class="group-title">Auth &amp; onboarding</h2></div>
+      <p class="group-intro">A brand-new tenant starts here: signup creates both the <code>Org</code> and its first admin <code>User</code> in one transaction.</p>
+      <div class="wf-grid">
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Sign up</h3>
+            <span class="endpoint">POST /auth/signup</span>
+            <span class="tag tag-public">public</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">routers/auth.py → signup</code>
+              <p class="step-note">Validated by <code>schemas/auth.py:UserSignup</code> — email format, password ≥ 8 chars, org name ≥ 2 chars.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">db.query(User).filter(email==…)</code>
+              <p class="step-note">Uniqueness check before anything is created.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">models/org.py → Org(…)</code>
+              <p class="step-note">Slug generated + collision loop, then <code>db.add(org); db.flush()</code> to get <code>org.id</code> without committing yet.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">pwd_context.hash(password)</code>
+              <p class="step-note">bcrypt, 12 rounds.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">models/user.py → User(role=admin, is_verified=False)</code>
+              <p class="step-note"><code>db.add(user); db.commit(); db.refresh(user)</code> — org and admin land in the same transaction.</p>
+            </div></div>
+          </div>
+          <p class="wf-desc">The tenant-creation entry point: one call produces a new <code>Org</code> and its first (admin-role) user. No auth required, since there's nothing to authenticate against yet.</p>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Log in</h3>
+            <span class="endpoint">POST /auth/token</span>
+            <span class="tag tag-public">public · OAuth2 password grant</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">routers/auth.py → login <span class="arrow">→</span> db.query(User).filter(email==form_data.username) <span class="arrow">→</span> pwd_context.verify(password, hashed) <span class="arrow">→</span> check is_active <span class="arrow">→</span> jwt.py:create_access_token({sub, org_id, role, email}) <span class="arrow">→</span> TokenResponse (8h)</code></div>
+          <p class="wf-desc"><code>org_id</code> and <code>role</code> are embedded directly in the JWT payload, so every later request can resolve tenant and permissions without an extra DB lookup.</p>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Get current profile</h3>
+            <span class="endpoint">GET /auth/me</span>
+            <span class="tag tag-scope">auth required</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">routers/auth.py → get_me <span class="arrow">→</span> Depends(get_current_user) <span class="arrow">→</span> returns the loaded User row</code></div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 02 USERS & ORGS -->
+    <section class="group" id="users">
+      <div class="group-head"><span class="group-num">02</span><h2 class="group-title">Users &amp; orgs</h2></div>
+      <p class="group-intro">Everyday tenant administration — creating teammates and, separately, platform-level org management.</p>
+      <div class="wf-grid">
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Create a user</h3>
+            <span class="endpoint">POST /users</span>
+            <span class="tag tag-role">admin only</span>
+            <span class="tag tag-scope">org-scoped</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">routers/users.py → create_user</code>
+              <p class="step-note">Gated by <code>require_role("admin")</code> + <code>get_user_org_id</code> — <code>org_id</code> comes from the caller's JWT, never the request body.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">schemas/user.py → UserCreate</code>
+              <p class="step-note">Password strength validator: ≥ 12 chars, upper/lower/digit/special, blocklisted common passwords, ≤ 72 bytes (bcrypt's limit).</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">db.query(User).filter(email==…)</code>
+              <p class="step-note">Email uniqueness check.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">pwd_context.hash(password) → models/user.py:User(org_id=org_id, …)</code>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">database.py:get_db → db.add(user); db.commit(); db.refresh(user)</code>
+            </div></div>
+          </div>
+          <p class="wf-desc">This is the canonical shape every write endpoint in this app follows: router function → role gate → schema validation → uniqueness check → ORM object → <code>get_db</code> session → <code>add</code>/<code>commit</code>.</p>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">List users</h3>
+            <span class="endpoint">GET /users</span>
+            <span class="tag tag-role">admin · analyst</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">routers/users.py → list_users <span class="arrow">→</span> require_role("admin","analyst") <span class="arrow">→</span> db.query(User).filter(org_id==org_id).all()</code></div>
+          <p class="wf-desc">The <code>org_id</code> filter is explicit in the code with a comment flagging it as critical — this is the query that must never leak another tenant's users.</p>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Create / list orgs</h3>
+            <span class="endpoint">POST · GET /orgs</span>
+            <span class="tag tag-role">admin only</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">routers/orgs.py → create_org / list_orgs <span class="arrow">→</span> require_role("admin") <span class="arrow">→</span> Org(…) → db.add/commit  |  db.query(Org).all()</code></div>
+          <p class="wf-desc">Platform-level operation, not tenant-level — <code>list_orgs</code> intentionally has no <code>org_id</code> filter, since it exists for cross-tenant onboarding, not day-to-day use.</p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 03 ASSETS -->
+    <section class="group" id="assets">
+      <div class="group-head"><span class="group-num">03</span><h2 class="group-title">Assets</h2></div>
+      <p class="group-intro">The things that get scanned — repos, hosts, images. <code>asset_weight</code> set here later feeds the posture-score and priority-score formulas in Dashboard and Executive.</p>
+      <div class="wf-grid">
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Create an asset</h3>
+            <span class="endpoint">POST /assets</span>
+            <span class="tag tag-role">admin · analyst</span>
+            <span class="tag tag-scope">org-scoped</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">routers/assets.py → create_asset <span class="arrow">→</span> dedupe on (org_id, target) <span class="arrow">→</span> AssetType(...) validation <span class="arrow">→</span> models/asset.py:Asset(…) → db.add/commit/refresh</code></div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">List / read assets</h3>
+            <span class="endpoint">GET /assets · /assets/{id} · /assets/{id}/findings</span>
+            <span class="tag tag-scope">org-ownership checked</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">list_assets <span class="arrow">→</span> per asset: latest Scan + findings grouped by severity (extra query per row)
+get_asset / get_asset_findings <span class="arrow">→</span> 403 if asset.org_id != caller's org_id</code></div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Patch / bulk-update assets</h3>
+            <span class="endpoint">PATCH /assets/{id} · POST /assets/bulk</span>
+            <span class="tag tag-role">admin · analyst</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">patch_asset <span class="arrow">→</span> asset_weight validated against {0.5, 1.0, 1.5, 2.0}
+bulk_update_assets <span class="arrow">→</span> per-item lookup by id or target (org-scoped) → owner_email update</code></div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 04 SCANS -->
+    <section class="group" id="scans">
+      <div class="group-head"><span class="group-num">04</span><h2 class="group-title">Scans pipeline</h2></div>
+      <p class="group-intro">The core of the platform. A single <code>POST /scans</code> kicks off a chain of Celery tasks that fan out across four scanner adapters, reconcile results, enrich them with threat intel and AI, then quietly notify Slack — all off the original request thread.</p>
+      <div class="wf-grid">
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Create scan</h3>
+            <span class="endpoint">POST /scans</span>
+            <span class="tag tag-role">admin · analyst</span>
+            <span class="tag tag-flow">rate-limited</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">routers/scans.py → create_scan</code>
+              <p class="step-note">10 scans/hour/IP via the <code>limits</code> library.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">validate_target()</code>
+              <p class="step-note">Blocks RFC1918 / loopback / localhost targets — the SSRF guard for the whole scan pipeline. The scanner adapters themselves don't re-check this.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">scan_types ⊆ {vuln, sca, secret, opengroup}</code>
+              <p class="step-note">Auto-creates an <code>Asset</code> if <code>asset_id</code> wasn't given, deduped by <code>org_id</code>+<code>target</code>.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">models/scan.py → Scan(status="queued") → db.add/commit/refresh</code>
+              <p class="step-note">Followed by <code>write_scan_audit_log()</code> → an <code>AuditLog</code> row.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">tasks/scan_tasks.py → run_scan_task.delay(…)</code>
+              <p class="step-note">Queued onto the Celery/Redis broker; <code>scan.celery_task_id</code> is saved back before the response returns.</p>
+            </div></div>
+          </div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Async execution — scanner fan-out</h3>
+            <span class="endpoint">celery worker</span>
+            <span class="tag tag-flow">parallel</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">tasks/scan_tasks.py → run_scan_task</code>
+              <p class="step-note"><code>Scan.status = "running"</code>, then one Celery subtask signature is built per requested scan type.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">run_nuclei_scan_subtask / run_trivy_scan_subtask / run_gitleaks_scan_subtask / run_opengroup_scan_subtask</code>
+              <p class="step-note">Each calls its adapter's <code>safe_run()</code> — <code>NucleiAdapter</code>, <code>TrivyAdapter</code>, <code>GitleaksAdapter</code>, <code>OpenGroupAdapter</code> — via the shared <code>adapters/runner.py:run_logged_command</code>.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">Redis hash scan:{scan_id}</code>
+              <p class="step-note">Tracks <code>status</code>, <code>progress_pct</code>, <code>current_step</code>, counts — polled live by the SSE progress endpoint below.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">check_scan_timeout_task.apply_async(countdown=1800)</code>
+              <p class="step-note">A 30-minute watchdog that fails the scan if it's still running.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">celery.chord(group(header_tasks))(scan_completed_callback.s(…))</code>
+              <p class="step-note">Fan-out / fan-in: all four subtasks run in parallel; the callback fires only once every one of them has finished.</p>
+            </div></div>
+          </div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Completion &amp; reconciliation</h3>
+            <span class="endpoint">scan_completed_callback</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">flatten all subtask results → save_findings(db, all_findings)</code>
+              <p class="step-note">Fingerprint-based upsert: an existing <code>Finding</code> with a matching fingerprint is updated in place, otherwise a new row is inserted. This is the single place all four adapters' output converges.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">_apply_trivy_fp_heuristic() / _apply_gitleaks_fp_heuristic()</code>
+              <p class="step-note">Heuristic false-positive tagging layered on top of the raw adapter output.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">reconciliation pass</code>
+              <p class="step-note">OpenGroup (SAST) findings from a prior scan that are no longer reported this time get auto-marked <code>FindingStatus.fixed</code>.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">redis.delete("executive:{org_id}") → enrich_findings_task.delay(scan_id)</code>
+              <p class="step-note">Invalidates the cached executive summary, then hands off to the enrichment chain. <code>Scan.status = "complete"</code>.</p>
+            </div></div>
+          </div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Enrichment chain — intel → AI → Slack</h3>
+            <span class="endpoint">enrich_findings_task → ai_enrichment_task → post_slack_summary</span>
+            <span class="tag tag-flow">external I/O</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">intel/nvd.py:NVDClient.get_cve_metrics() → intel/kev.py:KEVClient.is_cve_kev() → intel/epss.py:EPSSClient.get_epss_scores()</code>
+              <p class="step-note">CVSS score/vector, CISA KEV listing, and EPSS exploit-probability — all Redis-cached, batched where possible.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">ai/reachability.py:determine_cve_reachability()</code>
+              <p class="step-note">For Trivy findings: clones the asset's repo, AST-walks it for import/call-site evidence, then asks the LLM to classify reachable / unreachable / uncertain. OpenGroup findings get a simpler direct file-existence check, no LLM call.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">priority_score = epss × cvss × kev_multiplier × asset_weight × reachability_multiplier</code>
+              <p class="step-note">Then <code>RANK() OVER (PARTITION BY scan_id)</code> in SQL computes <code>priority_rank</code>.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">ai_enrichment_task.delay(scan_id)</code>
+              <p class="step-note">Trivy/OpenGroup findings processed in batches of 5 via a <code>ThreadPoolExecutor</code> → <code>ai/prompt_builder.py:enrich_finding()</code> → <code>ai/claude_client.py:AIClient</code> (Ollama by default, or Anthropic if <code>AI_PROVIDER=anthropic</code>). Every call writes an <code>AICall</code> row for cost tracking.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">generate_exec_summary_if_needed() → Scan.exec_summary</code>
+              <p class="step-note">A 3–5 sentence CISO-facing paragraph, cached on the <code>Scan</code> row.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">post_slack_summary.delay(scan_id) → SlackConfig lookup → utils/encryption.py:decrypt_value(webhook_url) → slack_sdk.WebhookClient.send()</code>
+              <p class="step-note">Skipped entirely if the org's Slack config is "critical only" and nothing critical/KEV-listed was found.</p>
+            </div></div>
+          </div>
+          <div class="flag-box">
+            <span class="flag-label">Design note</span>
+            Intel → AI → exec-summary → Slack is a <em>linear chain of <code>.delay()</code> calls</em> nested inside each task's success path — not an orchestrated Celery chain/chord. A silent crash partway through leaves every later stage permanently un-triggered, with no retry.
+          </div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Reading &amp; monitoring a scan</h3>
+            <span class="endpoint">/scans/{id}/*</span>
+          </div>
+          <div class="table-wrap">
+            <table class="mini-table">
+              <thead><tr><th>Endpoint</th><th>Function</th><th>What it does</th></tr></thead>
+              <tbody>
+                <tr><td><code>GET /scans</code></td><td><code>list_scans</code></td><td class="desc">Org-scoped, optional day/timeframe filter.</td></tr>
+                <tr><td><code>GET /scans/{id}</code></td><td><code>get_scan</code></td><td class="desc">403 if the scan's org doesn't match the caller.</td></tr>
+                <tr><td><code>GET /scans/{id}/findings</code></td><td><code>get_scan_findings</code></td><td class="desc">Findings scoped to both scan_id and org_id.</td></tr>
+                <tr><td><code>GET /scans/{id}/progress</code></td><td><code>get_scan_progress</code></td><td class="desc">SSE stream; polls the Redis progress hash + log list every 4s until status is complete/failed.</td></tr>
+                <tr><td><code>POST /scans/{id}/export</code></td><td><code>export_scan_report</code></td><td class="desc">Generates or fetches a cached PDF — see §06.</td></tr>
+                <tr><td><code>POST /scans/{id}/slack</code></td><td><code>post_scan_slack_summary</code></td><td class="desc">Manually re-queues <code>post_slack_summary.delay()</code>.</td></tr>
+                <tr><td><code>POST /scans/{id}/ask</code></td><td><code>ask_scan_question</code></td><td class="desc">Hands off to the AI chat agent — see §07.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 05 FINDINGS -->
+    <section class="group" id="findings">
+      <div class="group-head"><span class="group-num">05</span><h2 class="group-title">Findings</h2></div>
+      <p class="group-intro">Triage, remediation, and ticketing built on top of whatever <code>save_findings()</code> persisted.</p>
+      <div class="wf-grid">
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">List / filter findings</h3>
+            <span class="endpoint">GET /findings</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">routers/findings.py → list_findings <span class="arrow">→</span> org-scoped query: scan_id, asset_id, severity, status, exploit_validated, fp_candidate, free-text q (ILIKE) <span class="arrow">→</span> schemas/finding.py:FindingOut (model_validator flattens ~30 ORM fields)</code></div>
+          <p class="wf-desc">Tag filtering happens in Python after the query returns, not in SQL — a deliberate "database-agnostic" tradeoff called out in the code, since JSONB array containment isn't portable.</p>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Get / update / tag a finding</h3>
+            <span class="endpoint">GET · PATCH /findings/{id} · POST/DELETE …/tags</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">get_finding <span class="arrow">→</span> org-ownership 403 check
+update_finding <span class="arrow">→</span> mutate status / fp_candidate / jira_issue_key / pr_url → db.commit
+add_finding_tag / remove_finding_tag <span class="arrow">→</span> mutate the JSONB tags array</code></div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">AI-assisted finding review</h3>
+            <span class="endpoint">POST …/regenerate-ai · GET …/ai-enrichment</span>
+            <span class="tag tag-role">admin only</span>
+            <span class="tag tag-flow">AI call</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">routers/findings.py → regenerate_finding_ai</code>
+              <p class="step-note">Role check is done inline in this handler rather than via <code>require_role</code>.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">AIClient.analyze_vulnerability() / analyze_reachability() / analyze_severity_override()</code>
+              <p class="step-note">Three separate model calls, writing <code>ai_plain_english</code>, <code>reachability(_reason)</code>, and <code>ai_severity_override(_reason)</code> onto the <code>Finding</code> row.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">get_finding_ai_enrichment</code>
+              <p class="step-note">Cache-first: checks <code>Finding.ai_plain_english</code> / <code>scan_metadata["ai_enrichment"]</code> before calling <code>ai/prompt_builder.py:enrich_finding()</code>.</p>
+            </div></div>
+          </div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Remediation hub</h3>
+            <span class="endpoint">GET …/remediation-hub · POST …/remediation-hub/bulk-pr</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">get_remediation_hub <span class="arrow">→</span> per-asset: Trivy findings with ai_remediation set → patch-diff text extracted for UI review
+create_bulk_pr <span class="arrow">→</span> validate finding_ids belong to org+asset → consolidate patches → set Finding.pr_url/pr_status</code></div>
+          <div class="flag-box">
+            <span class="flag-label">Security note</span>
+            <code>create_bulk_pr</code> generates a <em>fake</em> PR URL (<code>str(uuid.uuid4().int)[:3]</code>) — no actual GitHub call happens here. The real PR creation is a separate endpoint below.
+          </div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Autofix — open a real PR</h3>
+            <span class="endpoint">POST /findings/{id}/create-fix-pr</span>
+            <span class="tag tag-flow">external I/O</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">GitHubConfig lookup → utils/encryption.py:decrypt_value(access_token)</code>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">git clone (subprocess) → tool-specific fix</code>
+              <p class="step-note">Gitleaks: regex-replaces the leaked secret with an env-var lookup, appends to <code>.gitignore</code>. Trivy dependency: bumps <code>package.json</code>/<code>requirements.txt</code>/<code>go.mod</code>. Trivy misconfig: an AI call generates a full replacement file, capped at 50 changed lines.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">git commit / push → PyGithub: Github(token).get_repo().create_pull()</code>
+              <p class="step-note">Falls back to a simulated PR URL in sandbox mode. <code>Finding.pr_url / pr_status</code> updated either way.</p>
+            </div></div>
+          </div>
+          <div class="flag-box">
+            <span class="flag-label">Security note</span>
+            Runs arbitrary <code>subprocess</code> git/npm commands and does regex-based secret scrubbing directly on cloned repo content — gated only by <code>get_current_user</code>, not role-restricted like most other write operations.
+          </div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Create a Jira ticket</h3>
+            <span class="endpoint">POST /findings/{id}/create-jira-ticket</span>
+            <span class="tag tag-flow">external I/O</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">JiraConfig lookup → decrypt_value(api_token) <span class="arrow">→</span> build Atlassian Document Format description → try issuetype Bug → Task → Task(no priority) <span class="arrow">→</span> httpx POST {base_url}/rest/api/3/issue (Basic auth) <span class="arrow">→</span> Finding.jira_issue_key → db.commit</code></div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 06 COMPLIANCE -->
+    <section class="group" id="compliance">
+      <div class="group-head"><span class="group-num">06</span><h2 class="group-title">Compliance &amp; reports</h2></div>
+      <div class="wf-grid">
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Compliance summary &amp; mapping</h3>
+            <span class="endpoint">GET /compliance/summary · /compliance/mapping</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">get_compliance_summary <span class="arrow">→</span> active findings (org-scoped, excludes fixed/FP/accepted) → compliance/mapper.py:compute_compliance_summary() → readiness score per framework
+get_compliance_mapping <span class="arrow">→</span> mapper.py:map_finding_to_controls() per finding → finding-to-control audit trail</code></div>
+          <p class="wf-desc">Frameworks (SOC 2, PCI-DSS, ISO 27001, NIST 800-53) and their control catalogs are hardcoded in <code>compliance/mapper.py</code>, not configurable per org.</p>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Export PDF report</h3>
+            <span class="endpoint">POST /scans/{id}/export</span>
+            <span class="tag tag-flow">cached</span>
+          </div>
+          <div class="flow">
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">utils/storage.py:get_pdf()</code>
+              <p class="step-note">MinIO/S3 cache check keyed on org_id / scan_id / template.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">generate_exec_summary_if_needed()</code>
+              <p class="step-note">On cache miss, backfills an AI-written exec summary if the scan doesn't already have one.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">reports/pdf.py:ScanReport(scan, findings, template).generate()</code>
+              <p class="step-note">ReportLab: cover page, numbered header/footer via a custom canvas, findings tables.</p>
+            </div></div>
+            <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+              <code class="loc">utils/storage.py:upload_pdf() → returned as an attachment</code>
+            </div></div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 07 AI AGENT -->
+    <section class="group" id="agent">
+      <div class="group-head"><span class="group-num">07</span><h2 class="group-title">AI chat agent</h2></div>
+      <p class="group-intro">Ask a scan a question in plain English; the answer is grounded in real queries, not a free-floating model response.</p>
+      <article class="wf">
+        <div class="wf-head">
+          <h3 class="wf-title">Ask a question about a scan</h3>
+          <span class="endpoint">POST /scans/{id}/ask</span>
+          <span class="tag tag-flow">ReAct loop · SSE</span>
+        </div>
+        <div class="flow">
+          <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+            <code class="loc">routers/scans.py → ask_scan_question → ai/agent.py:SecurityAgent(db, scan_id).run_agent(question)</code>
+            <p class="step-note">Up to 5 reasoning iterations.</p>
+          </div></div>
+          <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+            <code class="loc">SYSTEM_PROMPT + history → AIClient._call_model_with_model_override()</code>
+          </div></div>
+          <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+            <code class="loc">regex-parse "Action: tool_name(json_args)" → execute_tool()</code>
+            <p class="step-note">Dispatches to plain SQLAlchemy queries: <code>list_findings</code>, <code>get_finding</code>, <code>get_scan</code>, <code>get_asset</code>, <code>search_cves</code> — all scoped to <code>self.scan_id</code>.</p>
+          </div></div>
+          <div class="step"><div class="rail"><span class="node"></span></div><div class="step-body">
+            <code class="loc">loop until the model emits "Answer: …"</code>
+            <p class="step-note">Citations extracted via a <code>[finding_id: &lt;uuid&gt;]</code> regex, then streamed back to the client in 12-character SSE chunks.</p>
+          </div></div>
+        </div>
+        <div class="flag-box">
+          <span class="flag-label">Design note</span>
+          The agent's own tool queries are scoped by <code>scan_id</code> only, not re-checked against org_id — it relies entirely on the org-ownership check already done at the top of <code>ask_scan_question</code>.
+        </div>
+      </article>
+    </section>
+
+    <!-- 08 DASHBOARD -->
+    <section class="group" id="dashboard">
+      <div class="group-head"><span class="group-num">08</span><h2 class="group-title">Dashboard &amp; executive</h2></div>
+      <div class="wf-grid">
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Dashboard summary</h3>
+            <span class="endpoint">GET /dashboard/summary</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">routers/dashboard.py → get_dashboard_summary <span class="arrow">→</span> org-scoped Asset/Scan/Finding queries (windowed by days/timeframe) <span class="arrow">→</span> posture_score, funnel metrics, MTTR, "do this next" list, trend data</code></div>
+          <div class="flag-box">
+            <span class="flag-label">Data quality note</span>
+            This endpoint pads sparse real data with hardcoded fallback values — e.g. <code>total_findings = max(count, 1204)</code> and fabricated demo items with fictional CVE titles. It is <em>not</em> a pure reflection of database state; don't trust its numbers for a real customer org without checking the source.
+          </div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Executive summary</h3>
+            <span class="endpoint">GET /executive</span>
+            <span class="tag tag-flow">Redis-cached, 5 min</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">get_executive_summary <span class="arrow">→</span> Redis cache check (executive:{org_id}) <span class="arrow">→</span> on miss: _compute_posture_score (-10/critical, -3/high per asset_weight, +1 per fix in last 7d, capped +20) <span class="arrow">→</span> week-over-week trend + top 5 risks (ranked by KEV, exploit_validated, priority_score) <span class="arrow">→</span> write back to cache</code></div>
+          <p class="wf-desc">The cleaner, real-data-only counterpart to the Dashboard endpoint above — no fabricated fallback values here. Its cache is the one <code>save_findings()</code> explicitly invalidates on every new scan.</p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 09 ADMIN -->
+    <section class="group" id="admin">
+      <div class="group-head"><span class="group-num">09</span><h2 class="group-title">Admin, intel &amp; integrations</h2></div>
+      <div class="wf-grid">
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Threat intel status / refresh / AI usage</h3>
+            <span class="endpoint">/admin/intel/* · /admin/ai-usage</span>
+            <span class="tag tag-role">admin only</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">get_intel_status <span class="arrow">→</span> reads Redis keys kev:last_refresh / nvd:* / epss:* for cache freshness
+force_refresh_intel <span class="arrow">→</span> intel/kev.py:KEVClient.fetch_and_load_kev() → httpx GET CISA KEV feed (3× backoff) → Redis set kev:cves
+get_ai_usage <span class="arrow">→</span> SQL aggregation over AICall joined to Scan/Finding/Org — the surface for every AICall row written across §04/§05/§07</code></div>
+          <p class="wf-desc">Independent of any HTTP request, <code>celery_app.py</code>'s beat schedule also fires <code>tasks/scan_tasks.py:refresh_kev_feed</code> daily at 02:00 UTC.</p>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">Integration config — Jira, Slack, GitHub</h3>
+            <span class="endpoint">GET · POST /admin/settings/{jira,slack,github} · …/test</span>
+            <span class="tag tag-role">admin only</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">db.query({Jira,Slack,GitHub}Config).filter(org_id==org_id) <span class="arrow">→</span> on save: utils/encryption.py:encrypt_value() before storing the secret column <span class="arrow">→</span> GET responses mask the secret as "********"; POST re-decrypts the existing value if the client echoes the mask back unchanged
+…/test <span class="arrow">→</span> live connectivity check: Jira.project() / Slack WebhookClient.send() / GitHub get_user() (ghp_mock* tokens simulate a sandbox pass)</code></div>
+        </article>
+
+        <article class="wf">
+          <div class="wf-head">
+            <h3 class="wf-title">GitHub OAuth flow</h3>
+            <span class="endpoint">GET /admin/github/oauth-url · /admin/github/callback</span>
+          </div>
+          <div class="chain-wrap"><code class="chain">oauth-url <span class="arrow">→</span> builds the GitHub authorize URL (or a simulated mock-code URL if GITHUB_CLIENT_ID is unset)
+callback <span class="arrow">→</span> exchanges code for an access_token → encrypt_value() → GitHubConfig upsert → redirect to /settings#github</code></div>
+          <div class="flag-box">
+            <span class="flag-label">Security note</span>
+            The callback is unauthenticated by necessity (it's an OAuth redirect target) and falls back to <code>db.query(Org).first()</code> if no <code>org_id</code>/<code>state</code> param is present — in a real multi-tenant deployment, a dropped <code>state</code> parameter could misattribute a GitHub token to the wrong org.
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- RISK NOTES -->
+    <section class="group" id="risk">
+      <div class="group-head"><h2 class="group-title">Cross-cutting risk notes</h2></div>
+      <p class="group-intro">Things that matter across more than one workflow above, gathered in one place.</p>
+      <div class="table-wrap">
+        <table class="risk-table">
+          <thead><tr><th>Area</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>Unauthenticated debug endpoints</td><td><code>main.py</code> and <code>scans.py</code> both expose <code>/test-export-debug</code> and <code>/restart-backend</code> with zero auth — the latter's <code>os._exit(0)</code> is reachable by anyone who can hit the API.</td></tr>
+            <tr><td>Secrets at rest</td><td>Jira / Slack / GitHub credentials are Fernet-encrypted via a single app-wide <code>ENCRYPTION_KEY</code> — but <code>utils/encryption.py</code> has a hardcoded fallback key if that env var is unset. Fine for local dev, dangerous if the fallback ever ships to production.</td></tr>
+            <tr><td>SSRF guard</td><td><code>routers/scans.py:validate_target()</code> is the only place blocking RFC1918/loopback/localhost targets before they reach an adapter — none of the four adapters re-check this themselves.</td></tr>
+            <tr><td>AI cost tracking</td><td>Every LLM call that passes <code>db=</code> to <code>AIClient._call_model_with_model_override()</code> writes an <code>AICall</code> row, which is what powers <code>/admin/ai-usage</code>. Any call made without <code>db</code> is invisible to that dashboard.</td></tr>
+            <tr><td>Fingerprint-based upsert</td><td><code>save_findings()</code> is the single convergence point for all four adapters' output — dedup and reconciliation (including auto-marking stale OpenGroup findings <code>fixed</code>) only happens here, never per-adapter.</td></tr>
+            <tr><td>Demo data in Dashboard</td><td><code>routers/dashboard.py</code> mixes real DB-derived numbers with hardcoded plausible-looking fallback values. <code>/executive</code> does not have this problem — treat it as the source of truth instead.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>security-platform / backend/app — traced from source, not documentation</footer>

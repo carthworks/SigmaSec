@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Launch scan — wide layout</title>
+<style>
+  :root{
+    --bg:#070B12; --panel:#0E1420; --panel-2:#131A28; --line:#1E2634; --line-2:#2C3547;
+    --tx:#EDF1F8; --tx-2:#A3AEC2; --tx-3:#6E7A8F;
+    --indigo:#7C6CF6; --indigo-2:#9C8FFF;
+    --red:#FF7A75; --amber:#F0B95E; --green:#4FD9A4;
+    --r:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#050810;color:var(--tx);font-size:14px;line-height:1.5;
+    font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .mono{font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace}
+  :focus-visible{outline:2px solid var(--indigo-2);outline-offset:2px;border-radius:4px}
+
+  /* Modal sized so header + body + footer always fit a 768px-tall laptop viewport.
+     Footer is a flex sibling, never inside the scroll area — the primary action
+     can never be pushed below the fold. */
+  .modal{width:100%;max-width:960px;max-height:calc(100vh - 40px);
+    background:var(--panel);border:1px solid var(--line-2);border-radius:16px;
+    display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.9)}
+
+  .mhd{flex:none;padding:18px 24px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:flex-start;gap:16px}
+  .mhd h2{font-size:19px;font-weight:600;letter-spacing:-.02em}
+  .mhd p{font-size:13px;color:var(--tx-2);margin-top:2px}
+  .x{margin-left:auto;background:none;border:0;color:var(--tx-3);cursor:pointer;
+    font-size:20px;line-height:1;padding:2px 5px}
+  .x:hover{color:var(--tx)}
+
+  .body{flex:1;min-height:0;overflow-y:auto;padding:20px 24px;
+    display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:0 30px;align-content:start}
+  .col-l{min-width:0}
+  .col-r{min-width:0;border-left:1px solid var(--line);padding-left:30px}
+
+  .fld{margin-bottom:18px}
+  .fld:last-child{margin-bottom:0}
+  label.lb{display:block;font-size:12.5px;font-weight:500;margin-bottom:6px}
+  .hint{font-size:12px;color:var(--tx-3);margin-top:6px;line-height:1.45}
+  h3.sec{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx-3);
+    font-weight:600;margin-bottom:9px}
+
+  /* target */
+  .tin{position:relative}
+  .tin input{width:100%;background:#0A0F19;border:1px solid var(--line-2);border-radius:9px;
+    padding:10px 118px 10px 13px;color:var(--tx);font-size:13.5px;
+    font-family:ui-monospace,Menlo,monospace}
+  .tin input::placeholder{font-family:"Inter",sans-serif;color:var(--tx-3)}
+  .tin input:focus{border-color:var(--indigo);background:#0C121D}
+  .detected{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    font-size:11px;padding:3px 9px;border-radius:6px;background:#0F2A20;color:var(--green);
+    display:flex;align-items:center;gap:5px}
+  .detected::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green)}
+  .quick{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .quick button{background:var(--panel-2);border:1px solid var(--line);border-radius:20px;
+    padding:4px 11px;font:inherit;font-size:11.5px;color:var(--tx-2);cursor:pointer}
+  .quick button:hover{border-color:var(--line-2);color:var(--tx)}
+
+  /* scanners */
+  .sc{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .srow{display:flex;align-items:flex-start;gap:11px;padding:11px 14px;border-bottom:1px solid var(--line)}
+  .srow:last-child{border-bottom:0}
+  .srow:hover:not(.off){background:#121A28}
+  .srow.off{opacity:.42}
+  .srow input[type=checkbox]{width:16px;height:16px;margin-top:1px;accent-color:var(--indigo);flex:none;cursor:pointer}
+  .srow input:disabled{cursor:not-allowed}
+  .srow .txt{flex:1;min-width:0;cursor:pointer}
+  .srow b{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .srow small{display:block;font-size:12px;color:var(--tx-2);margin-top:1px;line-height:1.4}
+  .est{font-size:11px;color:var(--tx-3);white-space:nowrap;margin-top:2px}
+  .na{font-size:10px;background:#1A2130;color:var(--tx-3);padding:1px 7px;border-radius:5px;font-weight:500}
+  .soon{font-size:10px;background:#12212E;color:#6E9BC4;padding:1px 7px;border-radius:5px;font-weight:500}
+  .rec{font-size:10px;background:#1B1738;color:var(--indigo-2);padding:1px 7px;border-radius:5px;font-weight:500}
+
+  /* collapsibles */
+  details{border:1px solid var(--line);border-radius:var(--r);background:var(--panel-2);margin-bottom:10px}
+  summary{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;list-style:none;
+    display:flex;align-items:center;gap:9px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"›";color:var(--tx-3);font-size:16px;transition:transform .15s;line-height:1}
+  details[open] summary::before{transform:rotate(90deg)}
+  summary .cnt{margin-left:auto;font-size:11.5px;color:var(--tx-3);font-weight:400}
+  .dbody{padding:3px 14px 13px;border-top:1px solid var(--line)}
+  .drow{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .drow:last-child{border-bottom:0}
+  .drow input[type=checkbox]{width:15px;height:15px;margin-top:1px;accent-color:var(--indigo);flex:none}
+  .drow b{font-size:12.5px;font-weight:500;display:block}
+  .drow small{font-size:11.5px;color:var(--tx-2);line-height:1.4}
+  .dbody input[type=text]{width:100%;background:#0A0F19;border:1px solid var(--line);border-radius:7px;
+    padding:7px 10px;color:var(--tx);font-size:12.5px;margin-top:7px;font-family:ui-monospace,Menlo,monospace}
+
+  /* schedule */
+  .seg{display:flex;background:#0A0F19;border:1px solid var(--line-2);border-radius:8px;overflow:hidden}
+  .seg button{flex:1;background:none;border:0;border-right:1px solid var(--line);color:var(--tx-2);
+    padding:7px 8px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:#1D2436;color:var(--tx);font-weight:500}
+
+  /* danger */
+  .danger{border:1px solid #4A2320;border-radius:var(--r);background:rgba(255,122,117,.05);padding:13px}
+  .danger .hd{display:flex;align-items:flex-start;gap:10px}
+  .danger input[type=checkbox]{width:16px;height:16px;margin-top:1px;accent-color:var(--red);flex:none}
+  .danger b{font-size:13px;font-weight:600;color:var(--red)}
+  .danger p{font-size:11.5px;color:var(--tx-2);margin-top:3px;line-height:1.45}
+  .attest{margin-top:11px;padding-top:11px;border-top:1px solid #3A1E1C;display:flex;gap:10px;align-items:flex-start}
+  .attest input{width:16px;height:16px;margin-top:1px;accent-color:var(--red);flex:none}
+  .attest label{font-size:11.5px;color:var(--tx-2);line-height:1.45}
+
+  /* footer — always visible */
+  .mft{flex:none;padding:13px 24px;border-top:1px solid var(--line);background:#0A0F19;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .summ{font-size:12.5px;color:var(--tx-2)}
+  .summ b{color:var(--tx);font-weight:600}
+  .acts{margin-left:auto;display:flex;gap:10px}
+  .btn{padding:9px 18px;border-radius:8px;font:inherit;font-size:13.5px;font-weight:500;
+    border:1px solid transparent;cursor:pointer}
+  .btn.g{background:var(--panel-2);border-color:var(--line-2);color:var(--tx)}
+  .btn.g:hover{border-color:#3E4A63}
+  .btn.p{background:var(--indigo);color:#fff;display:flex;align-items:center;gap:8px}
+  .btn.p:hover{background:#6C5AF0}
+
+  @media(max-width:860px){
+    .body{grid-template-columns:1fr;gap:0}
+    .col-r{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:18px;margin-top:4px}
+  }
+</style>
+
+<div class="modal" role="dialog" aria-labelledby="mt" aria-modal="true">
+
+  <div class="mhd">
+    <div>
+      <h2 id="mt">Launch scan</h2>
+      <p>Pick a target. We'll enable the scanners that can read it.</p>
+    </div>
+    <button class="x" aria-label="Close">×</button>
+  </div>
+
+  <div class="body">
+
+    <!-- ============ LEFT ============ -->
+    <div class="col-l">
+
+      <div class="fld">
+        <label class="lb" for="tgt">Target</label>
+        <div class="tin">
+          <input id="tgt" type="text" value="github.com/carthworks/LibraDigit_web" spellcheck="false">
+          <span class="detected">Git repository</span>
+        </div>
+        <div class="quick">
+          <button type="button">↻ Rescan a previous target</button>
+          <button type="button">＋ Pick from Assets (20)</button>
+        </div>
+        <p class="hint">A domain or URL, a container image, or a Git repository. We detect the type automatically.</p>
+      </div>
+
+      <div class="fld">
+        <h3 class="sec">Scanners</h3>
+        <div class="sc">
+          <div class="srow">
+            <input type="checkbox" id="s1" checked>
+            <label class="txt" for="s1">
+              <b>Trivy <span class="rec">Recommended</span></b>
+              <small>Vulnerable dependencies in lockfiles and package manifests.</small>
+            </label>
+            <span class="est">~2 min</span>
+          </div>
+          <div class="srow">
+            <input type="checkbox" id="s2" checked>
+            <label class="txt" for="s2">
+              <b>Gitleaks <span class="rec">Recommended</span></b>
+              <small>API keys, tokens, and certificates across commit history.</small>
+            </label>
+            <span class="est">~4 min</span>
+          </div>
+          <div class="srow off">
+            <input type="checkbox" id="s3" disabled>
+            <label class="txt" for="s3">
+              <b>Nuclei <span class="na">Needs a live URL</span></b>
+              <small>Web endpoints, ports, and configuration exposure. Add a deployed URL to enable.</small>
+            </label>
+          </div>
+          <div class="srow off">
+            <input type="checkbox" id="s4" disabled>
+            <label class="txt" for="s4">
+              <b>Opengrep <span class="soon">Coming soon</span></b>
+              <small>Static analysis of your own code. Will feed reachability scoring.</small>
+            </label>
+          </div>
+        </div>
+        <p class="hint">Two scanners apply to this Git repository. Scan a deployed URL separately for web surface coverage.</p>
+      </div>
+
+      <div class="fld">
+        <h3 class="sec">When to run</h3>
+        <div class="seg">
+          <button class="on" type="button">Once, now</button>
+          <button type="button">Every PR</button>
+          <button type="button">Daily</button>
+          <button type="button">Weekly</button>
+        </div>
+        <p class="hint">Continuous scanning catches regressions. A one-off scan goes stale within days.</p>
+      </div>
+
+    </div>
+
+    <!-- ============ RIGHT ============ -->
+    <div class="col-r">
+
+      <div class="fld">
+        <h3 class="sec">Access and scope</h3>
+
+        <details>
+          <summary>Repository access <span class="cnt">Connected</span></summary>
+          <div class="dbody">
+            <div class="drow">
+              <div style="flex:1">
+                <b>carthworks organisation</b>
+                <small>GitHub App · read access to 12 repositories · connected 14 Jun 2026</small>
+              </div>
+            </div>
+            <p class="hint" style="margin-top:8px">Private repositories need a connected app or deploy key. Public targets need no access.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Scope and exclusions <span class="cnt">Defaults</span></summary>
+          <div class="dbody">
+            <div class="drow">
+              <input type="checkbox" id="e1" checked>
+              <label for="e1" style="flex:1;cursor:pointer">
+                <b>Skip test and vendor directories</b>
+                <small class="mono" style="font-size:11px">**/test/** · **/fixtures/** · **/vendor/**</small>
+              </label>
+            </div>
+            <div class="drow">
+              <input type="checkbox" id="e2" checked>
+              <label for="e2" style="flex:1;cursor:pointer">
+                <b>Default branch only</b>
+                <small>Uncheck to scan all branches — roughly 4x runtime.</small>
+              </label>
+            </div>
+            <div class="drow">
+              <input type="checkbox" id="e3">
+              <label for="e3" style="flex:1;cursor:pointer">
+                <b>Full commit history for secrets</b>
+                <small>Slower, but finds credentials that were committed then removed.</small>
+              </label>
+            </div>
+            <label class="lb" style="margin-top:11px;font-size:12px">Additional exclude patterns</label>
+            <input type="text" placeholder="docs/**, *.min.js" spellcheck="false">
+          </div>
+        </details>
+      </div>
+
+      <div class="fld">
+        <h3 class="sec">Active testing</h3>
+        <div class="danger">
+          <div class="hd">
+            <input type="checkbox" id="ex">
+            <div>
+              <label for="ex" style="cursor:pointer"><b>Active exploit validation</b></label>
+              <p>Sends real exploit probes to confirm findings are genuinely exploitable. Sharply reduces false positives, but generates live traffic and may trigger alerts, rate limits, or WAF blocks on the target.</p>
+            </div>
+          </div>
+          <div class="attest">
+            <input type="checkbox" id="auth">
+            <label for="auth">I own this target or hold written authorisation to test it. Unauthorised active testing may be unlawful.</label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="mft">
+    <span class="summ"><b>2 scanners</b> · about <b>6 minutes</b> · results appear in Findings</span>
+    <div class="acts">
+      <button class="btn g" type="button">Cancel</button>
+      <button class="btn p" type="button">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
+        Run 2 scanners
+      </button>
+    </div>
+  </div>
+</div>

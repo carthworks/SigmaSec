@@ -1,0 +1,88 @@
+# Implementation Plan: AST Reachability Payload & Revised AI Remediation Schema
+
+Implement the AST Reachability input payload and the revised AI model output schema across the backend enrichment engine, PostgreSQL models, API endpoints, and frontend UI.
+
+---
+
+## Proposed Changes
+
+### Backend Component (`backend/app`)
+
+#### [MODIFY] [prompt_builder.py](file:///c:/Users/tkart/Dev/products/security%20Platform/security-platform/backend/app/ai/prompt_builder.py)
+- Update `build_prompt(finding)` to accept and format the `reachability` object:
+  ```json
+  "reachability": {
+    "status": "reachable",
+    "entry_point": "routes/auth.py:42 (POST /login, unauthenticated)",
+    "call_path": ["routes/auth.py:42", "services/auth.py:118", "jwt/decode.py:203"],
+    "snippets": { "routes/auth.py:38-48": "...", "services/auth.py:112-124": "..." },
+    "analyzer_confidence": 0.91
+  }
+  ```
+- Update `AIEnrichment` Pydantic model and output schema string to enforce the revised schema:
+  ```json
+  {
+    "plain_english": "≤3 sentences. Risk in this codebase, not the CVE description.",
+    "why_now": "One line citing the specific evidence that produced the rank.",
+    "remediation_steps": [
+      { "action": "...", "command": "...", "file": "...", "verification": "..." }
+    ],
+    "patch": { "diff": "...", "applies_to_sha": "a3f2...", "files_touched": [] },
+    "blockers": ["Transitive via package-x@2.1 which pins <1.1.40"],
+    "breaking_change_risk": "low | medium | high",
+    "confidence": 0.0,
+    "insufficient_context": ["No file contents provided for auth.py"]
+  }
+  ```
+
+#### [MODIFY] [models/finding.py](file:///c:/Users/tkart/Dev/products/security%20Platform/security-platform/backend/app/models/finding.py)
+- Add columns:
+  - `ai_why_now`: String
+  - `ai_remediation_structured`: JSONB
+  - `ai_patch`: JSONB
+  - `ai_blockers`: JSONB
+  - `ai_breaking_change_risk`: String
+  - `ai_confidence`: Float
+  - `ai_insufficient_context`: JSONB
+  - `reachability_context`: JSONB
+
+#### [MODIFY] [schemas/finding.py](file:///c:/Users/tkart/Dev/products/security%20Platform/security-platform/backend/app/schemas/finding.py)
+- Expose the new fields in `FindingRead` and `FindingOut` Pydantic schemas.
+
+#### [MODIFY] [tasks/scan_tasks.py](file:///c:/Users/tkart/Dev/products/security%20Platform/security-platform/backend/app/tasks/scan_tasks.py)
+- Update parallel AI enrichment function `enrich_single_finding` to pass reachability payload and save all structured JSON fields to the database.
+
+#### [MODIFY] [routers/findings.py](file:///c:/Users/tkart/Dev/products/security%20Platform/security-platform/backend/app/routers/findings.py)
+- Update `/remediation-hub` and finding endpoints to populate and return the new structured remediation steps, patch diffs, and AST reachability context.
+
+---
+
+### Frontend Component (`frontend/platform-ui`)
+
+#### [MODIFY] [app/(app)/findings/page.tsx](file:///c:/Users/tkart/Dev/products/security%20Platform/security-platform/frontend/platform-ui/app/%28app%29/findings/page.tsx)
+- Update Finding interface to include the new AI enrichment attributes.
+- Update Finding Drawer Remediation & Overview tabs:
+  1. **Why Now Card**: Display the one-line evidence ranking badge.
+  2. **Structured Remediation Steps**: Render step-by-step cards with Action, Command (with copy-to-clipboard), File Target, and Verification instructions.
+  3. **Patch Diff Viewer**: Render unified diff block with SHA reference and touched files list.
+  4. **Risk & Blockers Badge**: Display Breaking Change Risk badge (`low`, `medium`, `high`), confidence score, and transitive package blockers.
+  5. **AST Reachability Explorer**: Render entry point, call path sequence, confidence meter, and code snippet drawer.
+
+#### [MODIFY] [app/(app)/remediation-hub/page.tsx](file:///c:/Users/tkart/Dev/products/security%20Platform/security-platform/frontend/platform-ui/app/%28app%29/remediation-hub/page.tsx)
+- Update Remediation Hub cards to render structured action steps, breaking change risk badges, and patch previews.
+
+---
+
+## Verification Plan
+
+### Automated Verification
+- Run Next.js build: `npm run build` in `frontend/platform-ui`.
+- Test backend schema validation with sample JSON payload.
+
+### Manual Verification
+- Launch Next.js UI, open Findings Drawer, verify the rendering of:
+  - **Why Now** evidence line
+  - **Structured Action / Command / File / Verification** steps
+  - **Patch Diff** preview
+  - **Breaking Change Risk** & **Blockers** badges
+  - **AST Reachability Call Path** & **Snippets**
