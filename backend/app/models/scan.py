@@ -19,7 +19,8 @@ class ScanType(str, enum.Enum):
     vuln = "vuln"  # Nuclei
     sca = "sca"  # Trivy
     secret = "secret"  # Gitleaks
-    opengroup = "opengroup"  # OpenGroup
+    opengroup = "opengroup"  # OpenGroup (legacy alias)
+    opengrep = "opengrep"  # Opengrep SAST
     network = "network"  # Nmap port / service scan
 
 

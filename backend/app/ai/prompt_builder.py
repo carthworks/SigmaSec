@@ -112,7 +112,7 @@ def build_prompt(finding: Any) -> str:
     sast_line = meta.get("line")
     sast_check = meta.get("check_id")
     sast_context = ""
-    if tool == "opengroup":
+    if tool in ("opengroup", "opengrep"):
         sast_context = (
             f"\nSAST SCAN DETAILS:\n"
             f"- Rule Check ID: {sast_check or 'N/A'}\n"

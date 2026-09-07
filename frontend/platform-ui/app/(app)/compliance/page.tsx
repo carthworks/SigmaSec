@@ -245,7 +245,7 @@ export default function CompliancePage() {
             <span className="text-slate-300">Trivy (SCA)</span>,{" "}
             <span className="text-slate-300">Gitleaks (Secrets)</span>,{" "}
             <span className="text-slate-300">Nuclei (DAST)</span>, and{" "}
-            <span className="text-slate-300">OpenGroup (SAST)</span> to
+            <span className="text-slate-300">Opengrep (SAST)</span> to
             SOC 2, PCI-DSS, ISO 27001, and NIST 800-53 controls in real time.
           </p>
         </div>

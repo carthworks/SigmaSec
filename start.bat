@@ -32,6 +32,18 @@ if %errorlevel% neq 0 (
 
 echo   - Docker is running.
 
+if not exist "%ROOT_DIR%backend\.env" (
+    echo   - backend\.env not found. Creating from backend\.env.example...
+    copy "%ROOT_DIR%backend\.env.example" "%ROOT_DIR%backend\.env" >nul
+)
+
+if not exist "%ROOT_DIR%frontend\platform-ui\.env.local" (
+    if exist "%ROOT_DIR%frontend\platform-ui\.env.local.example" (
+        echo   - frontend\.env.local not found. Creating from example...
+        copy "%ROOT_DIR%frontend\platform-ui\.env.local.example" "%ROOT_DIR%frontend\platform-ui\.env.local" >nul
+    )
+)
+
 echo.
 echo [2/4] Starting backend services (Postgres, Redis, MinIO, Celery, API)...
 cd /d "%ROOT_DIR%"

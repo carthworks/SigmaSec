@@ -146,7 +146,7 @@ Engineering teams are drowning in security noise. Conventional scanners emit hun
 The platform operates across 5 integrated stages:
 
 1. **DISCOVER (Unified Multi-Engine Scanning):**
-   Orchestrates **Nuclei** (DAST / web vuln), **Trivy** (container & SCA dependencies), **Gitleaks** (hardcoded secrets), **Semgrep / OpenGroup** (SAST static code analysis), and **Nmap** (network port and service discovery) in parallel.
+   Orchestrates **Nuclei** (DAST / web vuln), **Trivy** (container & SCA dependencies), **Gitleaks** (hardcoded secrets), **Opengrep** (SAST static code analysis), and **Nmap** (network port and service discovery) in parallel.
 2. **ENRICH (Real-World Threat Intelligence):**
    Cross-references every finding with **CISA KEV** (Known Exploited Vulnerabilities catalog with due dates), **FIRST EPSS v3** (Exploitation Probability percentile), and **NVD CVSS v3.1** scores via Redis-cached O(1) lookups.
 3. **PRIORITIZE (Composite Risk Engine & Active Validation):**
@@ -177,6 +177,7 @@ The platform operates across 5 integrated stages:
 ## 🚀 Latest Platform Upgrades & Changelog
 
 ### 🌟 Recent Updates (Latest Release)
+* **Opengrep SAST Static Code Analysis Integration**: Added native `OpengrepAdapter` (`backend/app/adapters/opengrep.py`) for static analysis AST scanning, ruleset customization, and code vulnerability detection.
 * **Nmap Network Port & Service Scanner Integration**: Added native network scanning adapter (`backend/app/adapters/nmap.py`) enabling port discovery, service enumeration, and open network attack surface assessment.
 * **Live Scan Execution Terminal Streamer**: Embedded real-time terminal output stream for running scanners with ANSI syntax colors, auto-scroll, log search, and `.log` download capabilities.
 * **Automation Run Scripts (`start.bat` / `stop.bat`)**: Added one-click script orchestration to start and stop Docker containers, Celery workers, and the Next.js frontend seamlessly.
@@ -209,7 +210,7 @@ The platform operates across 5 integrated stages:
 | **Nuclei** | DAST / Web Vuln | URLs, Web Apps, APIs | Active web vulnerabilities, CVEs, misconfigurations, exploit validation |
 | **Trivy** | Container / SCA | Container Images, Git Repos | Vulnerable dependencies, SBOM, OS package CVEs |
 | **Gitleaks** | Secret Detection | Git Repositories | Leaked API keys, private tokens, passwords, private keys |
-| **Semgrep / OpenGroup** | SAST | Source Code (AST) | Static code flaws, unsafe functions, code reachability verification |
+| **Opengrep** | SAST | Source Code (AST) | Static code flaws, unsafe functions, code reachability verification |
 | **Nmap** | Network Discovery | IPs, Hostnames, CIDRs | Open ports, exposed services, network service vulnerabilities |
 | **Anthropic Claude** | AI Reasoning | Enriched Findings | Plain-English explanations, attack narratives, remediation patches |
 

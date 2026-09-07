@@ -54,12 +54,12 @@ export function LiveTerminal({
       `[${new Date().toISOString()}] [SYSTEM] Allocating container sandbox... Success.`,
       `[${new Date().toISOString()}] [NUCLEI] Loading templates: http, cve, misconfiguration, default-logins... (9,421 rules active)`,
       `[${new Date().toISOString()}] [SEMGREP] Analyzing AST patterns across project repositories...`,
-      `[${new Date().toISOString()}] [OPENGROUP] Running OpenGroup static security analysis (SAST) rule checks...`,
+      `[${new Date().toISOString()}] [OPENGREP] Running Opengrep static security analysis (SAST) rule checks...`,
       `[${new Date().toISOString()}] [TRIVY] Scanning container image layers for known CVE vulnerabilities...`,
       `[${new Date().toISOString()}] [NUCLEI] Probing target endpoints at ${target}...`,
       `[${new Date().toISOString()}] [WARN] [NUCLEI] [http-missing-headers] Security header 'X-Frame-Options' missing on endpoint /login`,
       `[${new Date().toISOString()}] [CRITICAL] [NUCLEI] [CVE-2023-4863] Potential heap buffer overflow condition detected in libwebp parser`,
-      `[${new Date().toISOString()}] [INFO] [OPENGROUP] Rule sast-hardcoded-secret triggered on /src/config.ts:18`,
+      `[${new Date().toISOString()}] [INFO] [OPENGREP] Rule sast-hardcoded-secret triggered on /src/config.ts:18`,
       `[${new Date().toISOString()}] [INFO] Active AST reachability analyzer calculating package call paths...`,
 
     ];

@@ -143,6 +143,14 @@ def on_startup():
         else:
             migration_status = f"alembic.ini not found at {ini_path}"
             print(f"Programmatic migrations: alembic.ini not found at {ini_path}")
+
+        # Seed default org and users (admin@sigmasec.com / analyst@sigmasec.com)
+        try:
+            from app.seed import seed
+            seed()
+        except Exception as e_seed:
+            print(f"Startup seeding error: {e_seed}")
+
     except Exception as e:
         migration_status = "Failed"
         migration_error = str(e)

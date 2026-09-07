@@ -473,8 +473,15 @@ security-platform/
 │       │   ├── user.py
 │       │   ├── scan.py
 │       │   └── finding.py
+│       ├── adapters/         ← Scanner adapters
+│       │   ├── opengrep.py   ← Opengrep SAST static code analysis
+│       │   ├── trivy.py      ← Trivy container & SCA dependencies
+│       │   ├── gitleaks.py   ← Gitleaks secret detection
+│       │   ├── nuclei.py     ← Nuclei DAST web vulnerabilities
+│       │   ├── nmap.py       ← Nmap network port/service scanner
+│       │   └── runner.py     ← Logged subprocess runner with live Redis stream
 │       └── tasks/
-│           └── scan_tasks.py ← Celery task (stub — real scanners Week 3)
+│           └── scan_tasks.py ← Celery async scan tasks & threat enrichment pipeline
 │
 └── frontend/
     ├── .env.local            ← SECRET — get from Sathish

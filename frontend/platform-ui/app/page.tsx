@@ -1132,7 +1132,7 @@ export default function HomeLandingPage() {
                     <td>Opengrep</td>
                     <td>Your own source, as an AST</td>
                     <td>Reachability from entry points</td>
-                    <td><span className="chip soon">Rolling out</span></td>
+                    <td><span className="chip now">Live</span></td>
                   </tr>
                   <tr>
                     <td>Nmap</td>

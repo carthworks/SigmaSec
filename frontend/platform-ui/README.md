@@ -16,7 +16,7 @@ This is the Next.js 16 frontend interface for the **AI-Augmented Security Postur
 
 ### 3. Live Scan Execution Terminal Streamer
 ![Live Terminal Streamer — Scanner Logs](/screencapture-localhost-3000-scans-54985538-2462-4078-933b-a102a0f98738-2026-07-22-12_09_29.png)
-*Embedded real-time terminal stdout/stderr execution stream from Nuclei, Trivy, Gitleaks, and OpenGroup containers with ANSI syntax highlighting, auto-scroll, and log export.*
+*Embedded real-time terminal stdout/stderr execution stream from Nuclei, Trivy, Gitleaks, Opengrep, and Nmap containers with ANSI syntax highlighting, auto-scroll, and log export.*
 
 
 ### 4. Posture Score Mathematical Model & Rules
@@ -101,14 +101,14 @@ platform-ui/
     *   **Vulnerability Severity Badges:** Displays findings count segmented by criticality using color-coded badges (🔴 Critical, 🟠 High, 🟡 Medium, 🔵 Low).
     *   **Vulnerabilities Audit Drawer:** Click any asset to review individual findings, update lifecycle status, assign engineers, and write comments.
 2.  **Scan Execution Center & Live Tracking:**
-    *   **Launch Scan Dialog:** Select from 4 parallel security scanner modules (Trivy SCA, Gitleaks Secrets, Nuclei Web Vuln, OpenGroup SAST), set targets (Git repos, URLs, containers), and configure dedicated scan inputs.
+    *   **Launch Scan Dialog:** Select from 5 parallel security scanner modules (Trivy SCA, Gitleaks Secrets, Nuclei Web Vuln, Opengrep SAST, Nmap Network), set targets (Git repos, URLs, containers, host IPs), and configure dedicated scan inputs.
 
     *   **Active Exploit Validation (FR-SCN-13):** Toggle Active Exploit confirmation using Nuclei's `-validate` engine.
     *   **Live SSE Progress Tracking:** Opens a Server-Sent Events (`EventSource`) stream from a Next.js Auth API proxy which tracks parallel Celery task executions (Trivy + Nuclei), rendering a custom progress bar (0–100%) and current execution step.
     *   **Polling Fallback:** Automatically switches to poll the backend every 5 seconds using TanStack Query if the EventSource fails.
     *   **Findings Table:** Displays CVE code list with default severity descending sorting, real-time severity level filter buttons, and custom **Fix: x.y.z** badges for Trivy dependencies.
 3.  **Automated Compliance Control Mapping Engine (New Module):**
-    *   **Regulatory Control Mapping:** Automatically maps Trivy (SCA), Gitleaks (Secrets), Nuclei (DAST), and OpenGroup (SAST) findings to **SOC 2 Type II** (CC6.1, CC6.6, CC6.8, CC7.1), **PCI-DSS v4.0** (Req 6.3, 6.4, 8.3, 11.3), **ISO 27001:2022** (A.8.8, A.8.28, A.8.24, A.5.15), and **NIST SP 800-53 R5** (SI-2, RA-5, SA-11, IA-5) controls.
+    *   **Regulatory Control Mapping:** Automatically maps Trivy (SCA), Gitleaks (Secrets), Nuclei (DAST), Opengrep (SAST), and Nmap (Network) findings to **SOC 2 Type II** (CC6.1, CC6.6, CC6.8, CC7.1), **PCI-DSS v4.0** (Req 6.3, 6.4, 8.3, 11.3), **ISO 27001:2022** (A.8.8, A.8.28, A.8.24, A.5.15), and **NIST SP 800-53 R5** (SI-2, RA-5, SA-11, IA-5) controls.
     *   **Compliance Hub Dashboard:** Real-time framework readiness scorecards, interactive control status breakdown matrices, and one-click CISO audit PDF report exports.
 4.  **Security Reports Suite (New Module):**
 

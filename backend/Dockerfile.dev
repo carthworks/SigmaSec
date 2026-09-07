@@ -188,7 +188,8 @@ USER appuser
 RUN nuclei -version \
     && gitleaks version \
     && trivy --version \
-    && nmap --version
+    && nmap --version \
+    && opengrep --version
 
 
 EXPOSE 8000

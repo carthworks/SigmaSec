@@ -1563,8 +1563,7 @@ export default function ScanDetailPage({ params }: PageProps) {
                       key={type}
                       className="inline-flex text-[10px] font-semibold bg-primary/5 px-2 py-0.5 rounded text-primary capitalize border border-primary/10"
                     >
-                      {type === "vuln" ? "vulnerabilities" : type === "opengroup" ? "OpenGroup SAST" : type}
-
+                      {type === "vuln" ? "vulnerabilities" : type === "opengrep" || type === "opengroup" ? "Opengrep SAST" : type}
                     </span>
                   ))}
                 </div>

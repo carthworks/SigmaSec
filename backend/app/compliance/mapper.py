@@ -155,8 +155,8 @@ def map_finding_to_controls(finding: Any) -> Dict[str, List[str]]:
         mapped["iso_27001"].append("A.5.15")
         mapped["nist_800_53"].append("IA-5")
 
-    # 2. OpenGroup / SAST findings
-    if tool == "opengroup" or "sast" in check_id or "injection" in title or "sqli" in title or "xss" in title:
+    # 2. Opengrep / OpenGroup / SAST findings
+    if tool in ("opengroup", "opengrep") or "sast" in check_id or "injection" in title or "sqli" in title or "xss" in title:
         mapped["soc2"].append("CC6.8")
         mapped["pci_dss"].append("Req-6.3")
         mapped["iso_27001"].append("A.8.28")

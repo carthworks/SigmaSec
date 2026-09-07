@@ -704,8 +704,8 @@ export default function ReportsPage() {
                   <option value="nuclei">Nuclei (Vulnerability)</option>
                   <option value="trivy">Trivy (SCA/Containers)</option>
                   <option value="gitleaks">Gitleaks (Secrets)</option>
+                  <option value="opengrep">Opengrep (SAST)</option>
                   <option value="opengroup">OpenGroup (SAST)</option>
-
                 </select>
               </div>
 

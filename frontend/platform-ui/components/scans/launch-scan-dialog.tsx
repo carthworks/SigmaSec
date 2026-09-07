@@ -257,7 +257,7 @@ export function LaunchScanDialog({
     if (trivyEnabled) selectedTypes.push("sca");
     if (gitleaksEnabled) selectedTypes.push("secret");
     if (nucleiEnabled) selectedTypes.push("vuln");
-    if (openGroupEnabled) selectedTypes.push("opengroup");
+    if (openGroupEnabled) selectedTypes.push("opengrep");
     if (nmapEnabled) selectedTypes.push("network");
 
 
@@ -562,7 +562,7 @@ export function LaunchScanDialog({
                   </div>
                 </div>
 
-                {/* OpenGroup Scanner */}
+                {/* Opengrep SAST Scanner */}
                 <div
                   onClick={() => setOpenGroupEnabled(!openGroupEnabled)}
                   className={`p-3 rounded-lg border transition-all cursor-pointer flex items-start gap-3 ${
@@ -580,7 +580,7 @@ export function LaunchScanDialog({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white">OpenGroup</span>
+                        <span className="text-xs font-bold text-white">Opengrep SAST</span>
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-950/70 text-purple-300 border border-purple-800/60">
                           Recommended
                         </span>

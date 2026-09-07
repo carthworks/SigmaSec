@@ -5,7 +5,19 @@ import uuid
 import logging
 from datetime import datetime
 
-import redis
+try:
+    import redis
+    REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379")
+    redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+except Exception:
+    class _DummyRedis:
+        def hset(self, *args, **kwargs): pass
+        def expire(self, *args, **kwargs): pass
+        def hincrby(self, *args, **kwargs): return 1
+        def hget(self, *args, **kwargs): return "1"
+        def delete(self, *args, **kwargs): pass
+    redis_client = _DummyRedis()
+
 import sqlalchemy as sa
 from celery import chord, group
 
@@ -17,9 +29,6 @@ from app.intel.kev import KEVClient
 from app.intel.epss import EPSSClient
 
 logger = logging.getLogger(__name__)
-
-REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379")
-redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
 
 def update_progress(scan_id: str, pct: int, step: str):
@@ -188,9 +197,9 @@ def save_findings(db, findings: list):
 
     db.commit()
 
-    # FIX-04 Reconciliation pass: scoped to (asset_id, tool="opengroup")
+    # FIX-04 Reconciliation pass: scoped to (asset_id, tool in ("opengroup", "opengrep"))
     for (aid, tname) in scan_asset_tools:
-        if tname == "opengroup":
+        if tname in ("opengroup", "opengrep"):
             db_findings = db.query(Finding).filter(
                 Finding.asset_id == aid,
                 Finding.tool == tname,
@@ -269,9 +278,9 @@ def enrich_findings_task(scan_id: str):
         for f in findings:
             cve_id = f.cve_id
 
-            # D. Reachability Check (FR-AI-08) for Trivy & OpenGroup (FIX-05)
+            # D. Reachability Check (FR-AI-08) for Trivy, OpenGroup & Opengrep (FIX-05)
             reachability_multiplier = 1.0
-            if repo_dir and f.tool in ("trivy", "opengroup"):
+            if repo_dir and f.tool in ("trivy", "opengroup", "opengrep"):
                 if f.tool == "trivy":
                     from app.ai.reachability import determine_cve_reachability
                     try:
@@ -292,7 +301,7 @@ def enrich_findings_task(scan_id: str):
                         logger.error(f"Reachability check failed for finding {f.id}: {reach_err}")
                         f.reachability = Reachability.uncertain
                         f.reachability_reason = f"Reachability analysis execution error: {reach_err}"
-                elif f.tool == "opengroup":
+                elif f.tool in ("opengroup", "opengrep"):
                     meta = f.scan_metadata or {}
                     rel_file = meta.get("file_path") or f.url or ""
                     clean_rel = rel_file.split("#")[0].lstrip("/")
@@ -448,6 +457,11 @@ def run_scan_task(
             header_tasks.append(
                 run_gitleaks_scan_subtask.s(scan_id, gitleaks_target, org_id, asset_id)
             )
+        if "opengrep" in scan_types:
+            opengrep_target = git_repo or target
+            header_tasks.append(
+                run_opengrep_scan_subtask.s(scan_id, opengrep_target, org_id, asset_id)
+            )
         if "opengroup" in scan_types:
             opengroup_target = git_repo or target
             header_tasks.append(
@@ -580,6 +594,26 @@ def run_gitleaks_scan_subtask(scan_id: str, target: str, org_id: str, asset_id: 
         return findings
     finally:
         mark_subtask_done(scan_id, "gitleaks")
+
+
+@celery_app.task(
+    name="app.tasks.scan_tasks.run_opengrep_scan_subtask",
+    time_limit=1800,
+    soft_time_limit=1700,
+)
+def run_opengrep_scan_subtask(scan_id: str, target: str, org_id: str, asset_id: str):
+    from app.adapters.opengrep import OpengrepAdapter
+
+    try:
+        findings = OpengrepAdapter().safe_run(
+            target,
+            scan_id,
+            org_id,
+            asset_id,
+        )
+        return findings
+    finally:
+        mark_subtask_done(scan_id, "opengrep")
 
 
 @celery_app.task(
@@ -869,11 +903,11 @@ def ai_enrichment_task(scan_id: str):
         scan_uuid = uuid.UUID(scan_id)
         findings = db.query(Finding).filter(
             Finding.scan_id == scan_uuid,
-            Finding.tool.in_(["trivy", "opengroup"])
+            Finding.tool.in_(["trivy", "opengroup", "opengrep"])
         ).all()
         
         if not findings:
-            logger.info(f"No Trivy/OpenGroup findings for scan {scan_id} to AI enrich.")
+            logger.info(f"No Trivy/Opengrep/OpenGroup findings for scan {scan_id} to AI enrich.")
 
             generate_exec_summary_if_needed(db, scan_id)
             try:

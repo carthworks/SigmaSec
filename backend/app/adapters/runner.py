@@ -7,7 +7,10 @@ import subprocess
 from dataclasses import dataclass
 from typing import List, Optional
 
-import redis
+try:
+    import redis
+except ImportError:
+    redis = None
 
 from app.adapters import config
 
@@ -30,11 +33,13 @@ def _redact_sensitive(text: str) -> str:
 
 
 # Module-level pool: one pool per worker process, cheap Redis() handles per call.
-_pool: Optional[redis.ConnectionPool] = None
+_pool: Optional[object] = None
 
 
-def _redis() -> redis.Redis:
+def _redis():
     global _pool
+    if redis is None:
+        return None
     if _pool is None:
         _pool = redis.ConnectionPool.from_url(
             config.REDIS_URL,

@@ -45,7 +45,7 @@ const FAQS: FAQ[] = [
     id: "faq-3",
     category: "scanning",
     question: "What scanners are run during an automated target scan?",
-    answer: "The scanning engine coordinates five parallel, integrated security scanners: Nuclei (for web application vulnerabilities and configuration pings), Trivy (for container image filesystem checks and software composition analysis/SCA), Gitleaks (for scanning repositories and detecting hardcoded secrets), OpenGroup (for static security analysis and SAST rules), and Nmap (for host port and service version discovery)."
+    answer: "The scanning engine coordinates five parallel, integrated security scanners: Nuclei (for web application vulnerabilities and configuration pings), Trivy (for container image filesystem checks and software composition analysis/SCA), Gitleaks (for scanning repositories and detecting hardcoded secrets), Opengrep (for static security analysis and SAST rules), and Nmap (for host port and service version discovery)."
   },
   {
     id: "faq-4",
@@ -111,7 +111,7 @@ const FAQS: FAQ[] = [
     id: "faq-14",
     category: "scanning",
     question: "What is the Live Scan Execution Terminal Streamer?",
-    answer: "The Live Terminal Log Streamer on the Scan Details page (/scans/[id]) displays real-time stdout/stderr execution output from scanner containers (Nuclei, Semgrep, Trivy, Gitleaks, Zap, Nmap). It supports ANSI log highlighting, auto-scroll pause/resume, keyword searching, log copying, and `.log` file export."
+    answer: "The Live Terminal Log Streamer on the Scan Details page (/scans/[id]) displays real-time stdout/stderr execution output from scanner containers (Nuclei, Opengrep, Trivy, Gitleaks, Nmap). It supports ANSI log highlighting, auto-scroll pause/resume, keyword searching, log copying, and `.log` file export."
   },
   {
     id: "faq-15",
@@ -141,7 +141,7 @@ const FAQS: FAQ[] = [
     id: "faq-19",
     category: "general",
     question: "How does the Automated Compliance Control Mapping Engine work?",
-    answer: "SigmaSec's Automated Compliance Control Mapping Engine automatically translates technical findings from Trivy (SCA), Gitleaks (Secrets), Nuclei (DAST), OpenGroup (SAST), and Nmap (Network) into four major regulatory control frameworks: **SOC 2 Type II** (CC6.1, CC6.6, CC6.8, CC7.1), **PCI-DSS v4.0** (Req 6.3, 6.4, 8.3, 11.3), **ISO 27001:2022** (A.8.8, A.8.28, A.8.24, A.5.15), and **NIST SP 800-53 R5** (SI-2, RA-5, SA-11, IA-5). The **Compliance Hub** calculates real-time framework readiness scores and generates CISO audit-ready reports for external auditors."
+    answer: "SigmaSec's Automated Compliance Control Mapping Engine automatically translates technical findings from Trivy (SCA), Gitleaks (Secrets), Nuclei (DAST), Opengrep (SAST), and Nmap (Network) into four major regulatory control frameworks: **SOC 2 Type II** (CC6.1, CC6.6, CC6.8, CC7.1), **PCI-DSS v4.0** (Req 6.3, 6.4, 8.3, 11.3), **ISO 27001:2022** (A.8.8, A.8.28, A.8.24, A.5.15), and **NIST SP 800-53 R5** (SI-2, RA-5, SA-11, IA-5). The **Compliance Hub** calculates real-time framework readiness scores and generates CISO audit-ready reports for external auditors."
   },
   {
     id: "faq-21",

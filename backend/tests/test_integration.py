@@ -572,6 +572,34 @@ def test_opengroup_scan_creation(client, setup_data):
     assert adapter.tool_name == "opengroup"
 
 
+def test_opengrep_scan_creation(client, setup_data):
+    """
+    Test creating a scan with the 'opengrep' scan_type.
+    """
+    headers_a = {"Authorization": f"Bearer {setup_data['token_a']}"}
+    payload = {
+        "target": "github.com/org/repo-with-opengrep",
+        "scan_types": ["opengrep", "vuln"],
+    }
+    with patch("app.routers.scans.run_scan_task.delay") as mock_delay:
+        mock_task = MagicMock()
+        mock_task.id = "mock-opengrep-task-id-789"
+        mock_delay.return_value = mock_task
+
+        res = client.post("/scans", json=payload, headers=headers_a)
+        assert res.status_code == 201, res.text
+        scan_data = res.json()
+        assert "opengrep" in scan_data["scan_types"]
+        assert scan_data["status"] == "queued"
+        mock_delay.assert_called_once()
+
+    from app.adapters.opengrep import OpengrepAdapter, OpenGrepAdapter
+    adapter = OpengrepAdapter()
+    assert adapter.tool_name == "opengrep"
+    alias = OpenGrepAdapter()
+    assert alias.tool_name == "opengrep"
+
+
 
 
 
