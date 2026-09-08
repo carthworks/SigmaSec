@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm --prefix frontend/platform-ui run build",
+  "outputDirectory": "frontend/platform-ui/.next",
+  "framework": "nextjs"
+}

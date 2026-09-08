@@ -1,7 +1,16 @@
 {
+  "name": "sigmasec-platform",
+  "private": true,
+  "workspaces": [
+    "frontend/platform-ui"
+  ],
+  "scripts": {
+    "build": "npm --prefix frontend/platform-ui run build",
+    "start": "npm --prefix frontend/platform-ui run start",
+    "dev": "npm --prefix frontend/platform-ui run dev"
+  },
   "dependencies": {
     "npkill": "^0.12.2",
     "run": "^1.5.0"
-    
   }
 }
