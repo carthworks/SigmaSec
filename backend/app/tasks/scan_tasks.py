@@ -331,6 +331,8 @@ def enrich_findings_task(scan_id: str):
                 severity_scores = {"critical": 9.0, "high": 7.0, "medium": 5.0, "low": 3.0, "info": 1.0}
                 sev_str = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
                 cvss = severity_scores.get(sev_str, 5.0)
+                if f.cvss_score is None:
+                    f.cvss_score = cvss
 
                 adj = 0.0
                 if sev_str == "critical":
@@ -338,6 +340,10 @@ def enrich_findings_task(scan_id: str):
 
                 base_priority = (cvss + adj) * asset_weight
                 f.priority_score = round(max(0.0, min(10.0, base_priority * reachability_multiplier)), 3)
+
+                if not f.tags:
+                    tool_name = (f.tool or "").lower()
+                    f.tags = ["sast" if tool_name in ("opengrep", "opengroup", "semgrep") else "secrets" if tool_name == "gitleaks" else "dast" if tool_name == "nuclei" else tool_name]
                 continue
 
             cve_clean = cve_id.strip().upper()
@@ -367,12 +373,26 @@ def enrich_findings_task(scan_id: str):
             else:
                 severity_scores = {"critical": 9.0, "high": 7.0, "medium": 5.0, "low": 3.0, "info": 1.0}
                 cvss = severity_scores.get(f.severity.value if hasattr(f.severity, "value") else str(f.severity), 5.0)
+                f.cvss_score = cvss
 
             epss = f.epss_score if f.epss_score is not None else 0.0
             kev_multiplier = 2 if f.kev_listed else 1
             
             base_priority = epss * cvss * kev_multiplier * asset_weight
             f.priority_score = max(0.0, min(10.0, round(base_priority * reachability_multiplier, 3)))
+
+            if not f.tags:
+                auto_tags = ["cve"]
+                tool_name = (f.tool or "").lower()
+                if tool_name == "trivy":
+                    auto_tags.append("sca")
+                elif tool_name:
+                    auto_tags.append(tool_name)
+                if f.kev_listed:
+                    auto_tags.append("cisa-kev")
+                if f.exploit_validated:
+                    auto_tags.append("exploited")
+                f.tags = auto_tags
 
         db.commit()
 

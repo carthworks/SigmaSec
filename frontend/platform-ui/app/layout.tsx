@@ -38,11 +38,18 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "SigmaSec Security Team" }],
   creator: "SigmaSec",
-  publisher: "SigmaSec",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/apple-icon.svg",
   },
   openGraph: {
     type: "website",

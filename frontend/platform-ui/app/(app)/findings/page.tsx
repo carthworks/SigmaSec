@@ -845,26 +845,77 @@ function FindingsContent() {
       {
         accessorKey: "cvss_score",
         header: "CVSS",
-        cell: ({ row }) => (
-          <span className="whitespace-nowrap font-mono font-medium">
-            {row.original.cvss_score ? row.original.cvss_score.toFixed(1) : "—"}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const finding = row.original;
+          const score = typeof finding.cvss_score === "number" ? finding.cvss_score : null;
+          const fallbackScore = finding.severity === "critical" ? 9.0 : finding.severity === "high" ? 7.5 : finding.severity === "medium" ? 5.0 : finding.severity === "low" ? 3.0 : 1.0;
+          const displayScore = score !== null ? score : fallbackScore;
+          return (
+            <span
+              className={cn(
+                "whitespace-nowrap font-mono font-bold text-xs px-1.5 py-0.5 rounded border inline-flex items-center",
+                displayScore >= 9.0
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                  : displayScore >= 7.0
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                  : displayScore >= 4.0
+                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                  : "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20"
+              )}
+            >
+              {displayScore.toFixed(1)}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "epss_score",
         header: "EPSS",
-        cell: ({ row }) => (
-          <span className="whitespace-nowrap font-mono">
-            {row.original.epss_score ? `${(row.original.epss_score * 100).toFixed(2)}%` : "—"}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const finding = row.original;
+          const epss = typeof finding.epss_score === "number" ? finding.epss_score : 0.0;
+          return (
+            <span
+              className={cn(
+                "whitespace-nowrap font-mono text-xs font-semibold px-1.5 py-0.5 rounded border inline-flex items-center",
+                epss > 0.5
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                  : epss > 0.1
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                  : "bg-muted/40 text-foreground/80 border-border/40"
+              )}
+            >
+              {(epss * 100).toFixed(2)}%
+            </span>
+          );
+        },
       },
       {
         accessorKey: "tags",
         header: "Tags",
         cell: ({ row }) => {
-          const tags = row.original.tags || [];
+          const finding = row.original;
+          let tags = Array.isArray(finding.tags) && finding.tags.length > 0 ? finding.tags : [];
+          
+          if (tags.length === 0) {
+            const autoTags: string[] = [];
+            const tool = (finding.tool || "").toLowerCase();
+            if (tool === "opengrep" || tool === "semgrep" || tool === "opengroup") autoTags.push("sast");
+            else if (tool === "trivy") autoTags.push("sca");
+            else if (tool === "gitleaks") autoTags.push("secrets");
+            else if (tool === "nuclei") autoTags.push("dast");
+            else if (tool) autoTags.push(tool);
+            
+            if (finding.reachability === "reachable") autoTags.push("reachable");
+            if (finding.kev_listed) autoTags.push("cisa-kev");
+            if (finding.exploit_validated) autoTags.push("exploited");
+            tags = autoTags;
+          }
+
+          if (tags.length === 0) {
+            return <span className="italic opacity-30">—</span>;
+          }
+
           return (
             <div className="flex gap-1 items-center flex-wrap max-w-[160px]">
               {tags.slice(0, 2).map((t) => (
@@ -883,7 +934,6 @@ function FindingsContent() {
                   +{tags.length - 2}
                 </span>
               )}
-              {tags.length === 0 && <span className="italic opacity-30">—</span>}
             </div>
           );
         },

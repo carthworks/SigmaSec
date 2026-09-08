@@ -464,21 +464,21 @@ function FindingsTable({ scanId, scanStatus, scanTarget, onOpenFinding, findings
         cell: ({ row }) => {
           const score = row.original.cvss_score;
           const vector = row.original.cvss_vector;
-          if (score === undefined || score === null) {
-            return <span className="text-xs text-muted-foreground/50 font-medium">—</span>;
-          }
+          const fallbackScore = row.original.severity === "critical" ? 9.0 : row.original.severity === "high" ? 7.5 : row.original.severity === "medium" ? 5.0 : row.original.severity === "low" ? 3.0 : 1.0;
+          const displayScore = (score !== undefined && score !== null) ? score : fallbackScore;
+
           const content = (
             <span className={cn(
               "font-mono text-xs font-bold px-2 py-0.5 rounded border inline-flex items-center",
-              score >= 9.0
+              displayScore >= 9.0
                 ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
-                : score >= 7.0
+                : displayScore >= 7.0
                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                : score >= 4.0
+                : displayScore >= 4.0
                 ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
                 : "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20"
             )}>
-              {score.toFixed(1)}
+              {displayScore.toFixed(1)}
             </span>
           );
           if (vector) {
@@ -503,12 +503,10 @@ function FindingsTable({ scanId, scanStatus, scanTarget, onOpenFinding, findings
         sortingFn: "alphanumeric",
         cell: ({ row }) => {
           const score = row.original.epss_score;
-          if (score === undefined || score === null) {
-            return <span className="text-xs text-muted-foreground/50 font-medium">—</span>;
-          }
+          const epss = (score !== undefined && score !== null) ? score : 0.0;
           return (
             <span className="font-mono text-xs font-medium text-foreground/90">
-              {(score * 100).toFixed(2)}%
+              {(epss * 100).toFixed(2)}%
             </span>
           );
         }

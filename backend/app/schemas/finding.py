@@ -81,6 +81,38 @@ class FindingOut(BaseModel):
 
                 raw_out = json.dumps(sm, indent=2) if not isinstance(sm, str) else sm
 
+            raw_cvss = getattr(data, "cvss_score", None)
+            severity = getattr(data, "severity", None)
+            if raw_cvss is None and severity is not None:
+                sev_str = severity.value if hasattr(severity, "value") else str(severity)
+                severity_map = {"critical": 9.0, "high": 7.5, "medium": 5.0, "low": 3.0, "info": 1.0}
+                raw_cvss = severity_map.get(sev_str.lower(), 5.0)
+
+            raw_epss = getattr(data, "epss_score", None)
+            if raw_epss is None:
+                raw_epss = 0.0
+
+            raw_tags = getattr(data, "tags", None) or []
+            if not raw_tags:
+                tool_name = (getattr(data, "tool", "") or "").lower()
+                auto_tags = []
+                if tool_name in ("opengrep", "semgrep", "opengroup"):
+                    auto_tags.extend(["sast", "code"])
+                elif tool_name == "trivy":
+                    auto_tags.extend(["sca", "cve"])
+                elif tool_name == "gitleaks":
+                    auto_tags.extend(["secrets", "token"])
+                elif tool_name == "nuclei":
+                    auto_tags.extend(["dast", "web"])
+                elif tool_name:
+                    auto_tags.append(tool_name)
+                
+                if getattr(data, "kev_listed", False):
+                    auto_tags.append("cisa-kev")
+                if getattr(data, "exploit_validated", False):
+                    auto_tags.append("exploited")
+                raw_tags = auto_tags
+
             return {
                 "id": getattr(data, "id", None),
                 "org_id": getattr(data, "org_id", None),
@@ -94,9 +126,9 @@ class FindingOut(BaseModel):
                 ),
                 "cve_id": getattr(data, "cve_id", None),
                 "tool": getattr(data, "tool", None),
-                "cvss_score": getattr(data, "cvss_score", None),
+                "cvss_score": raw_cvss,
                 "cvss_vector": getattr(data, "cvss_vector", None),
-                "epss_score": getattr(data, "epss_score", None),
+                "epss_score": raw_epss,
                 "epss_percentile": getattr(data, "epss_percentile", None),
                 "kev_listed": getattr(data, "kev_listed", False),
                 "kev_due_date": getattr(data, "kev_due_date", None),
@@ -120,7 +152,7 @@ class FindingOut(BaseModel):
                     else getattr(data, "status", None)
                 ),
                 "raw_output": raw_out,
-                "tags": getattr(data, "tags", None) or [],
+                "tags": raw_tags,
                 "ai_remediation": getattr(data, "ai_remediation", None),
                 "ai_severity_override": (
                     getattr(data, "ai_severity_override", None).value
