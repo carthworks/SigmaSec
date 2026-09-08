@@ -36,22 +36,24 @@ class AIClient:
         """
         Queries Ollama API tags endpoint to check available models and resolve the best matches.
         """
-        # Try both the configured base url and loopback 127.0.0.1
-        endpoints = [f"{self.ollama_base}/api/tags"]
-        if "host.docker.internal" in self.ollama_base:
-            endpoints.append("http://127.0.0.1:11434/api/tags")
+        endpoints = [
+            f"{self.ollama_base}/api/tags",
+            "http://host.docker.internal:11434/api/tags",
+            "http://172.17.0.1:11434/api/tags",
+            "http://127.0.0.1:11434/api/tags",
+        ]
         
         local_models = []
         for url in endpoints:
             try:
-                response = httpx.get(url, timeout=2.0)
+                response = httpx.get(url, timeout=3.0)
                 if response.status_code == 200:
                     models_list = response.json().get("models", [])
                     local_models = [m.get("name") for m in models_list if m.get("name")]
                     if local_models:
                         # Update ollama_base to the base url of the successful endpoint
                         self.ollama_base = url.replace("/api/tags", "")
-                        logger.info(f"Resolved active Ollama base URL to: {self.ollama_base}")
+                        logger.info(f"Resolved active Ollama base URL to: {self.ollama_base} with models: {local_models}")
                         break
             except Exception:
                 continue
@@ -76,8 +78,14 @@ class AIClient:
         preferred_order = [
             "llama3:latest",
             "llama3",
+            "llama3.2:latest",
+            "llama3.2",
+            "llama3.1:latest",
+            "llama3.1",
+            "mistral:latest",
             "gemma3:4b",
             "deepseek-coder:6.7b",
+            "qwen2.5:latest",
             "qwen3:4b",
             "llava:latest",
             "glm-ocr:latest"
@@ -115,7 +123,10 @@ class AIClient:
         """
         Invokes local Ollama service using the API gateway url.
         """
-        url = f"{self.ollama_base}/api/generate"
+        # If models weren't discovered yet, attempt fresh resolution
+        if not self.local_models:
+            self.model = self._resolve_ollama_model(self.model)
+
         model_to_use = model_override or self.model
         payload = {
             "model": model_to_use,
@@ -128,55 +139,61 @@ class AIClient:
         }
         if system_prompt:
             payload["system"] = system_prompt
-        try:
-            logger.info(f"Connecting to Ollama at {url} (Model: {model_to_use})")
-            response = httpx.post(url, json=payload, timeout=15.0)
-            if response.status_code != 200:
-                return f"Ollama returned error: Status {response.status_code} - {response.text}"
-            
-            data = response.json()
-            response_text = data.get("response", "").strip()
 
-            if db is not None:
-                try:
-                    from app.models.ai_call import AICall
-                    prompt_len = len(prompt) + len(system_prompt or "")
-                    resp_len = len(response_text)
-                    prompt_tokens = max(1, prompt_len // 4)
-                    completion_tokens = max(1, resp_len // 4)
-                    
-                    ai_call = AICall(
-                        finding_id=finding_id,
-                        scan_id=scan_id,
-                        call_type=call_type,
-                        prompt=prompt,
-                        response=response_text,
-                        provider="ollama",
-                        model=model_to_use,
-                        prompt_tokens=prompt_tokens,
-                        completion_tokens=completion_tokens,
-                        cost=0.0
-                    )
-                    db.add(ai_call)
-                    db.commit()
-                except Exception as log_ex:
-                    logger.error(f"Failed to log AI call: {log_ex}")
+        candidate_bases = [
+            self.ollama_base,
+            "http://host.docker.internal:11434",
+            "http://172.17.0.1:11434",
+            "http://127.0.0.1:11434"
+        ]
+        # Deduplicate while preserving order
+        candidate_bases = list(dict.fromkeys(candidate_bases))
 
-            return response_text
-        except Exception as e:
-            # Fallback check if host.docker.internal was unreachable (e.g. running locally outside Docker)
-            if "host.docker.internal" in url:
-                fallback_url = url.replace("host.docker.internal", "127.0.0.1")
-                try:
-                    logger.info(f"Retrying local connection at {fallback_url}...")
-                    response = httpx.post(fallback_url, json=payload, timeout=5.0)
-                    if response.status_code == 200:
-                        return response.json().get("response", "").strip()
-                except Exception as ex:
-                    logger.info(f"Fallback retry to 127.0.0.1 failed: {ex}")
-                    pass
-            logger.error(f"Failed to communicate with local Ollama service: {e}")
-            return f"AI Analysis pending... (Ollama model '{model_to_use}' is offline or timed out.)"
+        last_error = None
+        for base in candidate_bases:
+            url = f"{base}/api/generate"
+            try:
+                logger.info(f"Connecting to Ollama at {url} (Model: {model_to_use})")
+                response = httpx.post(url, json=payload, timeout=60.0)
+                if response.status_code == 200:
+                    data = response.json()
+                    response_text = data.get("response", "").strip()
+                    self.ollama_base = base  # Cache successful base
+
+                    if db is not None:
+                        try:
+                            from app.models.ai_call import AICall
+                            prompt_len = len(prompt) + len(system_prompt or "")
+                            resp_len = len(response_text)
+                            prompt_tokens = max(1, prompt_len // 4)
+                            completion_tokens = max(1, resp_len // 4)
+                            
+                            ai_call = AICall(
+                                finding_id=finding_id,
+                                scan_id=scan_id,
+                                call_type=call_type,
+                                prompt=prompt,
+                                response=response_text,
+                                provider="ollama",
+                                model=model_to_use,
+                                prompt_tokens=prompt_tokens,
+                                completion_tokens=completion_tokens,
+                                cost=0.0
+                            )
+                            db.add(ai_call)
+                            db.commit()
+                        except Exception as log_ex:
+                            logger.error(f"Failed to log AI call: {log_ex}")
+
+                    return response_text
+                else:
+                    last_error = f"Status {response.status_code} - {response.text}"
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        logger.error(f"Failed to communicate with local Ollama service: {last_error}")
+        return f"AI Analysis pending... (Ollama model '{model_to_use}' is offline or timed out.)"
 
     def _call_anthropic(self, prompt: str, model_override: str = None, system_prompt: str = None, db: Any = None, finding_id: Any = None, scan_id: Any = None, call_type: str = None) -> str:
         """

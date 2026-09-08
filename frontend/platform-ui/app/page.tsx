@@ -479,6 +479,480 @@ function TickButtons({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// HERO SMART APP ANIMATION (Interactive Diagrammatic Pipeline Flow)
+// Visually demonstrates the 6 core diagrammatic steps of SigmaSec:
+// 1. Codebase (Git Repo, Commits, AST Ingestion & Scope Analysis)
+// 2. Scanners (Parallel Fleet: Opengrep, Trivy, Gitleaks, Nuclei, Nmap)
+// 3. CVE Analysis (AST Reachability, CISA KEV & EPSS Threat Intel Filter)
+// 4. Score (Composite Risk Scoring & Dynamic SLA Prioritization Matrix)
+// 5. AI Validation (Claude AI Autonomous Exploit Validation Probe in Sandbox)
+// 6. Remediation (1-Click AutoFix PR Diff, Jira Ticket, CI Passing, Posture Boost)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PIPELINE_STAGES = [
+  {
+    id: "codebase",
+    num: "01",
+    label: "Codebase",
+    icon: "📁",
+    shortTitle: "Git & Surface Intake",
+    statusBadge: "github.com/acme/backend-api",
+    terminalLog: "[INGEST] Ingested 142 source files, Dockerfile, and 28 API routes on branch 'main'.",
+  },
+  {
+    id: "scanners",
+    num: "02",
+    label: "Scanners",
+    icon: "⚡",
+    shortTitle: "5-Engine Fleet",
+    statusBadge: "5 Scanners Parallel",
+    terminalLog: "[ENGINES] Opengrep (SAST), Trivy (SCA), Gitleaks, Nuclei, Nmap completed in 42s.",
+  },
+  {
+    id: "cve_analysis",
+    num: "03",
+    label: "CVE Analysis",
+    icon: "🎯",
+    shortTitle: "AST & Threat Intel",
+    statusBadge: "1,204 ➔ 14 Real Threats",
+    terminalLog: "[INTEL] Filtered 1,190 unreachable false alarms (-98.8% noise). Traced CVE-2023-4863.",
+  },
+  {
+    id: "scoring",
+    num: "04",
+    label: "Score",
+    icon: "📊",
+    shortTitle: "Priority Matrix",
+    statusBadge: "Priority: 9.8 / 10.0 (P0)",
+    terminalLog: "[SCORE] Composite Risk Score 9.8/10.0 calculated (CVSS 8.8 + KEV +0.8 + AST +0.4).",
+  },
+  {
+    id: "ai_validation",
+    num: "05",
+    label: "AI Validate",
+    icon: "🤖",
+    shortTitle: "Claude Sandbox Probe",
+    statusBadge: "Exploit Confirmed",
+    terminalLog: "[AI-AGENT] Safe validation probe reproduced heap buffer overflow in staging sandbox.",
+  },
+  {
+    id: "remediation",
+    num: "06",
+    label: "Remediation",
+    icon: "🚀",
+    shortTitle: "1-Click AutoFix PR",
+    statusBadge: "PR #402 Ready · +26 Posture",
+    terminalLog: "[REMEDIATION] Opened PR #402 (Bump libwebp 1.3.2). Created Jira SEC-108. CI passed.",
+  },
+] as const;
+
+function HeroAppAnimation() {
+  const [activeStage, setActiveStage] = React.useState(0);
+  const [isPaused, setIsPaused] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+
+  const STAGE_DURATION_MS = 5000;
+
+  React.useEffect(() => {
+    if (isPaused) return;
+    const intervalTime = 50;
+    const step = (intervalTime / STAGE_DURATION_MS) * 100;
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          setActiveStage((curr) => (curr + 1) % PIPELINE_STAGES.length);
+          return 0;
+        }
+        return prev + step;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [isPaused, activeStage]);
+
+  const selectStage = (index: number) => {
+    setActiveStage(index);
+    setProgress(0);
+  };
+
+  const current = PIPELINE_STAGES[activeStage];
+
+  return (
+    <div
+      className="hero-anim-box"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      role="region"
+      aria-label="Interactive security pipeline diagrammatic flow"
+    >
+      {/* Top Header */}
+      <div className="hero-anim-head">
+        <div className="hero-anim-title">
+          <span className="hero-anim-dot-pulse" />
+          <span>Security Pipeline Flow Simulator</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="hero-anim-stage-badge">{current.statusBadge}</span>
+          <button
+            type="button"
+            className="hero-anim-ctrl-btn text-[10px]"
+            onClick={() => setIsPaused((p) => !p)}
+            title={isPaused ? "Resume auto-rotation" : "Pause auto-rotation"}
+          >
+            {isPaused ? "▶ Resume" : "⏸ Pause"}
+          </button>
+        </div>
+      </div>
+
+      {/* Visual Diagrammatic Flow Bar (Node Graph with Connectors) */}
+      <div className="hero-flow-bar" role="tablist" aria-label="Pipeline Stages Flow">
+        {PIPELINE_STAGES.map((st, idx) => {
+          const isActive = idx === activeStage;
+          const isPassed = idx < activeStage;
+          return (
+            <React.Fragment key={st.id}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`hero-flow-node ${isActive ? "is-active" : ""} ${isPassed ? "is-passed" : ""}`}
+                onClick={() => selectStage(idx)}
+              >
+                <div className="hero-flow-node-icon-wrap">
+                  <span className="hero-flow-node-icon">{st.icon}</span>
+                  <span className="hero-flow-node-num">{st.num}</span>
+                </div>
+                <span className="hero-flow-node-lbl">{st.label}</span>
+                {isActive && (
+                  <div
+                    className="hero-flow-node-progress"
+                    style={{ width: `${progress}%` }}
+                  />
+                )}
+              </button>
+              {idx < PIPELINE_STAGES.length - 1 && (
+                <div className={`hero-flow-connector ${isPassed ? "is-passed" : ""} ${isActive ? "is-active" : ""}`}>
+                  <span className="hero-flow-connector-line" />
+                  <span className="hero-flow-connector-arrow">›</span>
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {/* Body Area */}
+      <div className="hero-anim-body">
+        {/* Stage 0: Codebase & Attack Surface Intake */}
+        {activeStage === 0 && (
+          <div className="hero-anim-view" key="stage-0">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[11.5px] text-cyan-300 flex items-center gap-2">
+                <span className="text-cyan-400 font-bold">●</span>
+                Source Target: <code className="text-white bg-black/60 px-1.5 py-0.5 border border-slate-800">github.com/acme/backend-api</code>
+              </span>
+              <span className="font-mono text-[10.5px] text-cyan-400 bg-cyan-950/40 px-2 py-0.5 border border-cyan-800/40">
+                Branch: main @ 8f9c2d1
+              </span>
+            </div>
+
+            <div className="hero-anim-codebase-grid">
+              <div className="hero-anim-codebase-card">
+                <div className="hero-anim-codebase-card-hd">
+                  <span>📂 Application Code</span>
+                  <span className="text-cyan-400 font-mono text-[10px]">Python / TypeScript</span>
+                </div>
+                <div className="text-[11.5px] text-slate-300 font-mono mt-1">
+                  142 files · 28 FastAPI endpoints · 4 worker queues
+                </div>
+              </div>
+              <div className="hero-anim-codebase-card">
+                <div className="hero-anim-codebase-card-hd">
+                  <span>🐳 Containers & Infrastructure</span>
+                  <span className="text-purple-400 font-mono text-[10px]">Docker / Helm</span>
+                </div>
+                <div className="text-[11.5px] text-slate-300 font-mono mt-1">
+                  Dockerfile (multi-stage) · 1,048 lockfile dependencies
+                </div>
+              </div>
+            </div>
+
+            <div className="hero-anim-pills mt-3">
+              <span className="hero-anim-pill success">✔ Webhook Sync Active</span>
+              <span className="hero-anim-pill">⚡ AST Graph Indexed</span>
+              <span className="hero-anim-pill">🔒 Zero-Retention Scan Mode</span>
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
+              <span>Pipeline Trigger: <b className="text-white">git push</b> to production</span>
+              <span className="text-emerald-400">Next ➔ Dispatch Scanners</span>
+            </div>
+          </div>
+        )}
+
+        {/* Stage 1: Parallel Multi-Scanner Fleet */}
+        {activeStage === 1 && (
+          <div className="hero-anim-view" key="stage-1">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[11.5px] text-slate-300 flex items-center gap-2">
+                <span className="text-emerald-400 font-bold">●</span>
+                Scanning Engine Fleet: <code className="text-white bg-black/60 px-1.5 py-0.5 border border-slate-800">5 Engines in Parallel</code>
+              </span>
+              <span className="font-mono text-[10.5px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 border border-emerald-800/40">
+                Execution: 42s
+              </span>
+            </div>
+
+            <div className="hero-anim-engine-grid">
+              <div className="hero-anim-engine-row">
+                <div className="hero-anim-engine-name">
+                  <span className="text-cyan-400">⚡ Opengrep (SAST)</span>
+                </div>
+                <div className="hero-anim-engine-desc">
+                  412 AST rules · 32 candidates in source code
+                </div>
+              </div>
+              <div className="hero-anim-engine-row">
+                <div className="hero-anim-engine-name">
+                  <span className="text-purple-400">📦 Trivy (SCA)</span>
+                </div>
+                <div className="hero-anim-engine-desc">
+                  1,048 packages · 18 CVEs in image layers
+                </div>
+              </div>
+              <div className="hero-anim-engine-row">
+                <div className="hero-anim-engine-name">
+                  <span className="text-amber-400">🔑 Gitleaks (Secrets)</span>
+                </div>
+                <div className="hero-anim-engine-desc">
+                  500 commits · 2 leaked credentials flagged
+                </div>
+              </div>
+              <div className="hero-anim-engine-row">
+                <div className="hero-anim-engine-name">
+                  <span className="text-rose-400">🌐 Nuclei (DAST)</span>
+                </div>
+                <div className="hero-anim-engine-desc">
+                  4,200 templates · 3 exposure vectors
+                </div>
+              </div>
+              <div className="hero-anim-engine-row">
+                <div className="hero-anim-engine-name">
+                  <span className="text-emerald-400">📡 Nmap (Ports)</span>
+                </div>
+                <div className="hero-anim-engine-desc">
+                  14 open network ports & service banners
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
+              <span>Total Raw Signals: <b className="text-white">1,204 findings</b></span>
+              <span className="text-amber-400">Next ➔ Deduplicate & Filter</span>
+            </div>
+          </div>
+        )}
+
+        {/* Stage 2: CVE Analysis & AST Reachability (Noise Filter) */}
+        {activeStage === 2 && (
+          <div className="hero-anim-view" key="stage-2">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[11.5px] text-amber-300 flex items-center gap-2">
+                <span>🎯 Threat Intelligence & AST Reachability</span>
+              </span>
+              <span className="font-mono text-[10.5px] text-amber-400 bg-amber-950/40 px-2 py-0.5 border border-amber-800/40">
+                -98.8% Noise Dropped
+              </span>
+            </div>
+
+            <div className="hero-anim-card-highlight">
+              <div className="hero-anim-card-title">
+                <span className="text-white">CVE-2023-4863 · Heap Buffer Overflow</span>
+                <span className="text-[10px] font-mono bg-rose-950/70 text-rose-300 border border-rose-800/60 px-2 py-0.5">
+                  CRITICAL
+                </span>
+              </div>
+              <p className="text-[12px] text-slate-300 mt-1">
+                Package: <code className="text-slate-100">libwebp @ 1.3.0</code> in container runtime
+              </p>
+
+              <div className="hero-anim-pills">
+                <span className="hero-anim-pill danger">
+                  🔴 CISA KEV: Exploited in Wild
+                </span>
+                <span className="hero-anim-pill warn">
+                  ⚡ EPSS: 98.4th Percentile
+                </span>
+                <span className="hero-anim-pill success">
+                  ✅ AST: Reachable in /src/image_processor.py:42
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-2.5 bg-black/40 p-2 border border-slate-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+              <span>Transitive & Dormant: <b className="text-slate-200">1,190 suppressed</b></span>
+              <span className="text-rose-400 font-bold">14 Confirmed Real Threats</span>
+            </div>
+          </div>
+        )}
+
+        {/* Stage 3: Dynamic Risk Scoring Matrix */}
+        {activeStage === 3 && (
+          <div className="hero-anim-view" key="stage-3">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[11.5px] text-rose-300 flex items-center gap-2">
+                <span>📊 Composite Risk Scoring & SLA Matrix</span>
+              </span>
+              <span className="font-mono text-[10.5px] text-rose-400 bg-rose-950/40 px-2 py-0.5 border border-rose-800/40">
+                Priority: 9.8 / 10.0
+              </span>
+            </div>
+
+            <div className="hero-anim-card-highlight">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 font-mono text-center">
+                <div className="p-1.5 bg-black/60 border border-slate-800">
+                  <div className="text-[9.5px] text-slate-400 uppercase">CVSS Base</div>
+                  <div className="text-[14px] text-rose-400 font-bold">8.8</div>
+                </div>
+                <div className="p-1.5 bg-black/60 border border-slate-800">
+                  <div className="text-[9.5px] text-slate-400 uppercase">KEV Active</div>
+                  <div className="text-[14px] text-rose-300 font-bold">+0.8</div>
+                </div>
+                <div className="p-1.5 bg-black/60 border border-slate-800">
+                  <div className="text-[9.5px] text-slate-400 uppercase">AST Reachable</div>
+                  <div className="text-[14px] text-amber-300 font-bold">+0.4</div>
+                </div>
+                <div className="p-1.5 bg-black/60 border border-slate-800">
+                  <div className="text-[9.5px] text-slate-400 uppercase">Asset Value</div>
+                  <div className="text-[14px] text-cyan-300 font-bold">+0.3</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[11.5px] text-slate-300 pt-1">
+                <span>Assigned SLA Tier: <b className="text-rose-400 font-bold">P0 · 7-Day Fix Target</b></span>
+                <span className="text-slate-400 font-mono text-[10.5px]">vs 90-Day Industry Backlog</span>
+              </div>
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
+              <span>Queue Placement: <b className="text-white">#1 on Engineering Sprint</b></span>
+              <span className="text-purple-400">Next ➔ AI Validation Probe</span>
+            </div>
+          </div>
+        )}
+
+        {/* Stage 4: AI Exploit Validation & Root Cause Analysis */}
+        {activeStage === 4 && (
+          <div className="hero-anim-view" key="stage-4">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[11.5px] text-purple-300 flex items-center gap-2">
+                <span>🤖 Claude AI & Active Exploit Validation</span>
+              </span>
+              <span className="font-mono text-[10.5px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 border border-emerald-800/40">
+                Probe Confirmed
+              </span>
+            </div>
+
+            <div className="hero-anim-card-highlight">
+              <div className="flex items-center justify-between font-mono text-[11px] text-slate-300 mb-1.5">
+                <span className="text-emerald-400">✔ Active Validation Probe</span>
+                <span className="text-rose-400 font-bold">+0.5 Confirmed Boost</span>
+              </div>
+              <div className="bg-black/80 p-2 font-mono text-[11px] text-slate-300 border border-slate-800/80">
+                <span className="text-slate-500">$</span> nuclei -target https://api.acme.com/v1/avatar -validate
+                <br />
+                <span className="text-emerald-400">[CONFIRMED] Heap buffer overflow payload reproduced successfully.</span>
+              </div>
+
+              <p className="text-[11.5px] text-slate-300 mt-2 leading-relaxed">
+                <b className="text-white">AI Diagnosis:</b> User-uploaded WebP images bypass validation bounds, triggering arbitrary memory corruption. Immediate patch required.
+              </p>
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
+              <span>Evidence Attached: <b className="text-white">HTTP Request/Response PCAP</b></span>
+              <span className="text-emerald-400">Next ➔ Generate AutoFix</span>
+            </div>
+          </div>
+        )}
+
+        {/* Stage 5: Automated 1-Click Remediation & Resolution */}
+        {activeStage === 5 && (
+          <div className="hero-anim-view" key="stage-5">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[11.5px] text-emerald-400 flex items-center gap-2">
+                <span>🚀 Automated 1-Click Remediation</span>
+              </span>
+              <span className="font-mono text-[10.5px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 border border-emerald-800/40">
+                Fix Ready
+              </span>
+            </div>
+
+            <div className="hero-anim-card-highlight">
+              <div className="flex items-center justify-between font-mono text-[11.5px] text-white font-bold">
+                <span>🔀 Pull Request #402</span>
+                <span className="text-emerald-400 text-[10px] font-mono border border-emerald-800/60 bg-emerald-950/60 px-2 py-0.5">
+                  CI Passing
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-300 mt-0.5">
+                [SigmaSec AutoFix] Upgrade libwebp to 1.3.2 to resolve CVE-2023-4863
+              </p>
+
+              <pre className="mt-2 p-2 bg-black/80 border border-slate-800 font-mono text-[11px] text-slate-300 leading-snug">
+                <span className="text-rose-400 block">- libwebp==1.3.0</span>
+                <span className="text-emerald-400 block">+ libwebp==1.3.2  # Fixes CVE-2023-4863</span>
+              </pre>
+
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <span className="hero-anim-pill">🎟️ Jira SEC-108</span>
+                <span className="hero-anim-pill">💬 Slack Notified</span>
+                <span className="hero-anim-pill success">📈 Posture: 68 ➔ 94 (+26)</span>
+              </div>
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
+              <span>Action: <b className="text-emerald-400 font-bold">Ready to Merge</b></span>
+              <span className="text-slate-400">Loop ➔ Next Code Commit</span>
+            </div>
+          </div>
+        )}
+
+        {/* Terminal Log Ticker */}
+        <div className="hero-anim-term-ticker">
+          <span className="text-emerald-400 font-mono text-[10px] shrink-0">TERMINAL&gt;</span>
+          <span className="text-slate-300 font-mono text-[11px]">{current.terminalLog}</span>
+        </div>
+
+        {/* Controls Footer */}
+        <div className="hero-anim-ctrls">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="hero-anim-ctrl-btn"
+              onClick={() => selectStage((activeStage - 1 + PIPELINE_STAGES.length) % PIPELINE_STAGES.length)}
+            >
+              ← Prev
+            </button>
+            <button
+              type="button"
+              className="hero-anim-ctrl-btn"
+              onClick={() => selectStage((activeStage + 1) % PIPELINE_STAGES.length)}
+            >
+              Next →
+            </button>
+          </div>
+          <span className="font-mono text-[10px] text-slate-500">
+            Hover to pause · Step {activeStage + 1} of {PIPELINE_STAGES.length}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SCROLL REVEAL
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -624,6 +1098,12 @@ const LP_CSS = `
 .lp .hero-lp .wrap{position:relative;z-index:2}
 .lp .hero-canvas-bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:hidden}
 .lp .hero-canvas-bg canvas{display:block;width:100%;height:100%}
+.lp .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);gap:clamp(32px,4vw,56px);align-items:center}
+@media(max-width:1080px){
+  .lp .hero-grid{grid-template-columns:1fr;gap:44px}
+  .lp .hero-lp h1{max-width:none}
+}
+
 .lp .hero-lp h1{max-width:17ch}
 .lp .hero-benefit{color:var(--ink-2);font-weight:600}
 .lp .hero-slot{position:relative}
@@ -647,6 +1127,145 @@ const LP_CSS = `
   font-family:var(--mono);font-size:11.5px;color:var(--ink-3);letter-spacing:.02em}
 .lp .assur li{display:flex;align-items:center;gap:7px}
 .lp .assur li::before{content:"";width:5px;height:5px;background:var(--ink);flex:none}
+
+/* hero animation box */
+.lp .hero-anim-box{
+  position:relative;background:var(--dark-2);border:1px solid var(--dark-rule);
+  box-shadow:0 24px 48px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+  overflow:hidden;border-radius:2px;
+}
+.lp .hero-anim-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 16px;background:var(--dark);border-bottom:1px solid var(--dark-rule);
+}
+.lp .hero-anim-title{
+  display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--dark-tx);
+}
+.lp .hero-anim-dot-pulse{
+  width:7px;height:7px;border-radius:50%;background:#10b981;
+  box-shadow:0 0 8px #10b981;animation:lpPulseDot 2s infinite ease-in-out;
+}
+@keyframes lpPulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.85)}}
+.lp .hero-anim-stage-badge{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--dark-tx-2);
+  background:rgba(255,255,255,0.05);padding:2px 8px;border:1px solid var(--dark-rule);
+}
+
+/* diagrammatic flow bar */
+.lp .hero-flow-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:rgba(0,0,0,0.35);border-bottom:1px solid var(--dark-rule);
+  overflow-x:auto;scrollbar-width:none;gap:4px;
+}
+.lp .hero-flow-bar::-webkit-scrollbar{display:none}
+.lp .hero-flow-node{
+  position:relative;background:transparent;border:1px solid transparent;padding:6px 8px;
+  font-family:var(--mono);font-size:10.5px;color:var(--dark-tx-2);cursor:pointer;
+  transition:all .2s ease;display:flex;flex-direction:column;align-items:center;gap:2px;
+  flex:1;min-width:64px;border-radius:2px;
+}
+.lp .hero-flow-node:hover{color:var(--dark-tx);background:rgba(255,255,255,0.02);border-color:var(--dark-rule)}
+.lp .hero-flow-node.is-active{color:#fff;background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15)}
+.lp .hero-flow-node.is-passed{color:var(--dark-tx);opacity:0.8}
+.lp .hero-flow-node-icon-wrap{
+  display:flex;align-items:center;gap:4px;
+}
+.lp .hero-flow-node-icon{font-size:12px}
+.lp .hero-flow-node-num{font-size:9.5px;color:var(--dark-tx-2);opacity:0.7}
+.lp .hero-flow-node.is-active .hero-flow-node-num{color:#38bdf8}
+.lp .hero-flow-node-lbl{font-size:10.5px;white-space:nowrap}
+.lp .hero-flow-node-progress{
+  position:absolute;bottom:-1px;left:0;height:2px;background:var(--clay);
+  transition:width .1s linear;
+}
+.lp .hero-flow-node.is-active .hero-flow-node-progress{
+  background:#38bdf8;box-shadow:0 0 6px #38bdf8;
+}
+.lp .hero-flow-connector{
+  display:flex;align-items:center;justify-content:center;color:var(--dark-rule);
+  font-family:var(--mono);font-size:12px;font-weight:bold;user-select:none;flex:none;
+}
+.lp .hero-flow-connector.is-passed{color:#38bdf8}
+.lp .hero-flow-connector.is-active{color:#fff;animation:lpPulseArrow 1.2s infinite ease-in-out}
+@keyframes lpPulseArrow{0%,100%{opacity:1;transform:translateX(0)}50%{opacity:0.4;transform:translateX(2px)}}
+.lp .hero-flow-connector-line{display:none}
+
+.lp .hero-anim-body{
+  padding:18px 20px;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;
+}
+.lp .hero-anim-view{
+  animation:lpAnimFadeIn .3s ease both;
+}
+@keyframes lpAnimFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* codebase stage styles */
+.lp .hero-anim-codebase-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;
+}
+@media(max-width:640px){.lp .hero-anim-codebase-grid{grid-template-columns:1fr}}
+.lp .hero-anim-codebase-card{
+  background:#090C0F;border:1px solid var(--dark-rule);padding:10px 12px;
+}
+.lp .hero-anim-codebase-card-hd{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-family:var(--display);font-size:12.5px;color:#fff;font-weight:600;
+}
+
+.lp .hero-anim-engine-grid{
+  display:grid;grid-template-columns:1fr;gap:6px;margin-top:10px;
+}
+.lp .hero-anim-engine-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:6px 10px;background:#090C0F;border:1px solid var(--dark-rule);
+  font-family:var(--mono);font-size:11px;
+}
+.lp .hero-anim-engine-name{
+  display:flex;align-items:center;gap:8px;color:#fff;font-weight:600;
+}
+.lp .hero-anim-engine-desc{
+  color:var(--dark-tx-2);font-size:10.5px;
+}
+.lp .hero-anim-card-highlight{
+  background:#090C0F;border:1px solid var(--dark-rule);padding:12px 14px;margin-top:10px;
+}
+.lp .hero-anim-card-title{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-family:var(--display);font-size:13.5px;color:#fff;font-weight:600;
+}
+.lp .hero-anim-pills{
+  display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;
+}
+.lp .hero-anim-pill{
+  font-family:var(--mono);font-size:10px;padding:3px 7px;border:1px solid var(--dark-rule);
+  background:rgba(255,255,255,0.03);color:var(--dark-tx);
+}
+.lp .hero-anim-pill.danger{
+  border-color:rgba(163,43,28,0.5);color:#E8897C;background:rgba(163,43,28,0.12);
+}
+.lp .hero-anim-pill.success{
+  border-color:rgba(16,185,129,0.4);color:#6FBF9B;background:rgba(16,185,129,0.09);
+}
+.lp .hero-anim-pill.warn{
+  border-color:rgba(145,96,8,0.5);color:#FBBF24;background:rgba(145,96,8,0.12);
+}
+.lp .hero-anim-term-ticker{
+  margin-top:14px;padding:8px 11px;background:#040608;border:1px solid var(--dark-rule);
+  font-family:var(--mono);font-size:10.5px;color:#94a3b8;display:flex;align-items:center;
+  gap:10px;overflow:hidden;white-space:nowrap;
+}
+.lp .hero-anim-term-ticker span{
+  overflow:hidden;text-overflow:ellipsis;
+}
+.lp .hero-anim-ctrls{
+  display:flex;align-items:center;justify-content:space-between;margin-top:12px;
+  padding-top:10px;border-top:1px solid var(--dark-rule);font-family:var(--mono);font-size:11px;color:var(--dark-tx-2);
+}
+.lp .hero-anim-ctrl-btn{
+  background:transparent;border:0;color:var(--dark-tx-2);cursor:pointer;padding:3px 7px;
+  font-family:var(--mono);font-size:11px;transition:color .15s;
+}
+.lp .hero-anim-ctrl-btn:hover{color:#fff}
 
 /* sieve */
 .lp .sieve-band{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
@@ -946,63 +1565,69 @@ export default function HomeLandingPage() {
         <header className="hero-lp" id="top">
           <CyberNetworkBg />
           <div className="wrap">
-            <Rise>
-              <p className="eyebrow">Pilot deployment · 20 assets · week of 17 Aug 2026</p>
+            <div className="hero-grid">
+              <Rise>
+                <p className="eyebrow">Pilot deployment · 20 assets · week of 17 Aug 2026</p>
 
-              <h1 className="hero-slot">
-                <span key={heroSeq} className={rotating ? "hero-word anim" : "hero-word"}>
-                  {hero.pre}
-                  <span className="hero-benefit">{hero.benefit}</span>
-                </span>
-              </h1>
-
-              {HERO_ROTATE && (
-                <div className="hero-counter">
-                  <span>
-                    {String(heroIdx + 1).padStart(2, "0")} / {String(HERO_LINES.length).padStart(2, "0")}
+                <h1 className="hero-slot">
+                  <span key={heroSeq} className={rotating ? "hero-word anim" : "hero-word"}>
+                    {hero.pre}
+                    <span className="hero-benefit">{hero.benefit}</span>
                   </span>
-                  <div className="hero-dots">
-                    {HERO_LINES.map((line, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        className="hero-dot"
-                        aria-current={i === heroIdx}
-                        aria-label={`Show headline ${i + 1}: ${line.pre}${line.benefit}`}
-                        onClick={() => pickHero(i)}
-                      />
-                    ))}
+                </h1>
+
+                {HERO_ROTATE && (
+                  <div className="hero-counter">
+                    <span>
+                      {String(heroIdx + 1).padStart(2, "0")} / {String(HERO_LINES.length).padStart(2, "0")}
+                    </span>
+                    <div className="hero-dots">
+                      {HERO_LINES.map((line, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          className="hero-dot"
+                          aria-current={i === heroIdx}
+                          aria-label={`Show headline ${i + 1}: ${line.pre}${line.benefit}`}
+                          onClick={() => pickHero(i)}
+                        />
+                      ))}
+                    </div>
+                    {!reducedMotion && (
+                      <button type="button" className="hero-pause" onClick={() => setPaused((p) => !p)}>
+                        {paused ? "Play" : "Pause"}
+                      </button>
+                    )}
                   </div>
-                  {!reducedMotion && (
-                    <button type="button" className="hero-pause" onClick={() => setPaused((p) => !p)}>
-                      {paused ? "Play" : "Pause"}
-                    </button>
-                  )}
+                )}
+
+                <p className="lede">
+                  SigmaSec runs Nuclei, Trivy, Gitleaks, Opengrep, and Nmap against your code and infrastructure,
+                  then spends the rest of its time taking findings away — matching each one against exploit
+                  intelligence, checking whether the vulnerable path is reachable, and confirming it before an
+                  engineer ever sees it.
+                </p>
+
+                <div className="cta-row">
+                  <a className="btn-lp" href="#pilot">
+                    Request a pilot scan
+                  </a>
+                  <a className="btn-lp ghost" href="#sieve">
+                    See how ranking works
+                  </a>
                 </div>
-              )}
 
-              <p className="lede">
-                SigmaSec runs Nuclei, Trivy, Gitleaks and Opengrep against your code and infrastructure,
-                then spends the rest of its time taking findings away — matching each one against exploit
-                intelligence, checking whether the vulnerable path is reachable, and confirming it before an
-                engineer ever sees it.
-              </p>
+                <ul className="assur">
+                  <li>Your code stays in your environment</li>
+                  <li>No training on customer data</li>
+                  <li>India data residency available</li>
+                </ul>
+              </Rise>
 
-              <div className="cta-row">
-                <a className="btn-lp" href="#pilot">
-                  Request a pilot scan
-                </a>
-                <a className="btn-lp ghost" href="#sieve">
-                  See how ranking works
-                </a>
-              </div>
-
-              <ul className="assur">
-                <li>Your code stays in your environment</li>
-                <li>No training on customer data</li>
-                <li>India data residency available</li>
-              </ul>
-            </Rise>
+              <Rise delay={80}>
+                <HeroAppAnimation />
+              </Rise>
+            </div>
           </div>
         </header>
 

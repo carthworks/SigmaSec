@@ -108,6 +108,9 @@ services:
 
     container_name: backend
 
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     env_file:
       - ./backend/.env
 
@@ -151,6 +154,9 @@ services:
       dockerfile: Dockerfile.dev
 
     container_name: celery-worker
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
     env_file:
       - ./backend/.env
