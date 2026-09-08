@@ -534,6 +534,7 @@ function FindingsTable({ scanId, scanStatus, scanTarget, onOpenFinding, findings
         header: "Title",
         cell: ({ row }) => {
           const rank = row.original.priority_rank;
+          const hasAiExplanation = Boolean(row.original.ai_plain_english && row.original.ai_plain_english.trim().length > 0);
           return (
             <div className="flex flex-col gap-0.5 max-w-[280px]">
               <div className="flex items-center gap-1.5">
@@ -545,6 +546,25 @@ function FindingsTable({ scanId, scanStatus, scanTarget, onOpenFinding, findings
                 <span className="font-semibold text-sm text-foreground truncate" title={row.original.title}>
                   {row.original.title}
                 </span>
+                {hasAiExplanation && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors cursor-help shrink-0">
+                        <Sparkles className="h-2.5 w-2.5 text-purple-500 animate-pulse" />
+                        AI
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs p-2.5 text-xs bg-popover border border-purple-500/30 shadow-lg">
+                      <div className="flex items-center gap-1 font-bold text-purple-600 dark:text-purple-400 mb-1">
+                        <Sparkles className="h-3 w-3" />
+                        Plain English Explanation
+                      </div>
+                      <p className="text-[11px] text-muted-foreground font-normal leading-relaxed line-clamp-4">
+                        {row.original.ai_plain_english}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
               {row.original.description && (
                 <span className="text-[10px] text-muted-foreground truncate max-w-[280px]" title={row.original.description}>

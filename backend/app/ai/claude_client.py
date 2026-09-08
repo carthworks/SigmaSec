@@ -1,8 +1,8 @@
-# app/ai/claude_client.py
-
 import os
 import httpx
 import logging
+import time
+import re
 from typing import Any
 from dotenv import load_dotenv
 
@@ -10,6 +10,25 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+def redact_secrets(text: str) -> str:
+    """
+    Pre-flight scrubbing of sensitive credentials and secrets before dispatching to AI models.
+    """
+    if not text:
+        return text
+    
+    # Redact AWS Access Key IDs
+    text = re.sub(r"AKIA[0-9A-Z]{16}", "[REDACTED_AWS_KEY]", text)
+    # Redact GitHub PATs
+    text = re.sub(r"gh[pous]_[0-9a-zA-Z]{36,}", "[REDACTED_GITHUB_TOKEN]", text)
+    # Redact Private Keys
+    text = re.sub(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----", "[REDACTED_PRIVATE_KEY]", text)
+    # Redact JWTs
+    text = re.sub(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}", "[REDACTED_JWT]", text)
+    # Redact basic credential assignments
+    text = re.sub(r"(?i)(password|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*['\"][^'\"]{6,}['\"]", r'\1="[REDACTED_CREDENTIAL]"', text)
+    return text
 
 # Customizable configuration via environment variables
 AI_PROVIDER = os.environ.get("AI_PROVIDER", "ollama").lower()  # "ollama" or "anthropic"
@@ -123,6 +142,11 @@ class AIClient:
         """
         Invokes local Ollama service using the API gateway url.
         """
+        # Pre-flight secret scrubbing
+        prompt = redact_secrets(prompt)
+        if system_prompt:
+            system_prompt = redact_secrets(system_prompt)
+
         # If models weren't discovered yet, attempt fresh resolution
         if not self.local_models:
             self.model = self._resolve_ollama_model(self.model)
@@ -197,10 +221,15 @@ class AIClient:
 
     def _call_anthropic(self, prompt: str, model_override: str = None, system_prompt: str = None, db: Any = None, finding_id: Any = None, scan_id: Any = None, call_type: str = None) -> str:
         """
-        Invokes Anthropic Claude messages endpoint.
+        Invokes Anthropic Claude messages endpoint with pre-flight secret redaction and 429/529 backoff retry.
         """
         if not self.anthropic_key:
             return "AI Analysis pending... (Anthropic API Key is missing in backend env)"
+
+        # Pre-flight secret scrubbing
+        prompt = redact_secrets(prompt)
+        if system_prompt:
+            system_prompt = redact_secrets(system_prompt)
 
         url = "https://api.anthropic.com/v1/messages"
         headers = {
@@ -219,52 +248,67 @@ class AIClient:
         }
         if system_prompt:
             payload["system"] = system_prompt
-        try:
-            logger.info(f"Connecting to Anthropic API (Model: {model_to_use})")
-            response = httpx.post(url, json=payload, headers=headers, timeout=30.0)
-            if response.status_code != 200:
-                return f"Claude API returned error: Status {response.status_code} - {response.text}"
-            
-            data = response.json()
-            content = data.get("content", [])
-            response_text = "AI Analysis pending..."
-            if content and isinstance(content, list):
-                response_text = content[0].get("text", "").strip()
 
-            if db is not None:
-                try:
-                    from app.models.ai_call import AICall
-                    prompt_len = len(prompt) + len(system_prompt or "")
-                    resp_len = len(response_text)
-                    prompt_tokens = max(1, prompt_len // 4)
-                    completion_tokens = max(1, resp_len // 4)
-                    
-                    # Claude 3.5 Sonnet pricing
-                    input_rate = 3.0 / 1_000_000
-                    output_rate = 15.0 / 1_000_000
-                    cost = (prompt_tokens * input_rate) + (completion_tokens * output_rate)
-                    
-                    ai_call = AICall(
-                        finding_id=finding_id,
-                        scan_id=scan_id,
-                        call_type=call_type,
-                        prompt=prompt,
-                        response=response_text,
-                        provider="anthropic",
-                        model=model_to_use,
-                        prompt_tokens=prompt_tokens,
-                        completion_tokens=completion_tokens,
-                        cost=cost
-                    )
-                    db.add(ai_call)
-                    db.commit()
-                except Exception as log_ex:
-                    logger.error(f"Failed to log AI call: {log_ex}")
+        # Up to 3 attempts with exponential backoff on rate limits / temporary overload
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                logger.info(f"Connecting to Anthropic API (Model: {model_to_use}, Attempt {attempt + 1}/{max_attempts})")
+                response = httpx.post(url, json=payload, headers=headers, timeout=30.0)
+                
+                # Rate limit (429) or Overloaded (529) backoff
+                if response.status_code in (429, 529) and attempt < max_attempts - 1:
+                    sleep_sec = 2.0 ** attempt
+                    logger.warning(f"Anthropic returned status {response.status_code}. Backing off for {sleep_sec:.1f}s...")
+                    time.sleep(sleep_sec)
+                    continue
 
-            return response_text
-        except Exception as e:
-            logger.error(f"Failed to communicate with Anthropic API: {e}")
-            return f"AI Analysis pending... (Anthropic service error: {e})"
+                if response.status_code != 200:
+                    return f"Claude API returned error: Status {response.status_code} - {response.text}"
+                
+                data = response.json()
+                content = data.get("content", [])
+                response_text = "AI Analysis pending..."
+                if content and isinstance(content, list):
+                    response_text = content[0].get("text", "").strip()
+
+                if db is not None:
+                    try:
+                        from app.models.ai_call import AICall
+                        prompt_len = len(prompt) + len(system_prompt or "")
+                        resp_len = len(response_text)
+                        prompt_tokens = max(1, prompt_len // 4)
+                        completion_tokens = max(1, resp_len // 4)
+                        
+                        # Claude 3.5 Sonnet pricing
+                        input_rate = 3.0 / 1_000_000
+                        output_rate = 15.0 / 1_000_000
+                        cost = (prompt_tokens * input_rate) + (completion_tokens * output_rate)
+                        
+                        ai_call = AICall(
+                            finding_id=finding_id,
+                            scan_id=scan_id,
+                            call_type=call_type,
+                            prompt=prompt,
+                            response=response_text,
+                            provider="anthropic",
+                            model=model_to_use,
+                            prompt_tokens=prompt_tokens,
+                            completion_tokens=completion_tokens,
+                            cost=cost
+                        )
+                        db.add(ai_call)
+                        db.commit()
+                    except Exception as log_ex:
+                        logger.error(f"Failed to log AI call: {log_ex}")
+
+                return response_text
+            except Exception as e:
+                if attempt < max_attempts - 1:
+                    time.sleep(1.5 ** attempt)
+                    continue
+                logger.error(f"Failed to communicate with Anthropic API: {e}")
+                return f"AI Analysis pending... (Anthropic service error: {e})"
 
     def _call_model_with_model_override(self, prompt: str, model_override: str = None, system_prompt: str = None, db: Any = None, finding_id: Any = None, scan_id: Any = None, call_type: str = None) -> str:
         if self.provider == "anthropic":

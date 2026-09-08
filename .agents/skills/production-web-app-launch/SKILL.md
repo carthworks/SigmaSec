@@ -71,9 +71,10 @@ Then read **only the reference files that apply**:
 | `references/frontend-quality.md` | Always. Forms, errors, states, dead links, UI polish, performance. |
 | `references/security.md` | Always. Deeper sections apply only where auth or a backend exists. |
 | `references/backend-and-api.md` | Only when a backend, API, or database exists. |
+| `references/ai-and-llm.md` | Only when LLMs, GenAI models, agentic workflows, or AI APIs exist. |
 | `references/deployment.md` | Always. PWA section only if the project is meant to be installable. |
 
-Loading all seven on a static landing page wastes context and produces a report padded with irrelevant N/A rows. Route deliberately.
+Loading all eight on a static landing page wastes context and produces a report padded with irrelevant N/A rows. Route deliberately.
 
 ---
 
@@ -83,9 +84,9 @@ Scan first. Do not fix anything yet.
 
 Produce a prioritized findings list using these severities:
 
-- **BLOCKER** — will harm users, leak data, or break a core journey on day one. Exposed secrets, broken signup, unprotected admin routes, a build that fails.
-- **HIGH** — significantly degrades a core journey or the project's credibility. No error handling on the main form, unusable on mobile, missing 404.
-- **MEDIUM** — real but survivable. Missing OG image, thin metadata, inconsistent empty states.
+- **BLOCKER** — will harm users, leak data, or break a core journey on day one. Exposed secrets, broken signup, unprotected admin routes, a build that fails, unsandboxed autonomous AI code execution, exposed LLM API keys on client.
+- **HIGH** — significantly degrades a core journey or the project's credibility. No error handling on the main form, unusable on mobile, missing 404, unhandled LLM 429/timeout errors hanging requests, missing prompt injection isolation on untrusted input.
+- **MEDIUM** — real but survivable. Missing OG image, thin metadata, inconsistent empty states, high temperature on deterministic security triage tasks, unverified AI resource citations.
 - **LOW** — polish.
 
 Then stop and present the list to the owner with a proposed scope: what you intend to fix now, what you recommend deferring, and what needs their input. A full 28-category implementation pass on a real codebase is unbounded work — confirming scope here is what keeps the audit from ending half-finished with no clean handoff.
@@ -108,6 +109,8 @@ Skip this checkpoint only if the owner has already said to just fix everything y
 - Responsive CSS fixes.
 - Production URL configuration where the intended URL is already defined somewhere in the project.
 - Removing debug output, console noise, and leftover dev UI.
+- Adding timeout, retry, and schema validation (Zod/Pydantic) around LLM model calls.
+- Sanitizing AI-generated markdown outputs before rendering to prevent script injection.
 
 ## Ask first
 
@@ -120,6 +123,8 @@ Skip this checkpoint only if the owner has already said to just fix everything y
 - Removing functionality, even functionality that looks unused.
 - Major dependency replacements.
 - Security changes that visibly alter product behavior.
+- Modifying system prompts, AI decision boundaries, or model providers/versions.
+- Enabling autonomous write/merge actions without human-in-the-loop signoff.
 
 Fix in small, reviewable increments. After each meaningful change, re-run whatever Phase 0 said you can run — catching a broken build immediately is much cheaper than discovering it at the end of a twenty-file pass.
 
@@ -159,6 +164,7 @@ What was runnable here, and what was not. One or two lines.
 | Mobile | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
 | SEO & metadata | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
 | Security | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
+| AI & LLM Guardrails | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
 | Performance | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
 | Backend & API | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
 | Deployment config | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
