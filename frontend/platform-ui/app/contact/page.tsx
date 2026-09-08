@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Mail, MessageSquare, MapPin, Building, Clock } from "lucide-react";
+import { ArrowLeft, Mail, MessageSquare, MapPin, Building, Clock } from "lucide-react"; 
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
