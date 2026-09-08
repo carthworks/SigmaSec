@@ -31,6 +31,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/mode-toggle";
+import { SoundToggle } from "@/components/sound-toggle";
 import { CommandPalette } from "@/components/command-palette";
 import { signOut, useSession } from "next-auth/react";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -195,6 +196,9 @@ function TopBar({ setIsMobileMenuOpen, onOpenCommandPalette, pathname, session, 
             ⌘K
           </kbd>
         </button>
+
+        {/* Audio Notification Cues Toggle */}
+        <SoundToggle />
 
         {/* Dark Mode Toggle */}
         <ModeToggle />

@@ -220,6 +220,30 @@ const FAQS: FAQ[] = [
     category: "general",
     question: "Why do my tags always appear in the same color?",
     answer: "Tag colors are determined by a deterministic hash of the tag text. This means the same tag name ('compliance', 'tech-debt', etc.) always maps to the same color across all findings, all drawers, and all sessions — no configuration required. There are 8 distinct muted color palettes (indigo, emerald, amber, rose, violet, cyan, orange, sky) that tags are distributed across."
+  },
+  {
+    id: "faq-32",
+    category: "general",
+    question: "How do Audio Cues (micro-chimes) work for long-running operations?",
+    answer: "SigmaSec incorporates a browser Web Audio API synthesis engine that provides polite auditory feedback (earcons) when waiting for background tasks: 1) Scan Complete Chime (a soft 3-tone chord when an active scan finishes compiling), 2) AI Recommendation Chime (a cyber-shimmer harmonic ping when LLM enrichment arrives), and 3) Action Success Ping (crisp confirmation when launching scans, opening PRs, or creating Jira tickets). You can mute or unmute audio cues anytime using the Volume icon in the top navigation bar. Your mute preference is automatically saved in your browser's localStorage."
+  },
+  {
+    id: "faq-33",
+    category: "workflow",
+    question: "What does the sparkle indicator in the Findings table mean?",
+    answer: "In the Findings catalog table, findings that have an AI-synthesized 'Plain English Explanation' display a subtle purple/indigo sparkle badge next to their title. Hovering over this indicator reveals a tooltip previewing that a human-readable threat narrative and remediation breakdown are ready. Clicking the row opens the detail drawer where the full explanation and guided fix steps are immediately readable."
+  },
+  {
+    id: "faq-34",
+    category: "scoring",
+    question: "How are the CVSS, EPSS, and Tags table columns resolved and displayed?",
+    answer: "The Findings table includes dedicated columns for deep threat intelligence: CVSS renders color-coded base score badges (Critical 9.0+, High 7.0-8.9, Medium 4.0-6.9), EPSS displays the 30-day exploitation probability percentage alongside its percentile threat tier, and Tags displays deterministic color-coded chips for organization labels. If a scanner provides raw CVE coordinates, the platform automatically queries NVD and FIRST EPSS caches in real time to populate these metrics."
+  },
+  {
+    id: "faq-35",
+    category: "scanning",
+    question: "How do I deploy scanner workers in my own AWS or GCP cloud with the infra/ folder?",
+    answer: "The repository includes an `infra/` folder containing production-grade Terraform configurations for deploying isolated, multi-cloud scanning infrastructure. It provides VPC network definitions, private subnet security groups, and automated runner provisioning for AWS (ECS/EC2) and Google Cloud (Cloud Run/GCE). This allows scanners to run directly inside your private VPCs without exposing internal network endpoints to the public internet."
   }
 ];
 

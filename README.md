@@ -177,12 +177,15 @@ The platform operates across 5 integrated stages:
 ## 🚀 Latest Platform Upgrades & Changelog
 
 ### 🌟 Recent Updates (Latest Release)
+* **Web Audio API Earcon Cues**: Synthesized non-blocking audio micro-chimes for long-running workflows (3-tone scan completion chime, cyber-shimmer AI recommendation arrival, and action confirmation pings) paired with a persistent TopBar mute toggle.
+* **Plain English Explanation Table Indicators**: Findings with generated AI executive summaries now render a subtle purple sparkle indicator in the findings DataGrid, with instant tooltip previews and guided fix breakdowns.
+* **Deep Threat Intelligence DataGrid (CVSS, EPSS & Tags)**: Fully populated and color-coded table columns for NVD CVSS base scores, FIRST EPSS 30-day exploitation percentiles, and deterministic hash-colored tags.
+* **Private Cloud Scanner Infrastructure (`infra/`)**: Production-ready Terraform infrastructure modules for provisioning isolated, zero-egress scanner runner clusters in private VPCs across AWS and Google Cloud (GCP).
+* **Custom Vectorized SVG Brand Identity & Favicon**: Added high-resolution dual-contrast security shield SVG favicon with gradient accenting.
 * **Opengrep SAST Static Code Analysis Integration**: Added native `OpengrepAdapter` (`backend/app/adapters/opengrep.py`) for static analysis AST scanning, ruleset customization, and code vulnerability detection.
 * **Nmap Network Port & Service Scanner Integration**: Added native network scanning adapter (`backend/app/adapters/nmap.py`) enabling port discovery, service enumeration, and open network attack surface assessment.
 * **Live Scan Execution Terminal Streamer**: Embedded real-time terminal output stream for running scanners with ANSI syntax colors, auto-scroll, log search, and `.log` download capabilities.
 * **Automation Run Scripts (`start.bat` / `stop.bat`)**: Added one-click script orchestration to start and stop Docker containers, Celery workers, and the Next.js frontend seamlessly.
-* **Session Expiry & Protected Route Redirects**: Added graceful authentication expiry guards with automatic login redirects and state preservation.
-* **Hero Section & UI Polishing**: Redesigned modern landing page, dark/light theme tokens, badge QA sandbox (`/dev/badges`), and interactive help documentation.
 
 ### 🛡️ Month 3 Updates (Tag System, Performance & Security Hardening)
 * **Finding Tag System & Autocomplete**: Added JSONB GIN-indexed tagging (`POST /findings/{id}/tags`, `GET /findings/tags`), dynamic `djb2` color hashing (8 palettes), and multi-select pill filtering.

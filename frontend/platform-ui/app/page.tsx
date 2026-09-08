@@ -1974,10 +1974,10 @@ export default function HomeLandingPage() {
                     generated change carries an audit trail back to the evidence that produced it.
                   </p>
                   <ul>
-                    <li>Plain-English explanation</li>
-                    <li>Step-by-step remediation</li>
-                    <li>Patch scoped to your findings</li>
-                    <li>Diff preview before merge</li>
+                    <li>Plain-English explanation with table sparkle indicators</li>
+                    <li>Step-by-step remediation with audio completion earcons</li>
+                    <li>NVD CVSS & FIRST EPSS threat intelligence resolution</li>
+                    <li>Patch scoped to your findings with diff preview before merge</li>
                   </ul>
                 </div>
               </Rise>
@@ -2015,7 +2015,8 @@ export default function HomeLandingPage() {
                   <tr>
                     <td>Where does scanning run?</td>
                     <td>
-                      Scanning and reachability analysis run inside your own infrastructure. We receive finding
+                      Scanning and reachability analysis run inside your own infrastructure. We provide native
+                      Terraform modules (`infra/`) for private VPC deployment across AWS and GCP. We receive finding
                       metadata, not your repository.
                     </td>
                     <td><span className="chip now">Available today</span></td>

@@ -36,6 +36,7 @@ export default function DemoGuidePage() {
     prescan: false,
     darkmode: true,
     fullscreen: false,
+    audiocues: true,
   });
 
   const copyToClipboard = (text: string, key: string) => {
@@ -108,13 +109,13 @@ export default function DemoGuidePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {[
               { id: "backend", label: "Backend running (FastAPI + Celery + Redis)", tip: "docker compose up -d" },
               { id: "frontend", label: "Frontend active on localhost:3000", tip: "npm run dev" },
               { id: "login", label: "Logged into test admin account", tip: "Session active" },
               { id: "prescan", label: "1 Pre-warmed scan completed (Fallback data ready)", tip: "Go to Scans" },
               { id: "darkmode", label: "Dark mode active (Maximum contrast & polish)", tip: "TopBar Toggle" },
               { id: "fullscreen", label: "Browser full-screened (F11)", tip: "Zero tab clutter" },
+              { id: "audiocues", label: "Audio Cues active (Volume icon in TopBar)", tip: "Earcon micro-chimes enabled" },
             ].map((item) => (
               <div
                 key={item.id}
@@ -323,28 +324,28 @@ export default function DemoGuidePage() {
               time: "0:00 - 1:00",
               title: "Launch Scan",
               action: "Go to Scans -> New Scan -> Paste testphp.vulnweb.com",
-              say: "We ingest your URL or repo. Behind the scenes, Celery dispatches Nuclei, Trivy, Gitleaks, and Nmap simultaneously in parallel sandboxes.",
+              say: "We ingest your URL or repo with an instant action confirmation ping. Behind the scenes, Celery dispatches Nuclei, Trivy, Gitleaks, Opengrep, and Nmap simultaneously in parallel sandboxes.",
             },
             {
               step: "02",
               time: "1:00 - 2:30",
-              title: "Real-Time Terminal",
-              action: "Watch SSE terminal streaming logs",
-              say: "Real-time streaming over Server-Sent Events. As each CVE is detected, our chord task immediately hits NVD, CISA KEV, and FIRST EPSS for live enrichment.",
+              title: "Real-Time Terminal & Audio Cue",
+              action: "Watch SSE terminal logs until completion chime",
+              say: "Real-time streaming over Server-Sent Events, greeted by a subtle 3-tone earcon chime when complete. As each CVE is found, chord tasks enrich with NVD, CISA KEV, and FIRST EPSS.",
             },
             {
               step: "03",
               time: "2:30 - 4:30",
-              title: "Intelligent Triage",
-              action: "Show Findings table -> filter KEV -> open finding drawer",
-              say: "Notice the red 'EXPLOITED IN WILD' badge. Plain scanners give 800 items. We bubble up the 14 that have active zero-day exploits. Claude gives developer-friendly fix instructions.",
+              title: "Intelligent Triage & AI Sparkles",
+              action: "Show Findings table -> spot Plain English sparkles & CVSS/EPSS",
+              say: "Notice the sparkle indicator on findings with pre-compiled Plain English explanations. Plain scanners emit 800 items; we isolate the 14 actively weaponized exploits with deep threat metrics.",
             },
             {
               step: "04",
               time: "4:30 - 6:30",
-              title: "Compliance & Remediation",
-              action: "Click Compliance Matrix -> Remediation Hub",
-              say: "Technical findings are automatically linked to SOC 2 and PCI-DSS controls with audit readiness scores. Engineers can click 1-click 'Generate Fix PR' or push to Jira.",
+              title: "Compliance & 1-Click Remediation",
+              action: "Click Compliance Matrix -> Remediation Hub -> Fix PR",
+              say: "Technical findings are linked to SOC 2 and PCI-DSS controls. When generating AI mitigations or opening a Fix PR, engineers hear an instant confirmation chime as branches are pushed.",
             },
             {
               step: "05",

@@ -15,6 +15,7 @@ import {
 import { useSession } from "next-auth/react";
 import * as React from "react";
 import { toast } from "sonner";
+import { playActionSuccessSound } from "@/lib/sound-cues";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -229,6 +230,7 @@ export function LaunchScanDialog({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["scans"] });
+      playActionSuccessSound();
       toast.success("Scan Launched Successfully", {
         description: `Scan queued for target ${data.target}.`,
       });

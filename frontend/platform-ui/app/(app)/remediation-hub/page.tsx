@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { playActionSuccessSound } from "@/lib/sound-cues";
 
 interface RemediationFinding {
   id: string;
@@ -97,6 +98,7 @@ export default function RemediationHubPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["remediation-hub"] });
       queryClient.invalidateQueries({ queryKey: ["findings"] });
+      playActionSuccessSound();
       toast.success("Consolidated Pull Request opened!", {
         description: `Consolidated patch opened for review: ${data.pr_url}`,
       });

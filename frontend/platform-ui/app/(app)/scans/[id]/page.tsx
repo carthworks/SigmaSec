@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { playScanCompleteSound, playAiRecommendationSound, playActionSuccessSound } from "@/lib/sound-cues";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -927,6 +928,10 @@ export default function ScanDetailPage({ params }: PageProps) {
   const [selectedTemplate, setSelectedTemplate] = React.useState<"executive" | "technical">("executive");
   const [isExporting, setIsExporting] = React.useState(false);
 
+  // Audio Cue completion guards
+  const hasPlayedCompleteRef = React.useRef(false);
+  const wasRunningRef = React.useRef(false);
+
   // Lifted Finding Details Panel State
   const [selectedFinding, setSelectedFinding] = React.useState<FindingData | null>(null);
   const [open, setOpen] = React.useState(false);
@@ -991,6 +996,7 @@ export default function ScanDetailPage({ params }: PageProps) {
       if (!res.ok) throw new Error(data.detail || "Failed to create ticket");
       
       toast.success(data.message || `Jira ticket created successfully: ${data.issue_key}`, { id: toastId });
+      playActionSuccessSound();
       
       setSelectedFinding((prev) => prev ? { ...prev, jira_issue_key: data.issue_key } : null);
       
@@ -1060,6 +1066,7 @@ export default function ScanDetailPage({ params }: PageProps) {
       if (!res.ok) throw new Error(data.detail || "Failed to create PR");
       
       toast.success(data.message || `Autofix PR #${data.pr_number} successfully opened on GitHub!`, { id: toastId });
+      playActionSuccessSound();
       
       setSelectedFinding((prev) => prev ? { ...prev, pr_url: data.pr_url, pr_status: data.pr_status } : null);
       
@@ -1145,6 +1152,7 @@ export default function ScanDetailPage({ params }: PageProps) {
       const updatedFinding = await res.json();
       
       setSelectedFinding(updatedFinding);
+      playAiRecommendationSound();
       
       queryClient.setQueryData(["scan-findings", id], (oldData: FindingData[] | undefined) => {
         if (!oldData) return [];
@@ -1367,6 +1375,10 @@ export default function ScanDetailPage({ params }: PageProps) {
           setLogs((prev) => [...prev, ...data.logs]);
         }
         if (data.status === "complete" || data.status === "failed" || data.progress_pct === 100) {
+          if ((data.status === "complete" || data.progress_pct === 100) && !hasPlayedCompleteRef.current) {
+            hasPlayedCompleteRef.current = true;
+            playScanCompleteSound();
+          }
           queryClient.invalidateQueries({ queryKey: ["scan-findings", id] });
           queryClient.invalidateQueries({ queryKey: ["scan", id] });
           es.close();
@@ -1393,7 +1405,14 @@ export default function ScanDetailPage({ params }: PageProps) {
   // Sync state if scan finishes or if sse is failed and we poll
   React.useEffect(() => {
     if (scan) {
+      if (scan.status === "running" || scan.status === "pending") {
+        wasRunningRef.current = true;
+      }
       if (scan.status === "complete") {
+        if (wasRunningRef.current && !hasPlayedCompleteRef.current) {
+          hasPlayedCompleteRef.current = true;
+          playScanCompleteSound();
+        }
         setProgressPct(100);
         setCurrentStep("complete");
         queryClient.invalidateQueries({ queryKey: ["scan-findings", id] });

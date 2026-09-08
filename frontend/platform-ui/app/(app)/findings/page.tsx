@@ -36,6 +36,7 @@ import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
+import { playAiRecommendationSound } from "@/lib/sound-cues";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -192,6 +193,7 @@ function FindingsContent() {
       const updatedFinding = await res.json();
       
       setSelectedFinding(updatedFinding);
+      playAiRecommendationSound();
       
       qc.setQueryData(["findings"], (oldData: Finding[] | undefined) => {
         if (!oldData) return [];
@@ -569,6 +571,7 @@ function FindingsContent() {
     },
     onSuccess: (data, variables, context) => {
       qc.invalidateQueries({ queryKey: ["findings"] });
+      playActionSuccessSound();
       toast.success("Jira ticket created successfully!", {
         id: context?.toastId,
         description: `Issue key: ${data.issue_key}`,
@@ -589,7 +592,10 @@ function FindingsContent() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error("Failed to trigger fix PR");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to trigger fix PR");
+      }
       return res.json();
     },
     onMutate: () => {
@@ -597,9 +603,10 @@ function FindingsContent() {
     },
     onSuccess: (data, variables, context) => {
       qc.invalidateQueries({ queryKey: ["findings"] });
-      toast.success("Fix Pull Request opened!", {
+      playActionSuccessSound();
+      toast.success(data.message || "Fix Pull Request opened!", {
         id: context?.toastId,
-        description: "Review automated security fixes in code.",
+        description: data.pr_url ? `PR #${data.pr_number}: ${data.pr_url}` : "Review automated security fixes in code.",
       });
     },
     onError: (e: Error, variables, context) => {
