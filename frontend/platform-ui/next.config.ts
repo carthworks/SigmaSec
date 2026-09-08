@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
 
   // API rewrites: proxy /api/backend/* → FastAPI backend (INTERNAL_API_URL for server-side).
   // Function timeout for Vercel is configured in vercel.json (maxDuration: 60).
