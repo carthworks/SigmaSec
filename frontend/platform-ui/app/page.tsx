@@ -479,473 +479,318 @@ function TickButtons({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HERO SMART APP ANIMATION (Interactive Diagrammatic Pipeline Flow)
-// Visually demonstrates the 6 core diagrammatic steps of SigmaSec:
-// 1. Codebase (Git Repo, Commits, AST Ingestion & Scope Analysis)
-// 2. Scanners (Parallel Fleet: Opengrep, Trivy, Gitleaks, Nuclei, Nmap)
-// 3. CVE Analysis (AST Reachability, CISA KEV & EPSS Threat Intel Filter)
-// 4. Score (Composite Risk Scoring & Dynamic SLA Prioritization Matrix)
-// 5. AI Validation (Claude AI Autonomous Exploit Validation Probe in Sandbox)
-// 6. Remediation (1-Click AutoFix PR Diff, Jira Ticket, CI Passing, Posture Boost)
+// HERO SMART APP ANIMATION: A Unified Intelligence Pipeline (Compact Flow)
+// Designed after the simplified pipeline:
+// 1. DISCOVER ➔ 2. ENRICH ➔ 3. PRIORITIZE ➔ 4. UNDERSTAND ➔ 5. TAKE ACTION
+// A continuous animated energy flow travels along the pipe, illuminating each stage
+// with clear, simple visuals so anyone can immediately understand the platform.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PIPELINE_STAGES = [
+interface PipelineStep {
+  id: string;
+  num: string;
+  title: string;
+  subtitle: string;
+  tag: string;
+  color: string;
+  iconSvg: React.ReactNode;
+  activeDesc: string;
+}
+
+const PIPELINE_STEPS: PipelineStep[] = [
   {
-    id: "codebase",
-    num: "01",
-    label: "Codebase",
-    icon: "📁",
-    shortTitle: "Git & Surface Intake",
-    statusBadge: "github.com/acme/backend-api",
-    terminalLog: "[INGEST] Ingested 142 source files, Dockerfile, and 28 API routes on branch 'main'.",
+    id: "discover",
+    num: "1",
+    title: "DISCOVER",
+    subtitle: "Unified Scanners",
+    tag: "800+ Raw CVEs",
+    color: "#38bdf8", // cyan
+    iconSvg: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 2a10 10 0 0 1 10 10" />
+        <path d="M12 6a6 6 0 0 1 6 6" />
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+      </svg>
+    ),
+    activeDesc: "Scanning 142 repos across code, containers, and ports...",
   },
   {
-    id: "scanners",
-    num: "02",
-    label: "Scanners",
-    icon: "⚡",
-    shortTitle: "5-Engine Fleet",
-    statusBadge: "5 Scanners Parallel",
-    terminalLog: "[ENGINES] Opengrep (SAST), Trivy (SCA), Gitleaks, Nuclei, Nmap completed in 42s.",
+    id: "enrich",
+    num: "2",
+    title: "ENRICH",
+    subtitle: "Threat Intel",
+    tag: "CISA KEV & EPSS",
+    color: "#a855f7", // purple
+    iconSvg: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
+      </svg>
+    ),
+    activeDesc: "Cross-referencing real-world exploit feeds and live KEV lists...",
   },
   {
-    id: "cve_analysis",
-    num: "03",
-    label: "CVE Analysis",
-    icon: "🎯",
-    shortTitle: "AST & Threat Intel",
-    statusBadge: "1,204 ➔ 14 Real Threats",
-    terminalLog: "[INTEL] Filtered 1,190 unreachable false alarms (-98.8% noise). Traced CVE-2023-4863.",
+    id: "prioritize",
+    num: "3",
+    title: "PRIORITIZE",
+    subtitle: "AST Reachability",
+    tag: "Only ~1% Critical",
+    color: "#f59e0b", // amber
+    iconSvg: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+      </svg>
+    ),
+    activeDesc: "AST call-path reachability sieve: 99% false alarm noise dropped!",
   },
   {
-    id: "scoring",
-    num: "04",
-    label: "Score",
-    icon: "📊",
-    shortTitle: "Priority Matrix",
-    statusBadge: "Priority: 9.8 / 10.0 (P0)",
-    terminalLog: "[SCORE] Composite Risk Score 9.8/10.0 calculated (CVSS 8.8 + KEV +0.8 + AST +0.4).",
+    id: "understand",
+    num: "4",
+    title: "UNDERSTAND",
+    subtitle: "Claude AI",
+    tag: "Plain-English Triage",
+    color: "#ec4899", // pink/rose
+    iconSvg: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.86 4 4 0 0 0 1.25 2.94A4 4 0 0 0 6 18h12a4 4 0 0 0-.25-4.2 4 4 0 0 0 1.25-2.94A4 4 0 0 0 16 7V6a4 4 0 0 0-4-4z" />
+        <circle cx="9" cy="12" r="1" fill="currentColor" />
+        <circle cx="15" cy="12" r="1" fill="currentColor" />
+      </svg>
+    ),
+    activeDesc: "Claude AI confirms memory corruption & explains root cause...",
   },
   {
-    id: "ai_validation",
-    num: "05",
-    label: "AI Validate",
-    icon: "🤖",
-    shortTitle: "Claude Sandbox Probe",
-    statusBadge: "Exploit Confirmed",
-    terminalLog: "[AI-AGENT] Safe validation probe reproduced heap buffer overflow in staging sandbox.",
+    id: "action",
+    num: "5",
+    title: "TAKE ACTION",
+    subtitle: "1-Click AutoFix",
+    tag: "PR #402 Ready",
+    color: "#10b981", // emerald
+    iconSvg: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="18" cy="18" r="3" />
+        <circle cx="6" cy="6" r="3" />
+        <path d="M6 9v12" />
+        <path d="M18 9a9 9 0 0 1-9 9" />
+      </svg>
+    ),
+    activeDesc: "AutoFix PR #402 generated with passing CI. Posture score ➔ 88!",
   },
-  {
-    id: "remediation",
-    num: "06",
-    label: "Remediation",
-    icon: "🚀",
-    shortTitle: "1-Click AutoFix PR",
-    statusBadge: "PR #402 Ready · +26 Posture",
-    terminalLog: "[REMEDIATION] Opened PR #402 (Bump libwebp 1.3.2). Created Jira SEC-108. CI passed.",
-  },
-] as const;
+];
 
 function HeroAppAnimation() {
-  const [activeStage, setActiveStage] = React.useState(0);
+  const [activeStep, setActiveStep] = React.useState(0);
   const [isPaused, setIsPaused] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
 
-  const STAGE_DURATION_MS = 5000;
+  const STEP_DURATION_MS = 3200;
 
   React.useEffect(() => {
     if (isPaused) return;
-    const intervalTime = 50;
-    const step = (intervalTime / STAGE_DURATION_MS) * 100;
+    const intervalTime = 40;
+    const stepIncrement = (intervalTime / STEP_DURATION_MS) * 100;
 
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
-          setActiveStage((curr) => (curr + 1) % PIPELINE_STAGES.length);
+          setActiveStep((curr) => (curr + 1) % PIPELINE_STEPS.length);
           return 0;
         }
-        return prev + step;
+        return prev + stepIncrement;
       });
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [isPaused, activeStage]);
+  }, [isPaused, activeStep]);
 
-  const selectStage = (index: number) => {
-    setActiveStage(index);
-    setProgress(0);
-  };
+  const step = PIPELINE_STEPS[activeStep];
 
-  const current = PIPELINE_STAGES[activeStage];
+  // Pipeline positions across a 0 to 100 scale
+  const nodePositions = [10, 30, 50, 70, 90];
+  const currentOrbX =
+    nodePositions[activeStep] +
+    (activeStep < nodePositions.length - 1
+      ? ((nodePositions[activeStep + 1] - nodePositions[activeStep]) * progress) / 100
+      : 0);
 
   return (
     <div
-      className="hero-anim-box"
+      className="pipeline-card"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       role="region"
-      aria-label="Interactive security pipeline diagrammatic flow"
+      aria-label="Unified intelligence pipeline animation"
     >
-      {/* Top Header */}
-      <div className="hero-anim-head">
-        <div className="hero-anim-title">
-          <span className="hero-anim-dot-pulse" />
-          <span>Security Pipeline Flow Simulator</span>
+      {/* ── HEADER ── */}
+      <div className="pipeline-header">
+        <div className="flex items-center gap-2">
+          <span className="pipeline-dot-live" />
+          <span className="pipeline-header-title">
+            SOLUTION: A Unified Intelligence Pipeline
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="hero-anim-stage-badge">{current.statusBadge}</span>
+          <span className="pipeline-step-badge" style={{ borderColor: step.color, color: step.color }}>
+            Step {step.num}: {step.title}
+          </span>
           <button
             type="button"
-            className="hero-anim-ctrl-btn text-[10px]"
+            className="pipeline-ctrl-btn"
             onClick={() => setIsPaused((p) => !p)}
-            title={isPaused ? "Resume auto-rotation" : "Pause auto-rotation"}
+            title={isPaused ? "Resume animation" : "Pause animation"}
           >
-            {isPaused ? "▶ Resume" : "⏸ Pause"}
+            {isPaused ? "▶" : "⏸"}
           </button>
         </div>
       </div>
 
-      {/* Visual Diagrammatic Flow Bar (Node Graph with Connectors) */}
-      <div className="hero-flow-bar" role="tablist" aria-label="Pipeline Stages Flow">
-        {PIPELINE_STAGES.map((st, idx) => {
-          const isActive = idx === activeStage;
-          const isPassed = idx < activeStage;
-          return (
-            <React.Fragment key={st.id}>
+      {/* ── THE ANIMATED PIPELINE RAIL ── */}
+      <div className="pipeline-track-area">
+        {/* SVG Conduit Pipe with Glowing Flowing Laser */}
+        <svg className="pipeline-svg" viewBox="0 0 1000 130" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="pipeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#38bdf8" />
+              <stop offset="25%" stopColor="#a855f7" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="75%" stopColor="#ec4899" />
+              <stop offset="100%" stopColor="#10b981" />
+            </linearGradient>
+
+            <filter id="orbGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Outer Pipe Glow */}
+          <path
+            d="M 100,65 L 900,65"
+            fill="none"
+            stroke="url(#pipeGrad)"
+            strokeWidth="8"
+            strokeOpacity="0.25"
+            strokeLinecap="round"
+          />
+
+          {/* Inner Dark Tube */}
+          <path
+            d="M 100,65 L 900,65"
+            fill="none"
+            stroke="#0d111d"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+
+          {/* Continuous Traveling Energy Beam */}
+          <path
+            d="M 100,65 L 900,65"
+            fill="none"
+            stroke="url(#pipeGrad)"
+            strokeWidth="3.5"
+            strokeDasharray="40,260"
+            className="pipeline-energy-stream"
+          />
+
+          {/* Glowing Energy Orb traversing current position */}
+          <circle
+            cx={`${currentOrbX * 10}`}
+            cy="65"
+            r="8"
+            fill="#ffffff"
+            stroke={step.color}
+            strokeWidth="3"
+            filter="url(#orbGlow)"
+          />
+        </svg>
+
+        {/* 5 Circular Stage Stations */}
+        <div className="pipeline-nodes-row">
+          {PIPELINE_STEPS.map((s, idx) => {
+            const isActive = activeStep === idx;
+            const isPassed = activeStep > idx;
+
+            return (
               <button
+                key={s.id}
                 type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={`hero-flow-node ${isActive ? "is-active" : ""} ${isPassed ? "is-passed" : ""}`}
-                onClick={() => selectStage(idx)}
+                className={`pipeline-node-btn ${isActive ? "is-active" : isPassed ? "is-passed" : ""}`}
+                onClick={() => {
+                  setActiveStep(idx);
+                  setProgress(0);
+                }}
               >
-                <div className="hero-flow-node-icon-wrap">
-                  <span className="hero-flow-node-icon">{st.icon}</span>
-                  <span className="hero-flow-node-num">{st.num}</span>
+                {/* Glowing Circle Icon */}
+                <div
+                  className="pipeline-node-circle"
+                  style={{
+                    borderColor: isActive ? s.color : isPassed ? "#10b981" : "#1e293b",
+                    boxShadow: isActive ? `0 0 16px ${s.color}` : "none",
+                    color: isActive ? s.color : isPassed ? "#34d399" : "#64748b",
+                  }}
+                >
+                  {s.iconSvg}
+                  {/* Step Number Tag */}
+                  <span className="pipeline-node-num" style={{ background: s.color }}>
+                    {s.num}
+                  </span>
                 </div>
-                <span className="hero-flow-node-lbl">{st.label}</span>
-                {isActive && (
-                  <div
-                    className="hero-flow-node-progress"
-                    style={{ width: `${progress}%` }}
-                  />
-                )}
+
+                {/* Stage Title */}
+                <span className={`pipeline-node-title ${isActive ? "text-white font-bold" : "text-slate-400"}`}>
+                  {s.title}
+                </span>
+
+                {/* Micro Subtitle */}
+                <span className="pipeline-node-sub">
+                  {s.subtitle}
+                </span>
+
+                {/* Small Pill Tag */}
+                <span
+                  className="pipeline-node-tag"
+                  style={{
+                    background: isActive ? `${s.color}22` : "rgba(255,255,255,0.04)",
+                    color: isActive ? s.color : "#94a3b8",
+                    borderColor: isActive ? `${s.color}55` : "transparent",
+                  }}
+                >
+                  {s.tag}
+                </span>
               </button>
-              {idx < PIPELINE_STAGES.length - 1 && (
-                <div className={`hero-flow-connector ${isPassed ? "is-passed" : ""} ${isActive ? "is-active" : ""}`}>
-                  <span className="hero-flow-connector-line" />
-                  <span className="hero-flow-connector-arrow">›</span>
-                </div>
-              )}
-            </React.Fragment>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
-      {/* Body Area */}
-      <div className="hero-anim-body">
-        {/* Stage 0: Codebase & Attack Surface Intake */}
-        {activeStage === 0 && (
-          <div className="hero-anim-view" key="stage-0">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11.5px] text-cyan-300 flex items-center gap-2">
-                <span className="text-cyan-400 font-bold">●</span>
-                Source Target: <code className="text-white bg-black/60 px-1.5 py-0.5 border border-slate-800">github.com/acme/backend-api</code>
-              </span>
-              <span className="font-mono text-[10.5px] text-cyan-400 bg-cyan-950/40 px-2 py-0.5 border border-cyan-800/40">
-                Branch: main @ 8f9c2d1
-              </span>
-            </div>
-
-            <div className="hero-anim-codebase-grid">
-              <div className="hero-anim-codebase-card">
-                <div className="hero-anim-codebase-card-hd">
-                  <span>📂 Application Code</span>
-                  <span className="text-cyan-400 font-mono text-[10px]">Python / TypeScript</span>
-                </div>
-                <div className="text-[11.5px] text-slate-300 font-mono mt-1">
-                  142 files · 28 FastAPI endpoints · 4 worker queues
-                </div>
-              </div>
-              <div className="hero-anim-codebase-card">
-                <div className="hero-anim-codebase-card-hd">
-                  <span>🐳 Containers & Infrastructure</span>
-                  <span className="text-purple-400 font-mono text-[10px]">Docker / Helm</span>
-                </div>
-                <div className="text-[11.5px] text-slate-300 font-mono mt-1">
-                  Dockerfile (multi-stage) · 1,048 lockfile dependencies
-                </div>
-              </div>
-            </div>
-
-            <div className="hero-anim-pills mt-3">
-              <span className="hero-anim-pill success">✔ Webhook Sync Active</span>
-              <span className="hero-anim-pill">⚡ AST Graph Indexed</span>
-              <span className="hero-anim-pill">🔒 Zero-Retention Scan Mode</span>
-            </div>
-
-            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
-              <span>Pipeline Trigger: <b className="text-white">git push</b> to production</span>
-              <span className="text-emerald-400">Next ➔ Dispatch Scanners</span>
-            </div>
-          </div>
-        )}
-
-        {/* Stage 1: Parallel Multi-Scanner Fleet */}
-        {activeStage === 1 && (
-          <div className="hero-anim-view" key="stage-1">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11.5px] text-slate-300 flex items-center gap-2">
-                <span className="text-emerald-400 font-bold">●</span>
-                Scanning Engine Fleet: <code className="text-white bg-black/60 px-1.5 py-0.5 border border-slate-800">5 Engines in Parallel</code>
-              </span>
-              <span className="font-mono text-[10.5px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 border border-emerald-800/40">
-                Execution: 42s
-              </span>
-            </div>
-
-            <div className="hero-anim-engine-grid">
-              <div className="hero-anim-engine-row">
-                <div className="hero-anim-engine-name">
-                  <span className="text-cyan-400">⚡ Opengrep (SAST)</span>
-                </div>
-                <div className="hero-anim-engine-desc">
-                  412 AST rules · 32 candidates in source code
-                </div>
-              </div>
-              <div className="hero-anim-engine-row">
-                <div className="hero-anim-engine-name">
-                  <span className="text-purple-400">📦 Trivy (SCA)</span>
-                </div>
-                <div className="hero-anim-engine-desc">
-                  1,048 packages · 18 CVEs in image layers
-                </div>
-              </div>
-              <div className="hero-anim-engine-row">
-                <div className="hero-anim-engine-name">
-                  <span className="text-amber-400">🔑 Gitleaks (Secrets)</span>
-                </div>
-                <div className="hero-anim-engine-desc">
-                  500 commits · 2 leaked credentials flagged
-                </div>
-              </div>
-              <div className="hero-anim-engine-row">
-                <div className="hero-anim-engine-name">
-                  <span className="text-rose-400">🌐 Nuclei (DAST)</span>
-                </div>
-                <div className="hero-anim-engine-desc">
-                  4,200 templates · 3 exposure vectors
-                </div>
-              </div>
-              <div className="hero-anim-engine-row">
-                <div className="hero-anim-engine-name">
-                  <span className="text-emerald-400">📡 Nmap (Ports)</span>
-                </div>
-                <div className="hero-anim-engine-desc">
-                  14 open network ports & service banners
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
-              <span>Total Raw Signals: <b className="text-white">1,204 findings</b></span>
-              <span className="text-amber-400">Next ➔ Deduplicate & Filter</span>
-            </div>
-          </div>
-        )}
-
-        {/* Stage 2: CVE Analysis & AST Reachability (Noise Filter) */}
-        {activeStage === 2 && (
-          <div className="hero-anim-view" key="stage-2">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11.5px] text-amber-300 flex items-center gap-2">
-                <span>🎯 Threat Intelligence & AST Reachability</span>
-              </span>
-              <span className="font-mono text-[10.5px] text-amber-400 bg-amber-950/40 px-2 py-0.5 border border-amber-800/40">
-                -98.8% Noise Dropped
-              </span>
-            </div>
-
-            <div className="hero-anim-card-highlight">
-              <div className="hero-anim-card-title">
-                <span className="text-white">CVE-2023-4863 · Heap Buffer Overflow</span>
-                <span className="text-[10px] font-mono bg-rose-950/70 text-rose-300 border border-rose-800/60 px-2 py-0.5">
-                  CRITICAL
-                </span>
-              </div>
-              <p className="text-[12px] text-slate-300 mt-1">
-                Package: <code className="text-slate-100">libwebp @ 1.3.0</code> in container runtime
-              </p>
-
-              <div className="hero-anim-pills">
-                <span className="hero-anim-pill danger">
-                  🔴 CISA KEV: Exploited in Wild
-                </span>
-                <span className="hero-anim-pill warn">
-                  ⚡ EPSS: 98.4th Percentile
-                </span>
-                <span className="hero-anim-pill success">
-                  ✅ AST: Reachable in /src/image_processor.py:42
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-2.5 bg-black/40 p-2 border border-slate-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
-              <span>Transitive & Dormant: <b className="text-slate-200">1,190 suppressed</b></span>
-              <span className="text-rose-400 font-bold">14 Confirmed Real Threats</span>
-            </div>
-          </div>
-        )}
-
-        {/* Stage 3: Dynamic Risk Scoring Matrix */}
-        {activeStage === 3 && (
-          <div className="hero-anim-view" key="stage-3">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11.5px] text-rose-300 flex items-center gap-2">
-                <span>📊 Composite Risk Scoring & SLA Matrix</span>
-              </span>
-              <span className="font-mono text-[10.5px] text-rose-400 bg-rose-950/40 px-2 py-0.5 border border-rose-800/40">
-                Priority: 9.8 / 10.0
-              </span>
-            </div>
-
-            <div className="hero-anim-card-highlight">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 font-mono text-center">
-                <div className="p-1.5 bg-black/60 border border-slate-800">
-                  <div className="text-[9.5px] text-slate-400 uppercase">CVSS Base</div>
-                  <div className="text-[14px] text-rose-400 font-bold">8.8</div>
-                </div>
-                <div className="p-1.5 bg-black/60 border border-slate-800">
-                  <div className="text-[9.5px] text-slate-400 uppercase">KEV Active</div>
-                  <div className="text-[14px] text-rose-300 font-bold">+0.8</div>
-                </div>
-                <div className="p-1.5 bg-black/60 border border-slate-800">
-                  <div className="text-[9.5px] text-slate-400 uppercase">AST Reachable</div>
-                  <div className="text-[14px] text-amber-300 font-bold">+0.4</div>
-                </div>
-                <div className="p-1.5 bg-black/60 border border-slate-800">
-                  <div className="text-[9.5px] text-slate-400 uppercase">Asset Value</div>
-                  <div className="text-[14px] text-cyan-300 font-bold">+0.3</div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[11.5px] text-slate-300 pt-1">
-                <span>Assigned SLA Tier: <b className="text-rose-400 font-bold">P0 · 7-Day Fix Target</b></span>
-                <span className="text-slate-400 font-mono text-[10.5px]">vs 90-Day Industry Backlog</span>
-              </div>
-            </div>
-
-            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
-              <span>Queue Placement: <b className="text-white">#1 on Engineering Sprint</b></span>
-              <span className="text-purple-400">Next ➔ AI Validation Probe</span>
-            </div>
-          </div>
-        )}
-
-        {/* Stage 4: AI Exploit Validation & Root Cause Analysis */}
-        {activeStage === 4 && (
-          <div className="hero-anim-view" key="stage-4">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11.5px] text-purple-300 flex items-center gap-2">
-                <span>🤖 Claude AI & Active Exploit Validation</span>
-              </span>
-              <span className="font-mono text-[10.5px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 border border-emerald-800/40">
-                Probe Confirmed
-              </span>
-            </div>
-
-            <div className="hero-anim-card-highlight">
-              <div className="flex items-center justify-between font-mono text-[11px] text-slate-300 mb-1.5">
-                <span className="text-emerald-400">✔ Active Validation Probe</span>
-                <span className="text-rose-400 font-bold">+0.5 Confirmed Boost</span>
-              </div>
-              <div className="bg-black/80 p-2 font-mono text-[11px] text-slate-300 border border-slate-800/80">
-                <span className="text-slate-500">$</span> nuclei -target https://api.acme.com/v1/avatar -validate
-                <br />
-                <span className="text-emerald-400">[CONFIRMED] Heap buffer overflow payload reproduced successfully.</span>
-              </div>
-
-              <p className="text-[11.5px] text-slate-300 mt-2 leading-relaxed">
-                <b className="text-white">AI Diagnosis:</b> User-uploaded WebP images bypass validation bounds, triggering arbitrary memory corruption. Immediate patch required.
-              </p>
-            </div>
-
-            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
-              <span>Evidence Attached: <b className="text-white">HTTP Request/Response PCAP</b></span>
-              <span className="text-emerald-400">Next ➔ Generate AutoFix</span>
-            </div>
-          </div>
-        )}
-
-        {/* Stage 5: Automated 1-Click Remediation & Resolution */}
-        {activeStage === 5 && (
-          <div className="hero-anim-view" key="stage-5">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11.5px] text-emerald-400 flex items-center gap-2">
-                <span>🚀 Automated 1-Click Remediation</span>
-              </span>
-              <span className="font-mono text-[10.5px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 border border-emerald-800/40">
-                Fix Ready
-              </span>
-            </div>
-
-            <div className="hero-anim-card-highlight">
-              <div className="flex items-center justify-between font-mono text-[11.5px] text-white font-bold">
-                <span>🔀 Pull Request #402</span>
-                <span className="text-emerald-400 text-[10px] font-mono border border-emerald-800/60 bg-emerald-950/60 px-2 py-0.5">
-                  CI Passing
-                </span>
-              </div>
-              <p className="text-[11.5px] text-slate-300 mt-0.5">
-                [SigmaSec AutoFix] Upgrade libwebp to 1.3.2 to resolve CVE-2023-4863
-              </p>
-
-              <pre className="mt-2 p-2 bg-black/80 border border-slate-800 font-mono text-[11px] text-slate-300 leading-snug">
-                <span className="text-rose-400 block">- libwebp==1.3.0</span>
-                <span className="text-emerald-400 block">+ libwebp==1.3.2  # Fixes CVE-2023-4863</span>
-              </pre>
-
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="hero-anim-pill">🎟️ Jira SEC-108</span>
-                <span className="hero-anim-pill">💬 Slack Notified</span>
-                <span className="hero-anim-pill success">📈 Posture: 68 ➔ 94 (+26)</span>
-              </div>
-            </div>
-
-            <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-800/60">
-              <span>Action: <b className="text-emerald-400 font-bold">Ready to Merge</b></span>
-              <span className="text-slate-400">Loop ➔ Next Code Commit</span>
-            </div>
-          </div>
-        )}
-
-        {/* Terminal Log Ticker */}
-        <div className="hero-anim-term-ticker">
-          <span className="text-emerald-400 font-mono text-[10px] shrink-0">TERMINAL&gt;</span>
-          <span className="text-slate-300 font-mono text-[11px]">{current.terminalLog}</span>
-        </div>
-
-        {/* Controls Footer */}
-        <div className="hero-anim-ctrls">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="hero-anim-ctrl-btn"
-              onClick={() => selectStage((activeStage - 1 + PIPELINE_STAGES.length) % PIPELINE_STAGES.length)}
-            >
-              ← Prev
-            </button>
-            <button
-              type="button"
-              className="hero-anim-ctrl-btn"
-              onClick={() => selectStage((activeStage + 1) % PIPELINE_STAGES.length)}
-            >
-              Next →
-            </button>
-          </div>
-          <span className="font-mono text-[10px] text-slate-500">
-            Hover to pause · Step {activeStage + 1} of {PIPELINE_STAGES.length}
+      {/* ── LIVE ACTION BAR (Explains what is happening right now) ── */}
+      <div className="pipeline-live-feed">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <span className="pipeline-pulse-badge" style={{ background: step.color }}>
+            ACTION
           </span>
+          <span className="pipeline-feed-text">
+            {step.activeDesc}
+          </span>
+        </div>
+      </div>
+
+      {/* ── BOTTOM OUTCOMES (Simple & Impactful) ── */}
+      <div className="pipeline-outcomes-footer">
+        <div className="pipeline-kpi-chip">
+          <span className="kpi-bullet" />
+          <span><b>-99% Noise Dropped</b> (Only ~1% critical)</span>
+        </div>
+        <div className="pipeline-kpi-chip">
+          <span className="kpi-bullet purple" />
+          <span><b>Claude AI Verified</b> (Zero false alarms)</span>
+        </div>
+        <div className="pipeline-kpi-chip highlight">
+          <span className="kpi-score">88</span>
+          <span><b>Posture Score</b> · SOC 2 Ready</span>
         </div>
       </div>
     </div>
@@ -1128,144 +973,250 @@ const LP_CSS = `
 .lp .assur li{display:flex;align-items:center;gap:7px}
 .lp .assur li::before{content:"";width:5px;height:5px;background:var(--ink);flex:none}
 
-/* hero animation box */
-.lp .hero-anim-box{
-  position:relative;background:var(--dark-2);border:1px solid var(--dark-rule);
-  box-shadow:0 24px 48px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
-  overflow:hidden;border-radius:2px;
-}
-.lp .hero-anim-head{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:12px 16px;background:var(--dark);border-bottom:1px solid var(--dark-rule);
-}
-.lp .hero-anim-title{
-  display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;
-  letter-spacing:.08em;text-transform:uppercase;color:var(--dark-tx);
-}
-.lp .hero-anim-dot-pulse{
-  width:7px;height:7px;border-radius:50%;background:#10b981;
-  box-shadow:0 0 8px #10b981;animation:lpPulseDot 2s infinite ease-in-out;
-}
-@keyframes lpPulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.85)}}
-.lp .hero-anim-stage-badge{
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--dark-tx-2);
-  background:rgba(255,255,255,0.05);padding:2px 8px;border:1px solid var(--dark-rule);
+/* ── A UNIFIED INTELLIGENCE PIPELINE (Compact Flow Animation) ── */
+.lp .pipeline-card {
+  position: relative;
+  background: linear-gradient(145deg, #0b0f19 0%, #111827 100%);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 8px;
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.7), 0 0 24px -6px rgba(56, 189, 248, 0.15);
+  overflow: hidden;
+  margin-top: 6px;
 }
 
-/* diagrammatic flow bar */
-.lp .hero-flow-bar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 12px;background:rgba(0,0,0,0.35);border-bottom:1px solid var(--dark-rule);
-  overflow-x:auto;scrollbar-width:none;gap:4px;
+/* Header */
+.lp .pipeline-header {
+  padding: 8px 14px;
+  background: rgba(5, 8, 16, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
-.lp .hero-flow-bar::-webkit-scrollbar{display:none}
-.lp .hero-flow-node{
-  position:relative;background:transparent;border:1px solid transparent;padding:6px 8px;
-  font-family:var(--mono);font-size:10.5px;color:var(--dark-tx-2);cursor:pointer;
-  transition:all .2s ease;display:flex;flex-direction:column;align-items:center;gap:2px;
-  flex:1;min-width:64px;border-radius:2px;
+.lp .pipeline-dot-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  animation: lpPulseDot 1.8s infinite ease-in-out;
 }
-.lp .hero-flow-node:hover{color:var(--dark-tx);background:rgba(255,255,255,0.02);border-color:var(--dark-rule)}
-.lp .hero-flow-node.is-active{color:#fff;background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15)}
-.lp .hero-flow-node.is-passed{color:var(--dark-tx);opacity:0.8}
-.lp .hero-flow-node-icon-wrap{
-  display:flex;align-items:center;gap:4px;
+.lp .pipeline-header-title {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #f8fafc;
+  text-transform: uppercase;
 }
-.lp .hero-flow-node-icon{font-size:12px}
-.lp .hero-flow-node-num{font-size:9.5px;color:var(--dark-tx-2);opacity:0.7}
-.lp .hero-flow-node.is-active .hero-flow-node-num{color:#38bdf8}
-.lp .hero-flow-node-lbl{font-size:10.5px;white-space:nowrap}
-.lp .hero-flow-node-progress{
-  position:absolute;bottom:-1px;left:0;height:2px;background:var(--clay);
-  transition:width .1s linear;
+.lp .pipeline-step-badge {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1.5px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+  background: rgba(0, 0, 0, 0.4);
+  text-transform: uppercase;
 }
-.lp .hero-flow-node.is-active .hero-flow-node-progress{
-  background:#38bdf8;box-shadow:0 0 6px #38bdf8;
+.lp .pipeline-ctrl-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  font-size: 9px;
+  padding: 2px 6px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all .15s;
 }
-.lp .hero-flow-connector{
-  display:flex;align-items:center;justify-content:center;color:var(--dark-rule);
-  font-family:var(--mono);font-size:12px;font-weight:bold;user-select:none;flex:none;
-}
-.lp .hero-flow-connector.is-passed{color:#38bdf8}
-.lp .hero-flow-connector.is-active{color:#fff;animation:lpPulseArrow 1.2s infinite ease-in-out}
-@keyframes lpPulseArrow{0%,100%{opacity:1;transform:translateX(0)}50%{opacity:0.4;transform:translateX(2px)}}
-.lp .hero-flow-connector-line{display:none}
-
-.lp .hero-anim-body{
-  padding:18px 20px;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;
-}
-.lp .hero-anim-view{
-  animation:lpAnimFadeIn .3s ease both;
-}
-@keyframes lpAnimFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
-/* codebase stage styles */
-.lp .hero-anim-codebase-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;
-}
-@media(max-width:640px){.lp .hero-anim-codebase-grid{grid-template-columns:1fr}}
-.lp .hero-anim-codebase-card{
-  background:#090C0F;border:1px solid var(--dark-rule);padding:10px 12px;
-}
-.lp .hero-anim-codebase-card-hd{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
-  font-family:var(--display);font-size:12.5px;color:#fff;font-weight:600;
+.lp .pipeline-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
-.lp .hero-anim-engine-grid{
-  display:grid;grid-template-columns:1fr;gap:6px;margin-top:10px;
+/* Track Area */
+.lp .pipeline-track-area {
+  position: relative;
+  padding: 12px 6px 14px;
+  min-height: 125px;
+  display: flex;
+  align-items: center;
 }
-.lp .hero-anim-engine-row{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:6px 10px;background:#090C0F;border:1px solid var(--dark-rule);
-  font-family:var(--mono);font-size:11px;
+.lp .pipeline-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
-.lp .hero-anim-engine-name{
-  display:flex;align-items:center;gap:8px;color:#fff;font-weight:600;
+.lp .pipeline-energy-stream {
+  animation: lpPipelineFlow 2.8s linear infinite;
 }
-.lp .hero-anim-engine-desc{
-  color:var(--dark-tx-2);font-size:10.5px;
+@keyframes lpPipelineFlow {
+  from { stroke-dashoffset: 300; }
+  to { stroke-dashoffset: 0; }
 }
-.lp .hero-anim-card-highlight{
-  background:#090C0F;border:1px solid var(--dark-rule);padding:12px 14px;margin-top:10px;
+
+/* Nodes Row */
+.lp .pipeline-nodes-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
 }
-.lp .hero-anim-card-title{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  font-family:var(--display);font-size:13.5px;color:#fff;font-weight:600;
+.lp .pipeline-node-btn {
+  background: transparent;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  padding: 4px 2px;
+  border-radius: 4px;
+  transition: transform .18s;
 }
-.lp .hero-anim-pills{
-  display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;
+.lp .pipeline-node-btn:hover {
+  transform: translateY(-2px);
 }
-.lp .hero-anim-pill{
-  font-family:var(--mono);font-size:10px;padding:3px 7px;border:1px solid var(--dark-rule);
-  background:rgba(255,255,255,0.03);color:var(--dark-tx);
+.lp .pipeline-node-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #090d16;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all .25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.lp .hero-anim-pill.danger{
-  border-color:rgba(163,43,28,0.5);color:#E8897C;background:rgba(163,43,28,0.12);
+.lp .pipeline-node-btn.is-active .pipeline-node-circle {
+  transform: scale(1.1);
 }
-.lp .hero-anim-pill.success{
-  border-color:rgba(16,185,129,0.4);color:#6FBF9B;background:rgba(16,185,129,0.09);
+.lp .pipeline-node-num {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: bold;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 5px rgba(0,0,0,0.6);
 }
-.lp .hero-anim-pill.warn{
-  border-color:rgba(145,96,8,0.5);color:#FBBF24;background:rgba(145,96,8,0.12);
+.lp .pipeline-node-title {
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  margin-top: 6px;
+  transition: color .15s;
 }
-.lp .hero-anim-term-ticker{
-  margin-top:14px;padding:8px 11px;background:#040608;border:1px solid var(--dark-rule);
-  font-family:var(--mono);font-size:10.5px;color:#94a3b8;display:flex;align-items:center;
-  gap:10px;overflow:hidden;white-space:nowrap;
+.lp .pipeline-node-sub {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: #64748b;
+  margin-top: 1px;
+  white-space: nowrap;
 }
-.lp .hero-anim-term-ticker span{
-  overflow:hidden;text-overflow:ellipsis;
+.lp .pipeline-node-tag {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid;
+  margin-top: 4px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
 }
-.lp .hero-anim-ctrls{
-  display:flex;align-items:center;justify-content:space-between;margin-top:12px;
-  padding-top:10px;border-top:1px solid var(--dark-rule);font-family:var(--mono);font-size:11px;color:var(--dark-tx-2);
+
+/* Live Action Bar */
+.lp .pipeline-live-feed {
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
-.lp .hero-anim-ctrl-btn{
-  background:transparent;border:0;color:var(--dark-tx-2);cursor:pointer;padding:3px 7px;
-  font-family:var(--mono);font-size:11px;transition:color .15s;
+.lp .pipeline-pulse-badge {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #ffffff;
+  padding: 1.5px 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
 }
-.lp .hero-anim-ctrl-btn:hover{color:#fff}
+.lp .pipeline-feed-text {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bottom Outcomes Bar */
+.lp .pipeline-outcomes-footer {
+  padding: 7px 12px;
+  background: #060910;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lp .pipeline-kpi-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: #94a3b8;
+}
+.lp .pipeline-kpi-chip b {
+  color: #f1f5f9;
+}
+.lp .kpi-bullet {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+}
+.lp .kpi-bullet.purple {
+  background: #a855f7;
+}
+.lp .pipeline-kpi-chip.highlight {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: #34d399;
+}
+.lp .kpi-score {
+  font-weight: 800;
+  color: #34d399;
+  font-size: 11px;
+}
+
+@media (max-width: 680px) {
+  .lp .pipeline-nodes-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .lp .pipeline-svg {
+    display: none;
+  }
+}
 
 /* sieve */
 .lp .sieve-band{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
@@ -1567,7 +1518,7 @@ export default function HomeLandingPage() {
           <div className="wrap">
             <div className="hero-grid">
               <Rise>
-                <p className="eyebrow">Pilot deployment · 20 assets · week of 17 Aug 2026</p>
+                <p className="eyebrow">Enterprise Early Access · Continuous Exposure Management</p>
 
                 <h1 className="hero-slot">
                   <span key={heroSeq} className={rotating ? "hero-word anim" : "hero-word"}>

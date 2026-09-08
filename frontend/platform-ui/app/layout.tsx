@@ -15,9 +15,71 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://sigmasec.ai";
+
 export const metadata: Metadata = {
-  title: "SigmaSec — AI Security Posture Intelligence Platform",
-  description: "AI-augmented vulnerability management and security posture intelligence.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "SigmaSec — AI Security Posture Intelligence Platform",
+    template: "%s | SigmaSec",
+  },
+  description:
+    "Unified vulnerability scanning, AST call-graph reachability analysis, real-world exploit validation, and autonomous remediation pull requests.",
+  keywords: [
+    "Application Security",
+    "ASPM",
+    "AST Reachability",
+    "Vulnerability Management",
+    "Opengrep",
+    "Trivy",
+    "Nuclei",
+    "Gitleaks",
+    "Automated Remediation",
+  ],
+  authors: [{ name: "SigmaSec Security Team" }],
+  creator: "SigmaSec",
+  publisher: "SigmaSec",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteUrl,
+    title: "SigmaSec — From Security Noise to Actionable Intelligence",
+    description:
+      "Stop triaging noise. Start fixing what is exploitable. Automated AST reachability analysis and 1-click remediation pull requests.",
+    siteName: "SigmaSec",
+    images: [
+      {
+        url: "/Unified_Security_Intelligence_Workflow.png",
+        width: 1200,
+        height: 630,
+        alt: "SigmaSec Security Intelligence Pipeline",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SigmaSec — From Security Noise to Actionable Intelligence",
+    description:
+      "Stop triaging noise. Start fixing what is exploitable. Automated AST reachability analysis and 1-click remediation.",
+    images: ["/Unified_Security_Intelligence_Workflow.png"],
+    creator: "@sigmasec",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
