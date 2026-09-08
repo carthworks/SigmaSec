@@ -1,550 +1,184 @@
 ---
 name: production-web-app-launch
-description: Audit and implement production-readiness requirements across websites and web apps before launch. Use for any web app, website, SaaS, dashboard, landing page, ecommerce site, portfolio, or full-stack web project when preparing for launch, deployment, public release, or a production-readiness review.
+description: Audit and fix production-readiness gaps in websites and web apps — accessibility, SEO, metadata, security, forms, errors, mobile, deployment config, and operational concerns. Use this whenever someone is preparing a web project for launch, deployment, or public release, and also when they say things like "is this ready to ship", "can I go live", "review before I publish", "pre-launch check", or ask for a production readiness review — even if they never use the word "audit". Applies to static sites, React/Next/Vue/Angular apps, full-stack apps, SaaS products, dashboards, ecommerce, landing pages, and portfolios, and to already-live sites being reviewed after the fact.
 ---
 
-# Production Web App Launch Skill
+# Production Web App Launch
 
 ## Mission
 
-Take the web app from "works locally" to "ready for real users."
+Take a web project from "works locally" to "ready for real users."
 
-Do not merely produce a checklist. Inspect the actual project, identify gaps, implement fixes where safe, and verify the result.
+Inspect the actual project, find real gaps, fix what is safe to fix, verify the result, and be precise about what you could not verify. A report full of confident PASS marks that nobody actually tested is worse than no report — it converts unknown risk into false confidence.
 
-Apply this skill to:
-- Static websites
-- React / Next.js / Vue / Angular apps
-- Full-stack web applications
-- SaaS products
-- Dashboards
-- E-commerce sites
-- Landing pages
-- Portfolios
-- Internal web tools that may become public
+## The four states
 
-## Core behavior
+Every finding in this audit resolves to exactly one of these. This vocabulary drives the whole workflow and the final report:
 
-1. Inspect the existing project before changing anything.
-2. Detect the framework, build system, routing, deployment target, package manager, and existing configuration.
-3. Reuse the project's existing conventions instead of introducing unnecessary dependencies.
-4. Implement fixes, don't just describe them.
-5. Never invent legal/business information such as company identity, address, refund terms, retention periods, or contact details. If required information is unknown, add a clearly marked TODO or ask the owner.
-6. Never expose secrets, API keys, credentials, tokens, private URLs, or sensitive environment variables.
-7. Do not make destructive changes without explicit approval.
-8. After implementation, run the available tests, linting, type checks, and production build.
-9. Report what was implemented, what was verified, and what still requires human/business input.
+| State | Meaning |
+|---|---|
+| **VERIFIED** | Implemented and actually exercised — a command ran, a page loaded, a test passed. |
+| **IMPLEMENTED, UNVERIFIED** | Code changed, but you had no way to exercise it in this environment. |
+| **NOT IMPLEMENTED** | A real gap. Carries a severity. |
+| **NEEDS HUMAN DECISION** | Blocked on business, legal, or product judgment you must not invent. |
+| **N/A** | Genuinely does not apply to this project shape. Say why in one clause. |
+
+Never report VERIFIED for something you reasoned about but did not run. If you inspected code and it looks correct but nothing executed, that is IMPLEMENTED, UNVERIFIED.
+
+## Non-negotiables
+
+These hold in every phase:
+
+- **Never invent legal or business facts.** Company identity, address, refund terms, retention periods, support contacts, pricing. Unknown means a marked TODO or a question, never a plausible-sounding placeholder.
+- **Never print secret values.** Not API keys, tokens, credentials, connection strings, or the contents of environment variables — not in the report, not in logs, not in commit messages. Naming that a variable exists is fine; showing its value is not.
+- **Never weaken a security control to make a feature work.** Flag the conflict instead.
+- **No destructive changes without explicit approval.** Schema migrations, deletions, dependency swaps, infra changes.
 
 ---
 
-# Launch Readiness Audit
+# Phase 0 — Capability detection
 
-Check every applicable category below.
+Do this first, before reading any reference file. It determines what you can honestly claim later.
 
-## 1. Legal, privacy, and trust
+Establish, concretely:
 
-Check:
-- Privacy Policy page exists and is reachable.
-- Terms of Service / Terms & Conditions exists where applicable.
-- Cookie/privacy consent is implemented when legally required.
-- Data collection is explained accurately.
-- Contact/support information is available where appropriate.
-- Refund, cancellation, shipping, or subscription policies exist when relevant.
-- No misleading claims or placeholder legal text remain.
+- **Build**: is there a production build command, and does it run here?
+- **Tests / lint / typecheck**: configured? runnable?
+- **Dev server**: can the app actually start in this environment?
+- **Headless browser**: is Playwright or Puppeteer installed, or installable? Without one, viewport testing, cross-browser checks, console-error inspection, and click-through smoke tests are *not available to you*.
+- **Network**: can you reach a deployed URL, if one exists?
+- **Live deployment**: is there a production URL to inspect, or only source?
 
-Important:
-Legal requirements depend on jurisdiction and product behavior. Do not claim legal compliance merely because pages exist.
+Write this down before proceeding. Every check in the reference files falls into one of two buckets given this list: things you can execute, and things you can only read the source for. Mixing them up is the main failure mode of this skill.
 
-## 2. Clear conversion and CTA
-
-Check:
-- Every important page has an obvious primary action.
-- CTA wording is specific and meaningful.
-- Navigation leads users toward the intended action.
-- Forms explain what happens after submission.
-- Success and error states are clear.
-- No dead-end pages exist.
-
-## 3. FAQ and user guidance
-
-Check:
-- Frequently expected questions are answered.
-- Pricing, onboarding, account behavior, cancellation, delivery, support, and limitations are explained when applicable.
-- Empty states and first-use states explain what the user should do next.
-
-## 4. SEO fundamentals
-
-Check:
-- Unique `<title>` for important pages.
-- Useful meta description.
-- Correct heading hierarchy.
-- Canonical URL where appropriate.
-- `robots.txt`.
-- `sitemap.xml`.
-- Clean, descriptive URLs.
-- No accidental `noindex` on production pages.
-- Open Graph/social metadata.
-- Twitter/X card metadata where useful.
-- Structured data/schema markup where appropriate.
-- Search-engine-visible content is meaningful.
-- Duplicate content is minimized.
-
-Do not blindly add SEO text just to increase keyword density.
-
-## 5. Metadata
-
-For every important route check:
-- Title
-- Description
-- Canonical URL
-- Open Graph title
-- Open Graph description
-- Open Graph image
-- Social card metadata
-- Favicon
-- Theme color where appropriate
-
-Use route-specific metadata rather than copying one generic title everywhere.
-
-## 6. Social sharing
-
-Check:
-- Open Graph metadata.
-- Social preview image.
-- Correct title/description.
-- Absolute URLs where required.
-- Preview image dimensions and readability.
-- No broken or placeholder social image.
-
-## 7. Favicon and app identity
-
-Check:
-- Favicon exists.
-- Apple/touch icon where appropriate.
-- PWA icons if the app is a PWA.
-- Browser title and branding are consistent.
-- No framework/default favicon remains.
-
-## 8. Accessibility
-
-Perform a practical accessibility audit:
-- Semantic HTML.
-- Keyboard navigation.
-- Visible focus states.
-- Correct labels for inputs.
-- Accessible buttons and links.
-- Form errors associated with fields.
-- Images have meaningful alt text when informative.
-- Decorative images use appropriate empty alt text.
-- Color contrast is reasonable.
-- Do not rely on color alone.
-- Modal/dialog focus behavior.
-- Skip navigation where useful.
-- Heading hierarchy.
-- ARIA only when semantic HTML is insufficient.
-- Touch targets are usable on mobile.
-- Reduced-motion preference is respected where animations are significant.
-
-Do not write meaningless alt text such as "image" or stuff keywords into alt attributes.
-
-## 9. Responsive/mobile experience
-
-Test at minimum:
-- Small phone width.
-- Large phone width.
-- Tablet width.
-- Desktop width.
-
-Check:
-- No horizontal overflow.
-- Navigation works.
-- Menus work.
-- Tables remain usable.
-- Forms are usable.
-- Buttons are tappable.
-- Modals fit the viewport.
-- Text does not overlap.
-- Images scale correctly.
-- Sticky/fixed elements do not cover content.
-- Keyboard does not cause unusable layouts.
-
-## 10. Forms
-
-For every form:
-- Correct input types.
-- Labels.
-- Required-field handling.
-- Client-side validation.
-- Server-side validation where applicable.
-- Useful error messages.
-- Loading/submission state.
-- Duplicate-submit prevention.
-- Success state.
-- Failure state.
-- Spam/rate-limit protection where appropriate.
-- Sensitive data is handled safely.
-- No secrets are embedded in client-side code.
-
-## 11. Error handling
-
-Check:
-- Custom 404 page.
-- Useful 500/error boundary behavior.
-- API errors are handled.
-- Network failures are handled.
-- Empty states exist.
-- Loading states exist.
-- Retry behavior exists where appropriate.
-- Authentication/session expiry is handled.
-- Errors do not expose stack traces, secrets, database details, or internal architecture.
-
-## 12. Broken links and routes
-
-Check:
-- Internal links.
-- Navigation links.
-- Footer links.
-- CTA links.
-- Buttons that navigate.
-- Dynamic routes.
-- External links.
-- Images/assets.
-- API endpoints referenced by the frontend.
-
-Remove or fix:
-- 404 links.
-- Placeholder `#` links where they should navigate.
-- Dead buttons.
-- Routes that render blank screens.
-- Links pointing to development URLs.
-
-## 13. Security
-
-Inspect for common web security problems:
-- Secrets committed to source control.
-- API keys in frontend bundles.
-- Unsafe HTML injection.
-- Unsanitized user input.
-- Missing authorization checks.
-- Client-only authorization.
-- Insecure direct object references.
-- Weak password handling.
-- Missing CSRF protections where applicable.
-- Unsafe redirects.
-- File upload vulnerabilities.
-- Excessive API exposure.
-- Debug endpoints.
-- Verbose production errors.
-- Insecure CORS configuration.
-- Missing security headers where applicable.
-
-Do not weaken security controls merely to make functionality work.
-
-## 14. Authentication and authorization
-
-If authentication exists:
-- Login/logout works.
-- Session persistence works.
-- Session expiry works.
-- Protected routes are actually protected server-side.
-- Unauthorized users cannot access protected APIs directly.
-- Role/permission checks happen on the server.
-- Password reset flow is safe.
-- Account deletion behavior is handled where applicable.
-- OAuth callback/redirect URLs are production-safe.
-
-## 15. Privacy and analytics
-
-If analytics exists:
-- Tracking code is configured for production.
-- Development/test traffic is not accidentally mixed with production analytics.
-- Consent requirements are respected where applicable.
-- Personal/sensitive information is not accidentally sent to analytics.
-- Events have meaningful names.
-- Important conversion events are tracked.
-- Error monitoring does not leak secrets or sensitive data.
-
-## 16. Performance
-
-Check:
-- Production build succeeds.
-- Images are optimized.
-- Images have appropriate dimensions and lazy loading where useful.
-- Fonts are not unnecessarily blocking.
-- JavaScript bundles are reasonable.
-- Code splitting/lazy loading is used where it provides value.
-- Third-party scripts are minimized.
-- Large dependencies are identified.
-- Caching is sensible.
-- API requests are not unnecessarily duplicated.
-- Loading states prevent perceived slowness.
-- Core user flows are responsive.
-
-Do not optimize blindly. Measure or inspect bundle/build output when available.
-
-## 17. Web platform / HTTP behavior
-
-Check where applicable:
-- HTTPS in production.
-- Correct redirects.
-- Secure cookies.
-- Appropriate `SameSite` behavior.
-- HSTS when appropriate.
-- Content Security Policy where practical.
-- `X-Content-Type-Options`.
-- Referrer policy.
-- Permissions policy.
-- Cache headers.
-- Compression.
-- Correct MIME types.
-- No mixed content.
-
-## 18. Production configuration
-
-Check:
-- Production environment variables.
-- No hardcoded localhost URLs.
-- No development API endpoints.
-- Correct public base URL.
-- Correct API URL.
-- Correct OAuth URLs.
-- Correct CORS origins.
-- Production database configuration.
-- Logging configuration.
-- Error monitoring.
-- Build/deploy scripts.
-- Node/runtime version compatibility.
-- Environment-specific configuration.
-
-Never print secret environment variable values in the audit report.
-
-## 19. Database and backend reliability
-
-For applications with a backend:
-- Database migrations are reproducible.
-- Production schema is compatible with application code.
-- Connection configuration is production-safe.
-- Important queries are reasonable.
-- User input is validated.
-- Transactions are used where necessary.
-- Error handling does not corrupt state.
-- Rate limiting exists for sensitive endpoints where appropriate.
-- Background jobs have failure handling.
-- Health checks exist where appropriate.
-
-## 20. API quality
-
-Check:
-- Authentication/authorization.
-- Input validation.
-- Output validation where useful.
-- Correct HTTP status codes.
-- Consistent error format.
-- Rate limiting for abuse-prone endpoints.
-- Pagination for potentially large collections.
-- Timeouts.
-- Retries only where safe.
-- No accidental exposure of internal fields.
-- API documentation where appropriate.
-
-## 21. Deployment and infrastructure
-
-Check:
-- Production build command.
-- Start command.
-- Deployment configuration.
-- Required environment variables documented.
-- Domain configuration.
-- HTTPS.
-- Health check.
-- Rollback path.
-- Database migration strategy.
-- Static asset handling.
-- Serverless/runtime limits where applicable.
-- Cron/background jobs where applicable.
-
-## 22. PWA/app-like features
-
-If the project is intended to behave like an installable web app:
-- Web app manifest.
-- App icons.
-- Theme/background colors.
-- Service worker.
-- Offline behavior.
-- Installability.
-- Cache strategy.
-- Update strategy.
-
-Do not add PWA complexity if the product does not need it.
-
-## 23. Content quality
-
-Check:
-- No Lorem Ipsum.
-- No "TODO" visible to users.
-- No fake testimonials.
-- No placeholder phone numbers/emails.
-- No dummy pricing.
-- No accidental developer language.
-- No inconsistent terminology.
-- Grammar and spelling are acceptable.
-- Dates, currency, units, and contact details are consistent.
-- Empty states sound intentional.
-
-## 24. UI polish
-
-Check:
-- Consistent spacing.
-- Typography hierarchy.
-- Button states.
-- Hover states.
-- Focus states.
-- Disabled states.
-- Loading states.
-- Error states.
-- Success states.
-- Empty states.
-- Skeletons where useful.
-- Consistent border/radius/shadow conventions.
-- No visual clipping.
-- No accidental debug UI.
-- No browser-native-looking unfinished components where custom UI is expected.
-
-## 25. Observability
-
-For production apps:
-- Error monitoring.
-- Server logs.
-- Important application events.
-- Health endpoint where useful.
-- Performance monitoring where appropriate.
-- Alerts for critical failures.
-- No secrets or sensitive personal data in logs.
-
-## 26. Backup and recovery
-
-For apps with persistent data:
-- Database backups.
-- Restore procedure.
-- Migration rollback strategy.
-- Critical uploaded-file backup strategy.
-- Recovery ownership is known.
-
-Do not claim backups exist unless they are actually configured.
-
-## 27. Browser compatibility
-
-Test important flows in modern:
-- Chromium-based browser.
-- Firefox.
-- Safari/WebKit where available.
-
-Check:
-- Layout.
-- Forms.
-- Authentication.
-- Modals.
-- File uploads.
-- Clipboard.
-- Web APIs.
-- CSS features.
-
-## 28. Final launch smoke test
-
-Before declaring launch-ready, verify the complete user journey:
-
-1. Open production/home page.
-2. Navigate through primary navigation.
-3. Open the primary CTA.
-4. Submit important forms.
-5. Test validation failures.
-6. Test successful submission.
-7. Test authentication if present.
-8. Test protected pages.
-9. Test logout.
-10. Test important CRUD operations.
-11. Test refresh/deep links.
-12. Test mobile layout.
-13. Test 404.
-14. Check browser console for unexpected errors.
-15. Check network requests for failed calls.
-16. Run production build.
-17. Run tests/lint/typecheck if available.
+If a whole category is unexecutable — say, cross-browser testing with no browser available — do not quietly skip it and do not describe it as if you did it. Report it as NOT VERIFIED with the reason, and tell the owner what they need to run themselves.
 
 ---
 
-# Implementation Rules
+# Phase 1 — Detect project shape and route
 
-When a problem is found:
+Identify: framework, build system, router, package manager, styling approach, deployment target, whether a backend exists, whether auth exists, whether a database exists, whether the site is public-facing or internal.
 
-### Safe to implement automatically
-- Missing metadata.
-- Missing favicon wiring when assets already exist.
-- Basic sitemap/robots configuration.
-- Missing semantic labels.
-- Obvious broken internal links.
-- Missing loading/error/empty states when the implementation is straightforward.
-- Accessibility improvements that preserve intended behavior.
+Reuse the project's existing conventions. Do not introduce a dependency, a config format, or a directory layout the project does not already use.
+
+Then read **only the reference files that apply**:
+
+| Read this | When |
+|---|---|
+| `references/content-and-trust.md` | Always. Legal pages, conversion/CTA, FAQ, content quality. |
+| `references/seo-and-metadata.md` | Any public-facing site. Skip for internal-only tools. |
+| `references/accessibility.md` | Always. Includes responsive and cross-browser. |
+| `references/frontend-quality.md` | Always. Forms, errors, states, dead links, UI polish, performance. |
+| `references/security.md` | Always. Deeper sections apply only where auth or a backend exists. |
+| `references/backend-and-api.md` | Only when a backend, API, or database exists. |
+| `references/deployment.md` | Always. PWA section only if the project is meant to be installable. |
+
+Loading all seven on a static landing page wastes context and produces a report padded with irrelevant N/A rows. Route deliberately.
+
+---
+
+# Phase 2 — Scan and triage
+
+Scan first. Do not fix anything yet.
+
+Produce a prioritized findings list using these severities:
+
+- **BLOCKER** — will harm users, leak data, or break a core journey on day one. Exposed secrets, broken signup, unprotected admin routes, a build that fails.
+- **HIGH** — significantly degrades a core journey or the project's credibility. No error handling on the main form, unusable on mobile, missing 404.
+- **MEDIUM** — real but survivable. Missing OG image, thin metadata, inconsistent empty states.
+- **LOW** — polish.
+
+Then stop and present the list to the owner with a proposed scope: what you intend to fix now, what you recommend deferring, and what needs their input. A full 28-category implementation pass on a real codebase is unbounded work — confirming scope here is what keeps the audit from ending half-finished with no clean handoff.
+
+Skip this checkpoint only if the owner has already said to just fix everything you can.
+
+---
+
+# Phase 3 — Implement
+
+## Safe to implement without asking
+
+- Missing or duplicated route metadata.
+- Favicon wiring when the assets already exist.
+- `robots.txt` and `sitemap.xml` for a public site.
+- Missing form labels and input associations.
+- Broken internal links and dead `#` placeholders that clearly should navigate.
+- Loading, error, and empty states where the pattern already exists elsewhere in the codebase.
+- Accessibility fixes that preserve intended behavior.
 - Responsive CSS fixes.
-- Production URL configuration when the intended URL is already defined.
-- Obvious console/debug cleanup.
+- Production URL configuration where the intended URL is already defined somewhere in the project.
+- Removing debug output, console noise, and leftover dev UI.
 
-### Ask before implementing
-- Legal policy wording that requires business facts.
+## Ask first
+
+- Any legal or policy wording that depends on business facts.
 - Pricing or commercial terms.
-- Analytics vendors or tracking that affect privacy.
+- Adding analytics or tracking, or anything that changes what data is collected.
 - Authentication provider changes.
-- Database/schema changes with data-loss risk.
+- Schema or migration changes with data-loss risk.
 - Infrastructure changes that can cause downtime.
-- Removing functionality.
+- Removing functionality, even functionality that looks unused.
 - Major dependency replacements.
-- Security changes that alter product behavior significantly.
+- Security changes that visibly alter product behavior.
+
+Fix in small, reviewable increments. After each meaningful change, re-run whatever Phase 0 said you can run — catching a broken build immediately is much cheaper than discovering it at the end of a twenty-file pass.
 
 ---
 
-# Audit Output
+# Phase 4 — Verify
 
-At the end, produce a concise report:
+Run everything Phase 0 established is available: production build, tests, lint, typecheck.
 
+If a dev server and headless browser are available, run the smoke test through the core journey: home page, primary navigation, primary CTA, an important form with both a validation failure and a success, auth login/protected page/logout if present, one CRUD operation, a deep link refresh, a mobile viewport, and a 404. Watch the console for unexpected errors and the network panel for failed calls.
+
+If they are not available, say so plainly and hand the smoke test to the owner as a numbered list they can run themselves. That handoff is a legitimate output. Pretending the journey was tested is not.
+
+---
+
+# Report format
+
+```markdown
 ## Launch Readiness
-`READY` / `READY WITH WARNINGS` / `NOT READY`
+READY / READY WITH WARNINGS / NOT READY
+
+## Environment
+What was runnable here, and what was not. One or two lines.
 
 ## Implemented
-- ...
+- [VERIFIED] change — how it was verified
+- [IMPLEMENTED, UNVERIFIED] change — why it could not be verified
 
-## Verified
-- Build: PASS/FAIL
-- Tests: PASS/FAIL/NOT CONFIGURED
-- Lint: PASS/FAIL/NOT CONFIGURED
-- Type check: PASS/FAIL/NOT CONFIGURED
-- Accessibility: PASS/NEEDS REVIEW
-- Mobile: PASS/NEEDS REVIEW
-- SEO: PASS/NEEDS REVIEW
-- Security: PASS/NEEDS REVIEW
-- Performance: PASS/NEEDS REVIEW
+## Checks
+| Area | Status | Note |
+|---|---|---|
+| Build | PASS / FAIL / NOT CONFIGURED | |
+| Tests | PASS / FAIL / NOT CONFIGURED | |
+| Lint | PASS / FAIL / NOT CONFIGURED | |
+| Type check | PASS / FAIL / NOT CONFIGURED | |
+| Accessibility | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
+| Mobile | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
+| SEO & metadata | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
+| Security | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
+| Performance | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
+| Backend & API | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
+| Deployment config | PASS / ISSUES FOUND / NOT VERIFIED / N/A | |
 
-## Remaining Issues
-For each issue:
-- Severity: BLOCKER / HIGH / MEDIUM / LOW
-- Problem
-- File/route
-- Recommended action
+## Remaining issues
+For each: severity, problem, file or route, recommended action.
 
-## Human Decisions Needed
-List only items requiring product owner/business/legal decisions.
+## Needs human decision
+Only items blocked on business, legal, or product judgment.
+
+## Run this yourself
+Checks that require tooling unavailable here, as concrete steps.
+```
+
+Every row gets a status. `NOT VERIFIED` is an honest and frequently correct answer — reach for it rather than inflating a source-read into a PASS.
 
 ---
 
-# Important Principle
+# The underlying principle
 
-A site is not "production ready" simply because:
-- it builds,
-- it looks good,
-- or the homepage works.
+A site is not production ready because it builds, because it looks good, or because the homepage works.
 
-Production readiness means the important user journeys, accessibility, SEO, security, privacy, reliability, mobile experience, metadata, errors, forms, deployment configuration, and operational concerns have been checked and the known issues are explicit.
-
-Always distinguish between:
-- **implemented and verified**
-- **implemented but not fully verified**
-- **not implemented**
-- **requires human/business decision**
+It is production ready when the important user journeys, accessibility, SEO, security, privacy, reliability, mobile experience, metadata, error handling, forms, deployment configuration, and operational concerns have each been *examined*, and the residual risk is written down where the owner can see it. Legibility of what remains unknown is part of the deliverable, not a caveat on it.
