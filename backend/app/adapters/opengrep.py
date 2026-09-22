@@ -10,7 +10,7 @@ from typing import List
 
 from app.adapters.base import BaseAdapter
 from app.adapters import config
-from app.adapters.runner import run_logged_command
+from app.adapters.runner import run_logged_command, _LogSink
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,9 @@ class OpengrepAdapter(BaseAdapter):
         )
 
         if clone_res.timed_out or clone_res.returncode not in (0, None) or not os.path.isdir(repo_dir):
+            sink = _LogSink(scan_id)
+            sink.push(f"[{self.tool_name}] Git clone failed (exit code {clone_res.returncode}). If the repository is private, ensure valid credentials or a GITHUB_TOKEN are configured.")
+            sink.flush()
             logger.error(
                 "[%s] clone failed rc=%s timed_out=%s target=%s",
                 self.tool_name, clone_res.returncode, clone_res.timed_out, target,

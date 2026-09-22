@@ -25,19 +25,20 @@ function SessionExpiredContent() {
 
   React.useEffect(() => {
     setMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (countdown <= 0) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      return;
+    }
+
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [callbackUrl, router]);
+  }, [countdown, callbackUrl, router]);
 
   const isDirectUrlAccess = reason === "unauthenticated" || reason === "direct";
 

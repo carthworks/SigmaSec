@@ -3,40 +3,39 @@
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { calculateSla } from "@/lib/sla-calculator";
+import { playActionSuccessSound, playAiRecommendationSound } from "@/lib/sound-cues";
 import { getTagClassName } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
+    ColumnDef,
+    flexRender,
+    getCoreRowModel,
+    getPaginationRowModel,
+    useReactTable,
 } from "@tanstack/react-table";
 import {
-  AlertCircle,
-  AlertTriangle,
-  BadgeCheck,
-  CheckCircle2,
-  ChevronRight,
-  ExternalLink,
-  Flame,
-  GitPullRequest,
-  Loader2,
-  Plus,
-  RefreshCw,
-  Search,
-  ShieldAlert,
-  ShieldCheck,
-  Sparkles,
-  Tag as TagIcon,
-  X
+    AlertCircle,
+    AlertTriangle,
+    CheckCircle2,
+    ChevronRight,
+    ExternalLink,
+    Flame,
+    GitPullRequest,
+    Loader2,
+    Plus,
+    RefreshCw,
+    Search,
+    ShieldAlert,
+    ShieldCheck,
+    Sparkles,
+    Tag as TagIcon,
+    X
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
-import { playAiRecommendationSound } from "@/lib/sound-cues";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,16 +43,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 // ─── Interfaces ────────────────────────────────────────────────────────────

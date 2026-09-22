@@ -337,6 +337,34 @@ def get_scan_progress(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
+@router.get("/{scan_id}/logs")
+def get_scan_logs(
+    scan_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    org_id: uuid.UUID = Depends(get_user_org_id),
+    current_user: User = Depends(get_current_user),
+):
+    scan = db.query(Scan).filter(Scan.id == scan_id, Scan.org_id == org_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    logs: List[str] = []
+    try:
+        r = redis.from_url(
+            os.environ.get("REDIS_URL", "redis://localhost:6379"),
+            decode_responses=True,
+        )
+        logs = r.lrange(f"scan:{scan_id}:logs", 0, -1) or []
+    except Exception as e_logs:
+        logger.error(f"Failed to fetch logs from Redis: {e_logs}")
+
+    return {
+        "scan_id": str(scan_id),
+        "status": scan.status.value,
+        "logs": logs,
+    }
+
+
 @router.get("/{scan_id}/findings")
 def get_scan_findings(
     scan_id: uuid.UUID,

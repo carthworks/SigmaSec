@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 from app.adapters.base import BaseAdapter
 from app.adapters import config
-from app.adapters.runner import run_logged_command
+from app.adapters.runner import run_logged_command, _LogSink
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,9 @@ class GitleaksAdapter(BaseAdapter):
                 env=git_env,
             )
             if clone.timed_out or clone.returncode not in (0, None) or not os.path.isdir(scan_dir):
+                sink = _LogSink(scan_id)
+                sink.push(f"[gitleaks] Git clone failed (exit code {clone.returncode}). If the repository is private, ensure valid credentials or a GITHUB_TOKEN are configured.")
+                sink.flush()
                 logger.error(
                     "[gitleaks] clone failed rc=%s timed_out=%s target=%s",
                     clone.returncode, clone.timed_out, target,

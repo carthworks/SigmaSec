@@ -582,9 +582,20 @@ def run_trivy_scan_subtask(
     scan_id: str, target: str, org_id: str, asset_id: str, docker_image: str = None
 ):
     from app.adapters.trivy import TrivyAdapter
+    from app.adapters.runner import _LogSink
 
     try:
         trivy_target = docker_image or target
+        is_web_url = trivy_target.startswith("http://") or trivy_target.startswith("https://")
+        is_git = trivy_target.endswith(".git") or any(h in trivy_target for h in ("github.com", "gitlab.com", "bitbucket.org"))
+
+        if is_web_url and not is_git and not docker_image:
+            sink = _LogSink(scan_id)
+            sink.push(f"[trivy] Target '{trivy_target}' is a live web URL. Trivy SCA requires a Docker container image or Git repository. Skipping.")
+            sink.flush()
+            logger.info("[trivy] Skipped SCA for web URL: %s", trivy_target)
+            return []
+
         findings = TrivyAdapter().safe_run(
             trivy_target,
             scan_id,
@@ -602,9 +613,21 @@ def run_trivy_scan_subtask(
     soft_time_limit=1700,
 )
 def run_gitleaks_scan_subtask(scan_id: str, target: str, org_id: str, asset_id: str):
+    import os
     from app.adapters.gitleaks import GitleaksAdapter
+    from app.adapters.runner import _LogSink
 
     try:
+        is_web_url = target.startswith("http://") or target.startswith("https://")
+        is_git = target.endswith(".git") or any(h in target for h in ("github.com", "gitlab.com", "bitbucket.org"))
+
+        if is_web_url and not is_git and not os.path.isdir(target):
+            sink = _LogSink(scan_id)
+            sink.push(f"[gitleaks] Target '{target}' is a live web URL without a Git repository. Gitleaks requires a Git repository. Skipping.")
+            sink.flush()
+            logger.info("[gitleaks] Skipped Secret scan for web URL: %s", target)
+            return []
+
         findings = GitleaksAdapter().safe_run(
             target,
             scan_id,
@@ -622,9 +645,21 @@ def run_gitleaks_scan_subtask(scan_id: str, target: str, org_id: str, asset_id: 
     soft_time_limit=1700,
 )
 def run_opengrep_scan_subtask(scan_id: str, target: str, org_id: str, asset_id: str):
+    import os
     from app.adapters.opengrep import OpengrepAdapter
+    from app.adapters.runner import _LogSink
 
     try:
+        is_web_url = target.startswith("http://") or target.startswith("https://")
+        is_git = target.endswith(".git") or any(h in target for h in ("github.com", "gitlab.com", "bitbucket.org"))
+
+        if is_web_url and not is_git and not os.path.isdir(target):
+            sink = _LogSink(scan_id)
+            sink.push(f"[opengrep] Target '{target}' is a live web URL without a Git repository. Opengrep SAST requires a source repository. Skipping.")
+            sink.flush()
+            logger.info("[opengrep] Skipped SAST for web URL: %s", target)
+            return []
+
         findings = OpengrepAdapter().safe_run(
             target,
             scan_id,
@@ -642,9 +677,21 @@ def run_opengrep_scan_subtask(scan_id: str, target: str, org_id: str, asset_id: 
     soft_time_limit=1700,
 )
 def run_opengroup_scan_subtask(scan_id: str, target: str, org_id: str, asset_id: str):
+    import os
     from app.adapters.opengroup import OpenGroupAdapter
+    from app.adapters.runner import _LogSink
 
     try:
+        is_web_url = target.startswith("http://") or target.startswith("https://")
+        is_git = target.endswith(".git") or any(h in target for h in ("github.com", "gitlab.com", "bitbucket.org"))
+
+        if is_web_url and not is_git and not os.path.isdir(target):
+            sink = _LogSink(scan_id)
+            sink.push(f"[opengroup] Target '{target}' is a live web URL without a Git repository. Opengroup SAST requires a source repository. Skipping.")
+            sink.flush()
+            logger.info("[opengroup] Skipped SAST for web URL: %s", target)
+            return []
+
         findings = OpenGroupAdapter().safe_run(
             target,
             scan_id,

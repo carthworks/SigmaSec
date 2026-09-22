@@ -1,30 +1,26 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
 import {
-  Play,
-  Copy,
-  Check,
-  CheckCircle2,
-  AlertTriangle,
-  Flame,
-  Shield,
-  Sparkles,
-  Layers,
-  Terminal,
-  ExternalLink,
-  HelpCircle,
-  Clock,
-  ArrowRight,
-  TrendingUp,
-  Award,
-  Zap,
-  Globe,
-  Database,
-  KeyRound,
-  FileCheck2,
+    Award,
+    Check,
+    CheckCircle2,
+    Clock,
+    Copy,
+    Database,
+    Flame,
+    Globe,
+    HelpCircle,
+    KeyRound,
+    Layers,
+    Play,
+    Shield,
+    Sparkles,
+    Terminal,
+    TrendingUp,
+    Zap
 } from "lucide-react";
+import Link from "next/link";
+import * as React from "react";
 import { toast } from "sonner";
 
 export default function DemoGuidePage() {
@@ -109,6 +105,7 @@ export default function DemoGuidePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {[
               { id: "backend", label: "Backend running (FastAPI + Celery + Redis)", tip: "docker compose up -d" },
               { id: "frontend", label: "Frontend active on localhost:3000", tip: "npm run dev" },
               { id: "login", label: "Logged into test admin account", tip: "Session active" },

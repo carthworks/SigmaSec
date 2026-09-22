@@ -24,6 +24,7 @@
 *.pub
 secrets/
 certs/
+.agents/  
 
 # ---- Python (Backend) ----
 # Byte-compiled / optimized / DLL files

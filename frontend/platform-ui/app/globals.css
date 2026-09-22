@@ -205,6 +205,18 @@
   }
 }
 
+@keyframes loading-slide {
+  0% {
+    transform: translateX(-160%);
+  }
+  50% {
+    transform: translateX(120%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
 @media print {
   /* Hide sidebar navigation, nav elements, top headers, back links, and buttons */
   aside,
