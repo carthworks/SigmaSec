@@ -1,7 +1,8 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -21,6 +22,7 @@ from app.routers import (
     scans,
     users,
 )
+from app.utils.encryption import DecryptionError
 
 migration_status = "Not started"
 migration_error = None
@@ -38,6 +40,18 @@ app = FastAPI(
 # Attach limiter to app state
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.exception_handler(DecryptionError)
+def _decryption_error_handler(request: Request, exc: DecryptionError):
+    # Never echo the stored value or key details back to the client.
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": "A stored integration credential could not be decrypted. "
+            "Reconnect the integration in Settings → Integrations."
+        },
+    )
 
 app.add_middleware(
     CORSMiddleware,

@@ -35,6 +35,36 @@ def _sev_str(f: Finding) -> str:
     return sev.value if hasattr(sev, "value") else str(sev)
 
 
+def _intel_sync_state() -> Dict[str, Any]:
+    """KEV catalogue size and last-refresh timestamps, as recorded by the intel clients."""
+    state: Dict[str, Any] = {"kev_indexed": None, "kev": None, "epss": None, "nvd": None}
+    try:
+        import os
+        import redis
+
+        r = redis.from_url(os.environ.get("REDIS_URL", "redis://redis:6379/0"), decode_responses=True)
+        state["kev_indexed"] = r.scard("kev:cves") or None
+        state["kev"] = r.get("kev:last_refresh")
+        state["epss"] = r.get("epss:last_refresh")
+        state["nvd"] = r.get("nvd:last_refresh")
+    except Exception as e:  # dashboard must still render if Redis is down
+        logger.warning(f"[dashboard] could not read intel sync state: {e}")
+    return state
+
+
+def _kev_due(f: Finding) -> Optional[datetime]:
+    if not f.kev_due_date:
+        return None
+    try:
+        return datetime.strptime(f.kev_due_date[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _pct(part: int, whole: int) -> Optional[int]:
+    return round(part / whole * 100) if whole else None
+
+
 @router.get("/summary")
 def get_dashboard_summary(
     days: Optional[int] = Query(None, description="Filter timeframe by days (e.g. 1, 30, 90)"),
@@ -43,6 +73,12 @@ def get_dashboard_summary(
     org_id: str = Depends(get_user_org_id),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Every value in this response is derived from the organisation's own data.
+    When something is not known (no history, no feed sync yet, feature not built),
+    the value is null or an empty list and the UI shows an empty state. Never
+    substitute illustrative numbers here: customers read this as fact.
+    """
     # Parse days
     num_days = 30
     if days is not None and days > 0:
@@ -51,6 +87,8 @@ def get_dashboard_summary(
         tf_clean = timeframe.lower().strip()
         if tf_clean == "24h":
             num_days = 1
+        elif tf_clean in ["7d", "7 days"]:
+            num_days = 7
         elif tf_clean in ["30d", "30 days"]:
             num_days = 30
         elif tf_clean in ["90d", "90 days"]:
@@ -76,297 +114,218 @@ def get_dashboard_summary(
     if num_days < 180:
         findings_query = findings_query.filter(Finding.created_at >= cutoff)
     findings = findings_query.all()
+    total_findings = len(findings)
 
-    # Total org findings for funnel baseline if timeframe filter is small
-    all_findings_count = db.query(Finding).filter(Finding.org_id == org_id).count()
-    if all_findings_count == 0:
-        total_findings = len(findings)
-    else:
-        total_findings = max(all_findings_count, 1204)
-
-    # Compute Posture Score (0-100)
     open_findings = [f for f in findings if f.status not in [FindingStatus.fixed, FindingStatus.false_positive]]
     crit_count = sum(1 for f in open_findings if _sev_str(f) == "critical")
     high_count = sum(1 for f in open_findings if _sev_str(f) == "high")
     med_count = sum(1 for f in open_findings if _sev_str(f) == "medium")
+    kev_open = [f for f in open_findings if f.kev_listed]
 
-    # Base score formula: 100 - (10*crit + 3*high + 1*med)
-    raw_deduction = (crit_count * 10) + (high_count * 3) + (med_count * 1)
-    posture_score = round(max(0.0, min(100.0, 100.0 - raw_deduction + (10 if len(open_findings) < 5 else 0))), 0)
-    if posture_score == 100 and len(open_findings) > 0:
-        posture_score = 68.0
+    # Posture score (0-100): 100 - (10 x critical + 3 x high + 1 x medium) over open findings,
+    # +10 when fewer than 5 findings are open (unchanged from v1).
+    # Null until the org has scanned something, so a new account doesn't show a score.
+    posture_score = None
+    if scans or findings:
+        raw_deduction = (crit_count * 10) + (high_count * 3) + (med_count * 1)
+        bonus = 10 if len(open_findings) < 5 else 0
+        posture_score = round(max(0.0, min(100.0, 100.0 - raw_deduction + bonus)), 0)
 
-    # Posture Score Driver description
-    top_kev_findings = [f for f in open_findings if f.kev_listed or _sev_str(f) == "critical"]
-    driver_repo = "earthworks/libraDigit_web"
-    if top_kev_findings and top_kev_findings[0].asset_id and str(top_kev_findings[0].asset_id) in asset_map:
-        driver_repo = asset_map[str(top_kev_findings[0].asset_id)]
-    posture_driver = f"Driven by two KEV-listed findings introduced in {driver_repo} on Jul 18."
+    if not (scans or findings):
+        posture_driver = "No scans yet. Run a scan to calculate your posture score."
+    elif not open_findings:
+        posture_driver = "No open findings in this timeframe."
+    else:
+        parts = []
+        if kev_open:
+            parts.append(f"{len(kev_open)} open finding{'s' if len(kev_open) != 1 else ''} on CISA KEV")
+        if crit_count:
+            parts.append(f"{crit_count} critical")
+        if high_count:
+            parts.append(f"{high_count} high")
+        posture_driver = ("Driven by " + ", ".join(parts) + ".") if parts else "Only medium or lower findings are open."
 
-    # Funnel breakdown
+    # Funnel: real counts only.
     crit_high_count = sum(1 for f in findings if _sev_str(f) in ["critical", "high"])
-    reachable_count = sum(1 for f in findings if f.reachability == Reachability.reachable or getattr(f, "fp_candidate", False) is False)
-    if reachable_count == 0:
-        reachable_count = 86
-    exploitable_now_count = sum(1 for f in open_findings if f.kev_listed or (f.epss_score and f.epss_score >= 0.5) or f.exploit_validated)
-    if exploitable_now_count == 0:
-        exploitable_now_count = 14
+    reachable_count = sum(1 for f in findings if f.reachability == Reachability.reachable)
+    exploitable_now = [
+        f for f in open_findings if f.kev_listed or (f.epss_score is not None and f.epss_score >= 0.5)
+    ]
 
-    crit_high_pct = round((crit_high_count / max(total_findings, 1)) * 100)
-    reachable_pct = round((reachable_count / max(crit_high_count, 1)) * 100)
-
-    # "Do this next" Prioritized Actions
+    # "Do this next": real open findings only, ranked; no filler items.
     sorted_prioritized = sorted(
         open_findings,
         key=lambda f: (f.kev_listed, f.priority_score or 0.0, _sev_str(f) == "critical"),
         reverse=True,
     )
-
     do_this_next = []
-    # Dynamic or fallback top 4 items matching exact target UI
-    fallback_items = [
-        {
-            "id": "item-1",
-            "badge": "KEV",
-            "title": "Authentication bypass in gnutls",
-            "why_now": "Why now: on CISA KEV since Jun 2 · EPSS 0.87 · reachable from auth/login_handler.py · asset is internet-facing",
-            "sla_status": "SLA in 6h",
-            "sla_breaching": True,
-            "action_type": "review_pr",
-            "action_label": "Review fix PR",
-            "action_href": "/remediation-hub",
-        },
-        {
-            "id": "item-2",
-            "badge": "KEV",
-            "title": "Use-after-free in libxslt (xsltGotInvertedNsList)",
-            "why_now": "Why now: EPSS 0.71 · exploit validated in sandbox · reachable from the XML import parser",
-            "sla_status": "SLA in 2d",
-            "sla_breaching": True,
-            "action_type": "generate_pr",
-            "action_label": "Generate fix PR",
-            "action_href": "/remediation-hub",
-        },
-        {
-            "id": "item-3",
-            "badge": "SECRET",
-            "title": "Live AWS access key committed to LibraDigit web",
-            "why_now": "Why now: credential validated as active · present in 14 commits · public repository",
-            "sla_status": "Overdue 1d",
-            "sla_breaching": True,
-            "action_type": "rotate_secret",
-            "action_label": "Rotate and purge",
-            "action_href": "/remediation-hub",
-        },
-        {
-            "id": "item-4",
-            "badge": "EXPLOIT",
-            "title": "Type confusion in libxml xmlNode.psvi",
-            "why_now": "Why now: EPSS 0.44 · public PoC available · reachable, but only from an internal admin route",
-            "sla_status": "SLA in 5d",
-            "sla_breaching": False,
-            "action_type": "open_jira",
-            "action_label": "Open in Jira",
-            "action_href": "/findings?view=jira",
-        },
-    ]
-
-    for idx, f in enumerate(sorted_prioritized[:4]):
-        b_type = "KEV" if f.kev_listed else ("SECRET" if f.tool == "gitleaks" else ("EXPLOIT" if f.exploit_validated else "CRITICAL"))
+    for f in sorted_prioritized[:4]:
+        b_type = "KEV" if f.kev_listed else ("SECRET" if f.tool == "gitleaks" else _sev_str(f).upper())
         a_label = "Review fix PR" if f.pr_url else ("Open in Jira" if f.jira_issue_key else "Generate fix PR")
         a_href = "/remediation-hub" if f.pr_url or b_type in ["KEV", "SECRET"] else "/findings?view=jira"
-        
+
+        reasons = []
+        if f.kev_listed:
+            reasons.append("on CISA KEV")
+        if f.epss_score is not None:
+            reasons.append(f"EPSS {f.epss_score:.2f}")
+        reach = f.reachability.value if hasattr(f.reachability, "value") else f.reachability
+        if reach == "reachable":
+            reasons.append("dependency used in code")
+        if f.tool == "gitleaks":
+            reasons.append("secret committed to repository")
+        if not reasons:
+            reasons.append(f"{_sev_str(f)} severity")
+
+        due = _kev_due(f)
+        if due:
+            delta = (due.date() - now_utc.date()).days
+            sla_status = f"KEV due in {delta}d" if delta >= 0 else f"KEV overdue {-delta}d"
+            sla_breaching = delta < 0
+        else:
+            sla_status = None
+            sla_breaching = False
+
         do_this_next.append({
             "id": str(f.id),
             "badge": b_type,
             "title": f.title,
-            "why_now": f"Why now: EPSS {f.epss_score or 0.75} · {'on CISA KEV · ' if f.kev_listed else ''}reachable in code",
-            "sla_status": "SLA in 6h" if idx == 0 else ("SLA in 2d" if idx == 1 else "Overdue 1d"),
-            "sla_breaching": idx < 3,
+            "why_now": "Why now: " + " · ".join(reasons),
+            "sla_status": sla_status,
+            "sla_breaching": sla_breaching,
             "action_type": "review_pr" if f.pr_url else "generate_pr",
             "action_label": a_label,
             "action_href": a_href,
         })
 
-    if len(do_this_next) < 4:
-        do_this_next = fallback_items
-
-    # KPI Metrics
+    # KPIs
     jira_linked_count = sum(1 for f in findings if f.jira_issue_key)
-    pr_open_count = sum(1 for f in findings if f.pr_url)
+    pr_open_count = sum(1 for f in findings if f.pr_url and (f.pr_status or "open") == "open")
     accepted_risk_count = sum(1 for f in findings if f.status == FindingStatus.accepted_risk)
-    
-    # Calculate MTTR
+    sla_breaches = sum(1 for f in open_findings if _kev_due(f) and _kev_due(f) < now_utc)
+
     fixed_findings = [f for f in findings if f.status == FindingStatus.fixed and f.updated_at and f.created_at]
+    mttr_days = None
     if fixed_findings:
         total_days = sum((_dt_aware(f.updated_at) - _dt_aware(f.created_at)).total_seconds() / 86400.0 for f in fixed_findings)
         mttr_days = round(total_days / len(fixed_findings), 1)
-    else:
-        mttr_days = 4.2
 
-    # Assets scanned in last 7 days
     scanned_7d_cutoff = now_utc - timedelta(days=7)
-    assets_scanned_7d = db.query(Scan.asset_id).filter(Scan.org_id == org_id, Scan.created_at >= scanned_7d_cutoff).distinct().count()
-    total_assets_count = len(assets) or 20
-    scanned_pct = round((assets_scanned_7d / max(total_assets_count, 1)) * 100)
-    if scanned_pct == 0:
-        scanned_pct = 94
+    assets_scanned_7d = (
+        db.query(Scan.asset_id)
+        .filter(Scan.org_id == org_id, Scan.created_at >= scanned_7d_cutoff, Scan.asset_id.isnot(None))
+        .distinct()
+        .count()
+    )
+    scanned_pct = _pct(assets_scanned_7d, len(assets))
 
-    # Trend line dataset
+    # Trend: open vs remediated per day, reconstructed from finding timestamps.
+    # A finding counts as remediated from the time it was marked fixed (updated_at).
     trend_data = []
-    for i in range(num_days - 1, -1, -1):
-        day_date = now_utc - timedelta(days=i)
-        date_str = day_date.strftime("%b %d")
-        
-        # Count open vs remediated on that date
-        open_val = max(10, int(400 + 80 * (i / max(num_days, 1)) + (crit_count * 5)))
-        rem_val = max(5, int(150 + 120 * ((num_days - i) / max(num_days, 1))))
-        
-        trend_data.append({
-            "date": date_str,
-            "open": open_val,
-            "remediated": rem_val,
-        })
+    if findings:
+        for i in range(num_days - 1, -1, -1):
+            day_end = (now_utc - timedelta(days=i)).replace(hour=23, minute=59, second=59)
+            created = [f for f in findings if f.created_at and _dt_aware(f.created_at) <= day_end]
+            remediated = [
+                f for f in created
+                if f.status == FindingStatus.fixed and f.updated_at and _dt_aware(f.updated_at) <= day_end
+            ]
+            trend_data.append({
+                "date": day_end.strftime("%b %d"),
+                "open": len(created) - len(remediated),
+                "remediated": len(remediated),
+            })
 
-    # Recent scans
+    # Recent scans (real only)
     recent_scans_data = []
     for s in scans[:3]:
         target_type = "Git repo" if s.target.endswith(".git") or "github.com" in s.target else ("Container" if ":" in s.target and not s.target.startswith("http") else "Web app")
-        cnt = s.findings_count
+        cnt = s.findings_count or {}
+        status_val = s.status.value if hasattr(s.status, "value") else str(s.status)
         recent_scans_data.append({
             "id": str(s.id),
             "target": s.target,
             "target_type": target_type,
-            "status": s.status.value if hasattr(s.status, "value") else str(s.status),
+            "status": status_val,
             "created_at": s.created_at.isoformat(),
             "critical_count": cnt.get("critical", 0),
             "high_count": cnt.get("high", 0),
             "medium_count": cnt.get("medium", 0),
-            "summary_text": f"Completed · {cnt.get('critical', 0)} criticals",
+            "summary_text": f"{status_val.capitalize()} · {cnt.get('critical', 0)} critical",
         })
 
-    if not recent_scans_data:
-        recent_scans_data = [
-            {
-                "id": "scan-1",
-                "target": "earthworks/libraDigit_web",
-                "target_type": "Git repo",
-                "status": "complete",
-                "created_at": (now_utc - timedelta(hours=2)).isoformat(),
-                "critical_count": 15,
-                "high_count": 126,
-                "medium_count": 198,
-                "summary_text": "Completed 2h ago · 3 runs today · +2 new criticals vs previous run",
-            },
-            {
-                "id": "scan-2",
-                "target": "akitra.com",
-                "target_type": "Web app",
-                "status": "complete",
-                "created_at": (now_utc - timedelta(hours=2)).isoformat(),
-                "critical_count": 0,
-                "high_count": 0,
-                "medium_count": 0,
-                "summary_text": "Completed 2h ago · unchanged for 6 runs",
-            },
-            {
-                "id": "scan-3",
-                "target": "payments-api",
-                "target_type": "Container",
-                "status": "running",
-                "created_at": (now_utc - timedelta(minutes=4)).isoformat(),
-                "critical_count": 2,
-                "high_count": 5,
-                "medium_count": 12,
-                "summary_text": "Started 4m ago · base image ruby:3.2-alpine",
-            },
-        ]
-
-    # Remediation pipeline items
+    # Remediation pipeline: findings with a fix PR or Jira ticket, grouped by asset.
+    pipeline_groups: Dict[str, List[Dict[str, str]]] = {}
+    for f in open_findings:
+        if not (f.pr_url or f.jira_issue_key):
+            continue
+        group = asset_map.get(str(f.asset_id), "Unassigned asset")
+        subtitle = " · ".join(x for x in [f.cve_id, f.jira_issue_key] if x) or (f.tool or "")
+        if f.pr_url:
+            badge, color = "PR open", "emerald"
+        else:
+            badge, color = "Jira open", "blue"
+        pipeline_groups.setdefault(group, []).append(
+            {"title": f.title, "subtitle": subtitle, "badge": badge, "badge_color": color}
+        )
     remediation_pipeline = [
-        {
-            "group": "earthworks/libraDigit_web · 4 in flight",
-            "items": [
-                {
-                    "title": "gnutls — authentication bypass",
-                    "subtitle": "CVE-2024-42810 · SAML-12 · patch to 1.0.4",
-                    "badge": "PR ready",
-                    "badge_color": "emerald",
-                },
-                {
-                    "title": "libxslt — use-after-free",
-                    "subtitle": "CVE-2024-55549 · SAML-11 · patch to 1.1.42",
-                    "badge": "In review",
-                    "badge_color": "amber",
-                },
-                {
-                    "title": "libxml — type confusion in psvi",
-                    "subtitle": "CVE-2025-49796 · SEC-232257",
-                    "badge": "Jira open",
-                    "badge_color": "blue",
-                },
-            ],
-        },
-        {
-            "group": "payments-api · 3 in flight",
-            "items": [
-                {
-                    "title": "Hardcoded database credential",
-                    "subtitle": "Secret · SAML-13 · rotation pending",
-                    "badge": "In review",
-                    "badge_color": "amber",
-                },
-            ],
-        },
+        {"group": f"{name} · {len(items)} in flight", "items": items[:4]}
+        for name, items in pipeline_groups.items()
     ]
+
+    intel = _intel_sync_state()
+    cve_findings = [f for f in findings if f.cve_id]
+    analyzed_reach = [f for f in findings if f.reachability in (Reachability.reachable, Reachability.unreachable)]
 
     return {
         "timeframe": timeframe or "30d",
         "num_days": num_days,
         "posture_score": posture_score,
-        "points_changed_this_week": -6.0,
+        "points_changed_this_week": None,  # needs score history; not tracked yet
         "posture_driver": posture_driver,
         "funnel": {
             "total_findings": total_findings,
-            "critical_high_count": max(crit_high_count, 399),
-            "critical_high_pct": crit_high_pct or 33,
+            "critical_high_count": crit_high_count,
+            "critical_high_pct": _pct(crit_high_count, total_findings),
             "reachable_count": reachable_count,
-            "reachable_pct": reachable_pct or 78,
-            "exploitable_now_count": exploitable_now_count,
-            "exploitable_pct": 100,
+            "reachable_pct": _pct(reachable_count, crit_high_count),
+            "exploitable_now_count": len(exploitable_now),
+            "exploitable_pct": _pct(len(exploitable_now), total_findings),
         },
         "do_this_next": do_this_next,
         "kpis": {
             "mttr_days": mttr_days,
-            "mttr_change_days": -1.1,
-            "prs_open": max(pr_open_count, 7),
-            "jira_linked": max(jira_linked_count, 12),
-            "sla_breaches": 3,
-            "accepted_risks": max(accepted_risk_count, 2),
+            "mttr_change_days": None,  # needs history; not tracked yet
+            "prs_open": pr_open_count,
+            "jira_linked": jira_linked_count,
+            "sla_breaches": sla_breaches,
+            "accepted_risks": accepted_risk_count,
             "assets_scanned_7d_pct": scanned_pct,
         },
         "trend_data": trend_data,
         "intel_coverage": {
             "cisa_kev": {
-                "indexed": 1647,
-                "matches": max(sum(1 for f in findings if f.kev_listed), 9),
-                "last_sync": "3h ago",
+                "indexed": intel["kev_indexed"],
+                "matches": sum(1 for f in findings if f.kev_listed),
+                "last_sync": intel["kev"],
             },
             "epss": {
-                "scored": total_findings,
-                "total": total_findings,
-                "above_threshold": max(sum(1 for f in findings if f.epss_score and f.epss_score >= 0.5), 31),
-                "last_sync": "3h ago",
+                "scored": sum(1 for f in cve_findings if f.epss_score is not None),
+                "total": len(cve_findings),
+                "above_threshold": sum(1 for f in findings if f.epss_score is not None and f.epss_score >= 0.5),
+                "last_sync": intel["epss"],
             },
             "ast_reachability": {
-                "analyzed": 18,
-                "total_assets": max(len(assets), 20),
+                "analyzed": len(analyzed_reach),
+                "total_assets": len(assets),
                 "reachable_count": reachable_count,
-                "pending": 2,
+                "pending": None,
             },
             "exploit_validation": {
-                "sandbox_confirmed": max(sum(1 for f in findings if f.exploit_validated), 6),
-                "inconclusive": 3,
+                # Not implemented yet (docs/CLAIMS_AUDIT.md, claim 5).
+                "available": False,
+                "sandbox_confirmed": 0,
+                "inconclusive": 0,
             },
         },
         "recent_scans": recent_scans_data,
@@ -376,6 +335,6 @@ def get_dashboard_summary(
             "db_connected": True,
             "scan_engine_idle": not any(s.status == ScanStatus.running for s in scans),
             "total_scans": len(scans),
-            "intel_synced_at": "21 Jul, 21:06",
+            "intel_synced_at": intel["kev"] or intel["epss"],
         },
     }

@@ -9,10 +9,45 @@ from app.database import get_db
 from app.auth.dependencies import get_current_user, get_user_org_id
 from app.models import Finding, User
 from app.schemas.finding import FindingOut, FindingUpdate
+from app.utils.runtime import pr_simulation_enabled
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/findings", tags=["findings"])
+
+
+def _github_git_env(access_token: str) -> dict:
+    """
+    Environment for git subprocesses that authenticates to GitHub without putting
+    the token in the URL or command line. git reads GIT_CONFIG_COUNT/KEY/VALUE as
+    extra config entries (git >= 2.31).
+    """
+    import base64
+    import os
+
+    basic = base64.b64encode(f"x-access-token:{access_token}".encode("utf-8")).decode("ascii")
+    env = os.environ.copy()
+    env.update(
+        {
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "http.https://github.com/.extraheader",
+            "GIT_CONFIG_VALUE_0": f"AUTHORIZATION: basic {basic}",
+        }
+    )
+    return env
+
+
+def _scrub_credentials(text: str, access_token: str = "") -> str:
+    """Remove a known token, its basic-auth form, and any URL userinfo from text."""
+    import base64
+    import re
+
+    if access_token:
+        text = text.replace(access_token, "[REDACTED]")
+        basic = base64.b64encode(f"x-access-token:{access_token}".encode("utf-8")).decode("ascii")
+        text = text.replace(basic, "[REDACTED]")
+    return re.sub(r"(https?://)[^/\s@]+@", r"\1[REDACTED]@", text)
 
 
 class TagIn(BaseModel):
@@ -380,12 +415,10 @@ def create_fix_pr(
 
     # Fetch GitHub Config for Decryption
     gh_config = db.query(GitHubConfig).filter(GitHubConfig.org_id == org_id).first()
-    access_token = "ghp_mock_developer_access_token_123456"
+    access_token = ""
     if gh_config and gh_config.access_token:
-        try:
-            access_token = decrypt_value(gh_config.access_token)
-        except Exception:
-            access_token = "ghp_mock_developer_access_token_123456"
+        # DecryptionError propagates to the app-wide handler (409, generic message).
+        access_token = decrypt_value(gh_config.access_token)
 
     # 1. Resolve target git clone URL
     scan = finding.scan
@@ -395,9 +428,24 @@ def create_fix_pr(
     elif scan and scan.target and (scan.target.endswith(".git") or "github.com" in scan.target):
         git_url = scan.target
 
-    is_simulation = False
-    if not access_token or access_token.startswith("ghp_mock") or "mock" in access_token or not git_url or "github.com" not in git_url:
-        is_simulation = True
+    token_is_mock = not access_token or access_token.startswith("ghp_mock") or "mock" in access_token
+    target_is_github = bool(git_url) and "github.com" in git_url
+
+    # Simulation writes to a throwaway local repo and returns a fake PR URL. It is
+    # never used implicitly: only in development with SIGMASEC_PR_SIMULATION=1.
+    is_simulation = pr_simulation_enabled() and (token_is_mock or not target_is_github)
+    if not is_simulation:
+        if token_is_mock:
+            raise HTTPException(
+                status_code=400,
+                detail="Connect GitHub with a real access token in Settings → Integrations before creating fix PRs.",
+            )
+        if not target_is_github:
+            raise HTTPException(
+                status_code=400,
+                detail="Fix PRs are only supported for findings from GitHub repositories.",
+            )
+    if is_simulation:
         git_url = "https://github.com/cybersigma-intel/security-platform-sandbox.git"
 
     # Extract repo fullname (e.g. owner/repo)
@@ -456,9 +504,13 @@ def create_fix_pr(
                 pass
 
         else:
-            authenticated_url = f"https://x-access-token:{access_token}@github.com/{repo_fullname}.git"
+            # Credentials travel in the git process environment (an HTTP auth header
+            # set via GIT_CONFIG_*), never in the URL or argv, so they cannot appear
+            # in error messages, logs, `ps` output or .git/config.
+            git_env = _github_git_env(access_token)
+            plain_url = f"https://github.com/{repo_fullname}.git"
             logger.info(f"Cloning {repo_fullname} to {work_dir}...")
-            subprocess.run(["git", "clone", "--depth", "50", authenticated_url, work_dir], check=True, capture_output=True)
+            subprocess.run(["git", "clone", "--depth", "50", plain_url, work_dir], check=True, capture_output=True, env=git_env)
             subprocess.run(["git", "config", "user.name", "SigmaSec AutoFixer"], cwd=work_dir, check=True)
             subprocess.run(["git", "config", "user.email", "autofix@sigmasec.ai"], cwd=work_dir, check=True)
             subprocess.run(["git", "checkout", "-b", branch_name], cwd=work_dir, check=True)
@@ -467,37 +519,46 @@ def create_fix_pr(
         if finding.tool == "gitleaks":
             meta = finding.scan_metadata or {}
             file_name = meta.get("file", "api_key.py")
+            # Raw secrets are never stored (only a masked value and a hash), so the
+            # patch can only replace token formats it can recognise.
             secret_val = meta.get("secret", "")
-            
+            partial_secret = meta.get("partial_secret") or "the leaked credential"
+
             target_file_path = os.path.join(work_dir, file_name)
             if not os.path.exists(target_file_path):
+                if not is_simulation:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"'{file_name}' no longer exists on the default branch. Rotate the credential and purge it from git history.",
+                    )
                 os.makedirs(os.path.dirname(target_file_path) or work_dir, exist_ok=True)
                 with open(target_file_path, "w") as f:
-                    f.write(f'API_KEY = "{secret_val or "xoxb-1234567890-mocksecret"}"\n')
+                    f.write('API_KEY = "xoxb-1234567890-mocksecret"\n')
 
             with open(target_file_path, "r") as f:
                 content = f.read()
-            
+
             if secret_val and secret_val in content:
                 cleaned_content = content.replace(secret_val, "os.environ.get('SECRET_TOKEN', '')")
             else:
                 cleaned_content = re.sub(r'["\'](xox[baprs]-.*?|gh[pso]-.*?)["\']', "os.environ.get('SECRET_TOKEN', '')", content)
-            
+
+            if cleaned_content == content and not is_simulation:
+                raise HTTPException(
+                    status_code=409,
+                    detail="SigmaSec can't patch this secret type automatically. Rotate the credential, remove it from the file, and purge it from git history.",
+                )
+
             with open(target_file_path, "w") as f:
                 f.write(cleaned_content)
-            
-            # Append file to gitignore
-            gitignore_path = os.path.join(work_dir, ".gitignore")
-            gitignore_line = f"\n# Ignore secret file\n{file_name}\n"
-            with open(gitignore_path, "a+") as f:
-                f.write(gitignore_line)
-                
+
             pr_description = (
                 f"### SigmaSec Secret Mitigation\n\n"
-                f"Vulnerability resolved: hardcoded credentials removed inside `{file_name}` and replaced with environment variable lookup.\n\n"
-                f"**Manual Action Required:**\n"
-                f"1. Revoke the token immediately (`{(secret_val or 'xoxb-123456')[:6]}...`).\n"
-                f"2. Add a secure configuration setting inside your cloud runtime environment as `SECRET_TOKEN`."
+                f"Hardcoded credential removed from `{file_name}` and replaced with an environment variable lookup.\n\n"
+                f"**Manual action required — this PR does not make the credential safe:**\n"
+                f"1. Revoke and rotate the credential (`{partial_secret}`) now. It remains in git history.\n"
+                f"2. Purge it from history (e.g. `git filter-repo`) and force-push, coordinating with your team.\n"
+                f"3. Provide the new value to your runtime as `SECRET_TOKEN`."
             )
 
         elif finding.tool == "trivy" and finding.scan_metadata:
@@ -544,6 +605,11 @@ def create_fix_pr(
                     with open(go_mod_path, "w") as f:
                         f.write(content)
                 else:
+                    if not is_simulation:
+                        raise HTTPException(
+                            status_code=409,
+                            detail=f"No package.json, requirements.txt or go.mod at the repository root. Upgrade {pkg_name} to {fixed_version} manually.",
+                        )
                     with open(requirements_txt_path, "w") as f:
                         f.write(f"{pkg_name}=={fixed_version}\n")
                     
@@ -552,6 +618,11 @@ def create_fix_pr(
                     f"Bumps vulnerable package dependency `{pkg_name}` to safe release `{fixed_version}` to address CVE vulnerability **{finding.cve_id or 'N/A'}**."
                 )
             else:
+                if not is_simulation:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="No fixed version is available for this finding, so there is nothing to patch automatically.",
+                    )
                 target_file = meta.get("file", "Dockerfile")
                 dockerfile_path = os.path.join(work_dir, target_file)
                 if not os.path.exists(dockerfile_path):
@@ -598,7 +669,7 @@ def create_fix_pr(
         if is_simulation:
             pr_url = f"https://github.com/sigmasec-intel/security-platform-sandbox/pull/{pr_number}"
         else:
-            subprocess.run(["git", "push", "origin", branch_name, "--force"], cwd=work_dir, check=True)
+            subprocess.run(["git", "push", "origin", branch_name, "--force"], cwd=work_dir, check=True, capture_output=True, env=git_env)
             
             g = Github(access_token)
             repo = g.get_repo(repo_fullname)
@@ -628,14 +699,20 @@ def create_fix_pr(
         }
 
     except HTTPException:
+        shutil.rmtree(work_dir, ignore_errors=True)
         raise
     except Exception as pr_ex:
         if os.path.exists(work_dir):
             shutil.rmtree(work_dir, ignore_errors=True)
-        logger.error(f"Failed to create fix PR for finding {finding_id}: {pr_ex}", exc_info=True)
+        # Log a scrubbed message (no traceback: frames can hold the token) and
+        # return a generic error; never echo subprocess commands or output.
+        logger.error(
+            f"Failed to create fix PR for finding {finding_id}: "
+            f"{_scrub_credentials(f'{type(pr_ex).__name__}: {pr_ex}', access_token)}"
+        )
         raise HTTPException(
             status_code=400,
-            detail=f"Autofix PR generation failed: {str(pr_ex)}"
+            detail="Autofix PR generation failed. Check that the GitHub token has Contents and Pull requests write access to this repository.",
         )
 
 

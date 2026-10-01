@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
 class NucleiAdapter(BaseAdapter):
     """
     Runs Nuclei against a web target. Parses JSONL (one object per line).
-    FR-SCN-13: when options["validate"] is True, runs -validate and marks
-    exploit_validated=True on every returned finding.
+    Findings are template matches. FR-SCN-13 (active exploit validation) is not
+    implemented: options["validate"] is recorded in metadata, but no finding is
+    marked exploit_validated.
     """
 
     tool_name = "nuclei"
@@ -59,7 +60,11 @@ class NucleiAdapter(BaseAdapter):
         if options.get("rate_limit"):
             cmd += ["-rate-limit", str(options["rate_limit"])]
         if validate:
-            cmd.append("-validate")
+            # Nuclei's -validate flag only checks template syntax ("validate the
+            # passed templates to nuclei"); it does not exploit or confirm anything.
+            # Real exploit validation is not implemented, so the request is recorded
+            # but nothing is marked as validated.
+            logger.info("[nuclei] active validation requested but not implemented; findings are template matches only")
 
         result = run_logged_command(scan_id=scan_id, cmd=cmd, timeout=config.NUCLEI_TIMEOUT)
 
@@ -128,12 +133,13 @@ class NucleiAdapter(BaseAdapter):
             "tool": self.tool_name,
             "url": matched_at,
             "description": info.get("description", ""),
-            "exploit_validated": validate_mode,  # FR-SCN-13
+            "exploit_validated": False,  # FR-SCN-13: no exploit validation exists yet
             "metadata": {
                 "template_id": template_id,
                 "host": data.get("host", ""),
                 "tags": info.get("tags", []),
                 "reference": info.get("reference", []),
-                "validate_mode": validate_mode,
+                "evidence_type": "nuclei_template_match",
+                "active_validation_requested": validate_mode,
             },
         }

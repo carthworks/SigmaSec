@@ -117,7 +117,7 @@ export function LaunchScanDialog({
   const [excludePatterns, setExcludePatterns] = React.useState("docs/**, *.min.js");
 
   // Active testing states
-  const [activeValidation, setActiveValidation] = React.useState(false);
+  const activeValidation = false; // exploit validation not implemented yet
   const [authorizedCheck, setAuthorizedCheck] = React.useState(false);
 
   const targetType = React.useMemo(() => detectTargetType(target), [target]);
@@ -906,18 +906,19 @@ export function LaunchScanDialog({
               </h3>
 
               <div className="border border-red-900/60 bg-red-950/15 p-4 rounded-lg space-y-3.5">
-                {/* Active exploit validation */}
-                <label className="flex items-start gap-2.5 cursor-pointer">
+                {/* Active exploit validation — not implemented yet (see docs/CLAIMS_AUDIT.md, claim 5) */}
+                <label className="flex items-start gap-2.5 cursor-not-allowed opacity-60">
                   <input
                     type="checkbox"
-                    checked={activeValidation}
-                    onChange={(e) => setActiveValidation(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-red-800 bg-slate-900 text-red-600 focus:ring-red-500/20 accent-red-600 cursor-pointer"
+                    checked={false}
+                    disabled
+                    aria-describedby="active-validation-note"
+                    className="mt-0.5 h-4 w-4 rounded border-red-800 bg-slate-900 text-red-600 focus:ring-red-500/20 accent-red-600 cursor-not-allowed"
                   />
                   <div>
-                    <span className="font-bold text-red-400 text-xs block">Active exploit validation</span>
-                    <p className="text-[11px] text-slate-400 leading-relaxed mt-1">
-                      Sends real exploit probes to confirm findings are genuinely exploitable. Sharply reduces false positives, but generates live traffic and may trigger alerts, rate limits, or WAF blocks on the target.
+                    <span className="font-bold text-red-400 text-xs block">Active exploit validation · coming soon</span>
+                    <p id="active-validation-note" className="text-[11px] text-slate-400 leading-relaxed mt-1">
+                      Not available yet. Web findings today are Nuclei template matches; nothing is exploited or confirmed.
                     </p>
                   </div>
                 </label>

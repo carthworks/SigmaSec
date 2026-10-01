@@ -25,9 +25,9 @@ Scans must be triggered manually via the UI or the `POST /scans` API. There is n
 **Status:** ✅ Resolved in v1.0.x  
 Nuclei templates now live in a Docker named volume (`nuclei_templates`) mounted at `/home/appuser/nuclei-templates` on both the API and worker containers. A `POST /admin/nuclei/update-templates` endpoint dispatches a Celery task that runs `nuclei -update-templates -ud <volume_path>`. The next scan automatically uses the updated templates — no container rebuild or redeploy required.
 
-### Active exploit validation only runs on Nuclei findings
-**Status:** By design, v1.0  
-The `active_validation` flag (FR-SCN-13) fires Nuclei `-validate` probes. Trivy (SCA) and Gitleaks (secrets) findings are not actively probed — they rely on static analysis only.
+### Active exploit validation is not implemented
+**Status:** Not implemented  
+The `active_validation` flag (FR-SCN-13) is accepted by the API but does nothing: Nuclei's `-validate` flag only checks template syntax, so it is no longer passed and no finding is marked `exploit_validated`. Nuclei findings are template matches. The UI toggle is disabled until real validation exists.
 
 ### PR-time scanning requires a GitHub App installation
 **Status:** Manual setup required  
@@ -37,17 +37,17 @@ FR-SCN-12 (PR scanning) depends on a GitHub App installed on the target organisa
 
 ## 🤖 AI & Enrichment
 
-### Requires Anthropic API key — no self-hosted LLM option
-**Status:** Deferred to v1.3+  
-All AI enrichment and the agentic chat (FR-AI-10) require an active `ANTHROPIC_API_KEY` pointed at the Anthropic Cloud API. Running a local or self-hosted model (e.g., Ollama, vLLM) is not supported in v1.
+### Local LLM support is via Ollama only
+**Status:** Available  
+`AI_PROVIDER` defaults to `ollama`, so enrichment can run fully locally with no data leaving the deployment. Set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` to use Claude instead. Other self-hosted runtimes (e.g. vLLM) are not supported yet.
 
 ### AI enrichment is best-effort — not guaranteed per scan
 **Status:** Known behaviour  
 If the Anthropic API is rate-limited, slow, or returns an error, the Celery enrichment task logs the failure and stores `null` in `ai_plain_english`. The finding is still saved; only the plain-English summary and remediation plan are missing.
 
-### Source-call reachability analysis (FR-AI-08) only works on cloned Git repos
-**Status:** By design, v1.0  
-AST-based reachability parsing requires the source repository to be cloned. Web-only scans (Nuclei against a URL) will always show `reachability: null`.
+### Dependency reachability (FR-AI-08) is an import-level check, Python-first
+**Status:** Beta, v1.0  
+Reachability needs the source repository to be cloned; web-only scans always show `reachability: null`. It finds imports and direct call sites of a vulnerable package (Python via AST, other languages via text matching) and asks the LLM for a verdict. It is not a call graph and does not trace from entry points. A package that isn't imported by name is reported as `uncertain`, and only a confident `unreachable` verdict lowers priority. SAST (Opengrep) findings are not reachability-analysed.
 
 ---
 
@@ -146,7 +146,7 @@ Findings are not yet tagged with ATT&CK techniques or OWASP Top 10 categories. T
 | Compliance report packs (dynamic) | v1.2 |
 | MITRE ATT&CK / OWASP heatmaps | v1.2 |
 | Network / host scanning (Nmap) | ✅ v1.0.x |
-| Self-hosted LLM option | v1.3+ |
+| Self-hosted LLM option | ✅ Ollama (vLLM etc. v1.3+) |
 | Geo-HA / multi-region | v1.3+ |
 
 ---
