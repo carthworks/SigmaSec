@@ -935,6 +935,9 @@ export function LaunchScanDialog({
                     <span className="text-[11px] text-slate-300 leading-relaxed block font-medium">
                       I own this target or hold written authorisation to test it. <span className="text-red-400 font-bold">*</span>
                     </span>
+                    <span className="text-[10.5px] text-slate-400 leading-relaxed block mt-1">
+                      Web and network scans also need the domain or IP to be verified under Assets → Verified targets.
+                    </span>
                   </div>
                 </label>
               </div>

@@ -278,6 +278,7 @@ def test_nuclei_command_never_passes_template_validate_flag(monkeypatch):
         return SimpleNamespace(timed_out=False, returncode=0, stdout="")
 
     monkeypatch.setattr(nuclei_mod, "run_logged_command", fake_run)
+    monkeypatch.setattr(nuclei_mod, "assert_public_target", lambda t: ["93.184.216.34"])  # no live DNS in tests
     adapter = nuclei_mod.NucleiAdapter.__new__(nuclei_mod.NucleiAdapter)
     adapter.binary = "nuclei"
     adapter.run("https://example.com", "s", "o", "a", options={"validate": True})

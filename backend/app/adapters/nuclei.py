@@ -7,7 +7,8 @@ from typing import List
 
 from app.adapters.base import BaseAdapter
 from app.adapters import config
-from app.adapters.runner import run_logged_command
+from app.adapters.runner import refuse_target, run_logged_command
+from app.security.targets import TargetNotAllowed, assert_public_target
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,14 @@ class NucleiAdapter(BaseAdapter):
         options = options or {}
         validate = bool(options.get("validate", False))
 
+        # Re-check right before sending traffic: the target must still resolve only
+        # to public addresses (guards against DNS changes after the scan was queued).
+        try:
+            assert_public_target(target)
+        except TargetNotAllowed as exc:
+            refuse_target(scan_id, "nuclei", str(exc))
+            return []
+
         # Prefer the live-updated template volume; fall back to bundled default.
         import os as _os
         templates_path = config.NUCLEI_TEMPLATES_PATH
@@ -57,8 +66,8 @@ class NucleiAdapter(BaseAdapter):
             "-retries", "1",
             "-H", f"User-Agent: {config.USER_AGENT}",
         ]
-        if options.get("rate_limit"):
-            cmd += ["-rate-limit", str(options["rate_limit"])]
+        # Polite default: Nuclei's own default is 150 requests/second.
+        cmd += ["-rate-limit", str(options.get("rate_limit") or config.NUCLEI_RATE_LIMIT)]
         if validate:
             # Nuclei's -validate flag only checks template syntax ("validate the
             # passed templates to nuclei"); it does not exploit or confirm anything.

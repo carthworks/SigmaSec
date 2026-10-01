@@ -27,6 +27,7 @@ import {
   ColumnDef,
 } from "@tanstack/react-table";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { VerifiedTargets } from "@/components/assets/verified-targets";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -286,6 +287,8 @@ export default function AssetsPage() {
       const scanTypes =
         asset.asset_type === "url"
           ? ["vuln"]
+          : asset.asset_type === "host"
+          ? ["network"]
           : asset.asset_type === "docker_image"
           ? ["sca"]
           : ["secret"];
@@ -301,7 +304,11 @@ export default function AssetsPage() {
           asset_id: asset.id,
         }),
       });
-      if (!res.ok) throw new Error("Failed to trigger scan");
+      if (!res.ok) {
+        // Surface the API's reason (e.g. target not verified, hourly limit reached).
+        const body = await res.json().catch(() => ({}));
+        throw new Error(typeof body?.detail === "string" ? body.detail : "Failed to trigger scan");
+      }
       return res.json();
     },
     onSuccess: () =>
@@ -765,6 +772,9 @@ export default function AssetsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Verified targets (required for web and network scans) ─────── */}
+      <VerifiedTargets />
 
       {/* ── Findings drawer ────────────────────────────────────────────── */}
       <Dialog open={drawerOpen} onOpenChange={setDrawerOpen}>

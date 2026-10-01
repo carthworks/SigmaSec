@@ -21,7 +21,8 @@ from typing import List
 
 from app.adapters.base import BaseAdapter
 from app.adapters import config
-from app.adapters.runner import run_logged_command
+from app.adapters.runner import refuse_target, run_logged_command
+from app.security.targets import TargetNotAllowed, assert_public_target, extract_host
 
 logger = logging.getLogger(__name__)
 
@@ -64,12 +65,14 @@ class NmapAdapter(BaseAdapter):
     ) -> List[dict]:
         options = options or {}
 
-        # Strip URL scheme -- nmap wants a bare host/IP
-        bare_target = target
-        for scheme in ("https://", "http://"):
-            if bare_target.startswith(scheme):
-                bare_target = bare_target[len(scheme):]
-        bare_target = bare_target.split("/")[0].split(":")[0]
+        # Re-check right before sending traffic: the target must still resolve only
+        # to public addresses (guards against DNS changes after the scan was queued).
+        try:
+            assert_public_target(target)
+            bare_target = extract_host(target)  # bare host/IP, IPv6-safe
+        except TargetNotAllowed as exc:
+            refuse_target(scan_id, "nmap", str(exc))
+            return []
 
         cmd = [
             self.binary,

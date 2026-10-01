@@ -9,6 +9,7 @@ from .ai_call import AICall
 from .jira_config import JiraConfig
 from .slack_config import SlackConfig
 from .github_config import GitHubConfig
+from .target_verification import TargetVerification
 
 __all__ = [
     "Base",
@@ -30,4 +31,5 @@ __all__ = [
     "JiraConfig",
     "SlackConfig",
     "GitHubConfig",
+    "TargetVerification",
 ]
