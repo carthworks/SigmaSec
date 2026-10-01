@@ -237,13 +237,13 @@ export default function RemediationHubPage() {
         <Card className="bg-card/50 border-border/80 shadow-sm hover:shadow-md transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Reachable Path Risks
+              Dependencies Used In Code
             </CardTitle>
             <Cpu className="h-4 w-4 text-amber-500 animate-pulse" />
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="text-3xl font-extrabold tracking-tight text-foreground">{stats.reachableCount}</div>
-            <p className="text-xs text-muted-foreground/80 leading-snug">Executing package call paths in AST</p>
+            <p className="text-xs text-muted-foreground/80 leading-snug">Import-level usage check (beta)</p>
           </CardContent>
         </Card>
 

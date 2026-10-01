@@ -1455,7 +1455,7 @@ function FindingsContent() {
                         <h4 className="text-[11px] font-bold text-indigo-500 uppercase tracking-wider">Why Now — Triage Evidence</h4>
                       </div>
                       <p className="text-[12.5px] font-medium text-foreground/90 leading-relaxed">
-                        {selectedFinding.ai_why_now || "Reachable unauthenticated entry point detected with active threat intel indicator."}
+                        {selectedFinding.ai_why_now || "No AI triage context has been generated for this finding yet."}
                       </p>
                     </div>
 
@@ -1467,11 +1467,8 @@ function FindingsContent() {
                         selectedFinding.severity === "medium" ? 6.5 : 3.8
                       );
 
-                      const epssVal = selectedFinding.epss_score ?? (
-                        (selectedFinding.severity === "critical" || selectedFinding.kev_listed) ? 0.942 :
-                        selectedFinding.severity === "high" ? 0.785 :
-                        selectedFinding.severity === "medium" ? 0.341 : 0.082
-                      );
+                      // EPSS only exists for CVEs. Never estimate it from severity.
+                      const epssVal: number | null = selectedFinding.epss_score ?? null;
 
                       return (
                         <div className="grid grid-cols-2 gap-4">
@@ -1504,11 +1501,13 @@ function FindingsContent() {
                             <CardContent className="p-3 pt-0 space-y-1.5">
                               <div className="flex items-center justify-between">
                                 <span className="text-xl font-bold font-mono">
-                                  {(epssVal * 100).toFixed(2)}%
+                                  {epssVal === null ? "—" : `${(epssVal * 100).toFixed(2)}%`}
                                 </span>
-                                <span className="text-[9px] text-muted-foreground">30-day wild risk</span>
+                                <span className="text-[9px] text-muted-foreground">
+                                  {epssVal === null ? (selectedFinding.cve_id ? "Not scored yet" : "No CVE, so no EPSS") : "30-day exploitation probability"}
+                                </span>
                               </div>
-                              <Progress
+                              {epssVal !== null && <Progress
                                 value={epssVal * 100}
                                 className={cn(
                                   "h-1.5",
@@ -1516,7 +1515,7 @@ function FindingsContent() {
                                   epssVal > 0.30 ? "[&>[data-slot=progress-value]]:bg-amber-500" :
                                   "[&>[data-slot=progress-value]]:bg-emerald-500"
                                 )}
-                              />
+                              />}
                             </CardContent>
                           </Card>
                         </div>
@@ -1654,64 +1653,18 @@ function FindingsContent() {
                     </h4>
                     
                     {(() => {
-                      const steps = (selectedFinding.ai_remediation_structured && selectedFinding.ai_remediation_structured.length > 0)
-                        ? selectedFinding.ai_remediation_structured
-                        : (selectedFinding.tool || "").toLowerCase().includes("trivy")
-                        ? [
-                            {
-                              action: "Upgrade vulnerable package dependency to latest patch release",
-                              command: `npm install ${selectedFinding.title.split(" ")[0] || "dependency"}@latest --save-exact`,
-                              file: "package.json",
-                              verification: "trivy fs . --severity HIGH,CRITICAL"
-                            },
-                            {
-                              action: "Verify lockfile integrity and run automated regression tests",
-                              command: "npm test",
-                              file: "package-lock.json",
-                              verification: "npm run build"
-                            }
-                          ]
-                        : (selectedFinding.tool || "").toLowerCase().includes("gitleaks")
-                        ? [
-                            {
-                              action: "Revoke compromised API token or credential at provider console",
-                              command: "aws iam revoke-security-credentials --user-name deploy-bot",
-                              file: ".env.production",
-                              verification: "gitleaks detect --source . -v"
-                            },
-                            {
-                              action: "Purge secret reference from git commit history",
-                              command: "git filter-repo --path .env --invert-paths",
-                              file: ".git",
-                              verification: "git log -p -1"
-                            }
-                          ]
-                        : [
-                            {
-                              action: "Enforce strict input validation and parameter sanitization",
-                              command: "sed -i 's/verify=False/verify=True/' routes/auth.py",
-                              file: "routes/auth.py",
-                              verification: "pytest tests/test_security.py"
-                            },
-                            {
-                              action: "Deploy Web Application Firewall (WAF) signature rule",
-                              command: "cloudflare-cli rules add --pattern '/api/v1/login' --action block",
-                              file: "infrastructure/waf_rules.json",
-                              verification: "curl -i -X POST http://localhost:8000/login"
-                            }
-                          ];
-
-                      const patchObj = selectedFinding.ai_patch?.diff
-                        ? selectedFinding.ai_patch
-                        : {
-                            diff: "--- a/routes/auth.py\n+++ b/routes/auth.py\n@@ -38,7 +38,7 @@ def handle_login():\n-    return verify_token(request.headers.get('Authorization'), verify=False)\n+    return verify_token(request.headers.get('Authorization'), verify=True)",
-                            applies_to_sha: "a3f29b1",
-                            files_touched: ["routes/auth.py"]
-                          };
+                      // Only AI-generated steps are shown; nothing is invented when they're missing.
+                      const steps = selectedFinding.ai_remediation_structured ?? [];
+                      const patchObj = selectedFinding.ai_patch?.diff ? selectedFinding.ai_patch : null;
 
                       return (
                         <div className="space-y-4">
                           <div className="space-y-3">
+                            {steps.length === 0 && (
+                              <p className="text-xs text-muted-foreground">
+                                No structured remediation plan yet. Use &quot;Regenerate AI analysis&quot; to create one.
+                              </p>
+                            )}
                             {steps.map((step, idx) => (
                               <div key={idx} className="p-4 rounded-xl border border-border/80 bg-muted/10 space-y-2.5">
                                 <div className="flex items-center justify-between">
@@ -1740,18 +1693,20 @@ function FindingsContent() {
                             ))}
                           </div>
 
-                          {/* Unified Patch Preview Block */}
-                          <div className="space-y-2 pt-3 border-t border-border/40">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Unified Patch Preview</h4>
-                              {patchObj.applies_to_sha && (
-                                <span className="text-[10px] font-mono text-muted-foreground">SHA: {patchObj.applies_to_sha}</span>
-                              )}
+                          {/* Unified Patch Preview Block — only when the AI produced a patch */}
+                          {patchObj && (
+                            <div className="space-y-2 pt-3 border-t border-border/40">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Suggested Patch (AI-generated, review before applying)</h4>
+                                {patchObj.applies_to_sha && (
+                                  <span className="text-[10px] font-mono text-muted-foreground">SHA: {patchObj.applies_to_sha}</span>
+                                )}
+                              </div>
+                              <pre className="bg-slate-950 text-slate-100 dark:text-slate-100 p-3.5 rounded-xl font-mono text-[11px] border border-border/80 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                                {patchObj.diff}
+                              </pre>
                             </div>
-                            <pre className="bg-slate-950 text-slate-100 dark:text-slate-100 p-3.5 rounded-xl font-mono text-[11px] border border-border/80 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                              {patchObj.diff}
-                            </pre>
-                          </div>
+                          )}
                         </div>
                       );
                     })()}
@@ -1778,16 +1733,15 @@ function FindingsContent() {
                               : "bg-amber-500/10 text-amber-600 border-amber-500/20"
                           )}
                         >
-                          {selectedFinding.reachability || "Reachable"}
+                          {selectedFinding.reachability || "Not analysed"}
                         </span>
                       </div>
 
                       <div className="space-y-2">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Call Site Location / Analysis</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Analysis (import-level check, beta)</p>
                         <pre className="bg-slate-950 text-slate-100 dark:text-slate-100 border border-border/80 rounded-xl p-4 text-[11.5px] font-mono overflow-auto max-h-60 whitespace-pre-wrap leading-relaxed font-medium shadow-inner">
-                          {selectedFinding.reachability_reason || 
-                            `// routes/auth.py:42 (POST /login, unauthenticated)\nimport { verify_token } from 'services/auth';\n\ndef handle_login():\n  return verify_token(request.headers.get('Authorization'))`
-                          }
+                          {selectedFinding.reachability_reason ||
+                            "Reachability hasn't been analysed for this finding. It runs for dependency (Trivy) findings from Git repositories."}
                         </pre>
                       </div>
                     </div>
@@ -1798,7 +1752,7 @@ function FindingsContent() {
                 {activeTab === "raw" && (
                   <div className="space-y-3">
                     <h4 className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                      Raw Scanner & AST Reachability JSON Output
+                      Raw Scanner &amp; Enrichment JSON Output
                     </h4>
                     <pre className="bg-slate-950 text-emerald-400 dark:text-emerald-300 border border-emerald-500/20 rounded-xl p-4 text-[11px] font-mono overflow-auto max-h-[55vh] whitespace-pre-wrap break-all select-all leading-relaxed shadow-inner">
                       {(() => {
@@ -1811,44 +1765,29 @@ function FindingsContent() {
                           }
                         }
 
+                        // Real stored values only: missing fields stay null rather than being filled in.
                         const rawPayload = {
                           finding_id: selectedFinding.id,
                           title: selectedFinding.title,
                           tool: selectedFinding.tool,
-                          cve_id: selectedFinding.cve_id || "CVE-2024-3094",
+                          cve_id: selectedFinding.cve_id ?? null,
                           severity: selectedFinding.severity,
-                          cvss_score: selectedFinding.cvss_score || 8.9,
-                          epss_score: selectedFinding.epss_score || 0.942,
-                          asset_name: selectedFinding.asset_name || "Production Core API",
+                          cvss_score: selectedFinding.cvss_score ?? null,
+                          epss_score: selectedFinding.epss_score ?? null,
+                          asset_name: selectedFinding.asset_name ?? null,
                           reachability: {
-                            status: selectedFinding.reachability || "reachable",
-                            entry_point: selectedFinding.reachability_context?.entry_point || "routes/auth.py:42 (POST /login, unauthenticated)",
-                            call_path: selectedFinding.reachability_context?.call_path || ["routes/auth.py:42", "services/auth.py:118", "jwt/decode.py:203"],
-                            snippets: selectedFinding.reachability_context?.snippets || {
-                              "routes/auth.py:38-48": "def handle_login():\n    return verify_token(request.headers.get('Authorization'))",
-                              "services/auth.py:112-124": "def verify_token(token):\n    return jwt.decode(token, verify=False)"
-                            },
-                            analyzer_confidence: selectedFinding.reachability_context?.analyzer_confidence || 0.92
+                            status: selectedFinding.reachability ?? null,
+                            reason: selectedFinding.reachability_reason ?? null,
+                            context: selectedFinding.reachability_context ?? null,
                           },
                           ai_enrichment: {
-                            plain_english: selectedFinding.ai_plain_english || "Reachable unauthenticated entry point detected in routes/auth.py.",
-                            why_now: selectedFinding.ai_why_now || "Reachable call path detected with active threat intel indicator.",
-                            breaking_change_risk: selectedFinding.ai_breaking_change_risk || "low",
-                            blockers: selectedFinding.ai_blockers || [],
-                            remediation_steps: selectedFinding.ai_remediation_structured || [
-                              {
-                                action: "Enforce strict input validation and parameter sanitization",
-                                command: "sed -i 's/verify=False/verify=True/' routes/auth.py",
-                                file: "routes/auth.py",
-                                verification: "pytest tests/test_security.py"
-                              }
-                            ],
-                            patch: selectedFinding.ai_patch || {
-                              diff: "--- a/routes/auth.py\n+++ b/routes/auth.py\n@@ -38,7 +38,7 @@ def handle_login():\n-    return verify_token(request.headers.get('Authorization'), verify=False)\n+    return verify_token(request.headers.get('Authorization'), verify=True)",
-                              applies_to_sha: "a3f29b1",
-                              files_touched: ["routes/auth.py"]
-                            }
-                          }
+                            plain_english: selectedFinding.ai_plain_english ?? null,
+                            why_now: selectedFinding.ai_why_now ?? null,
+                            breaking_change_risk: selectedFinding.ai_breaking_change_risk ?? null,
+                            blockers: selectedFinding.ai_blockers ?? [],
+                            remediation_steps: selectedFinding.ai_remediation_structured ?? [],
+                            patch: selectedFinding.ai_patch ?? null,
+                          },
                         };
                         return JSON.stringify(rawPayload, null, 2);
                       })()}

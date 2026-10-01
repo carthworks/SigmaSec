@@ -1356,6 +1356,11 @@ export default function ScanDetailPage({ params }: PageProps) {
     if (scan.status === "complete" || scan.status === "failed") {
       setProgressPct(100);
       setCurrentStep(scan.status);
+      // Finished scans: load the stored scanner output once.
+      fetch(`/api/scans/${id}/logs`)
+        .then((res) => (res.ok ? res.json() : { logs: [] }))
+        .then((data) => setLogs(Array.isArray(data?.logs) ? data.logs : []))
+        .catch(() => setLogs([]));
       return;
     }
 
@@ -1805,7 +1810,7 @@ export default function ScanDetailPage({ params }: PageProps) {
               Scan Engine Live Output Stream
             </h2>
             <p className="text-xs text-muted-foreground">
-              Real-time terminal execution stdout/stderr stream from Nuclei, Semgrep, Trivy & Zap scanner containers.
+              Scanner output for this scan, streamed while it runs and stored afterwards.
             </p>
           </div>
         </div>
@@ -1814,6 +1819,7 @@ export default function ScanDetailPage({ params }: PageProps) {
           target={scan.target}
           scanTypes={scan.scan_types}
           status={scan.status}
+          initialLogs={logs}
         />
       </div>
 

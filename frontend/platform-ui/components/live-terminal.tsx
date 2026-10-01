@@ -29,69 +29,17 @@ interface LiveTerminalProps {
 
 export function LiveTerminal({
   scanId,
-  target = "target.local",
-  scanTypes = ["nuclei", "semgrep"],
   status = "running",
   initialLogs,
   className = "",
 }: LiveTerminalProps) {
-  const [logs, setLogs] = React.useState<string[]>([]);
+  // Shows only real scanner output passed in by the caller. It never generates
+  // placeholder lines: a terminal that invents output can't be trusted.
+  const logs = React.useMemo(() => initialLogs ?? [], [initialLogs]);
   const [autoScroll, setAutoScroll] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
   const terminalEndRef = React.useRef<HTMLDivElement>(null);
-
-  // Generate initial log stream lines if not provided
-  React.useEffect(() => {
-    if (initialLogs && initialLogs.length > 0) {
-      setLogs(initialLogs);
-      return;
-    }
-
-    const defaultLogs = [
-      `[${new Date().toISOString()}] [INFO] Initializing SigmaSec Scanner Engine v0.1.0`,
-      `[${new Date().toISOString()}] [INFO] Task ID: ${scanId} | Target: ${target}`,
-      `[${new Date().toISOString()}] [INFO] Active threat vectors: ${scanTypes.join(", ")}`,
-      `[${new Date().toISOString()}] [SYSTEM] Allocating container sandbox... Success.`,
-      `[${new Date().toISOString()}] [NUCLEI] Loading templates: http, cve, misconfiguration, default-logins... (9,421 rules active)`,
-      `[${new Date().toISOString()}] [SEMGREP] Analyzing AST patterns across project repositories...`,
-      `[${new Date().toISOString()}] [OPENGREP] Running Opengrep static security analysis (SAST) rule checks...`,
-      `[${new Date().toISOString()}] [TRIVY] Scanning container image layers for known CVE vulnerabilities...`,
-      `[${new Date().toISOString()}] [NUCLEI] Probing target endpoints at ${target}...`,
-      `[${new Date().toISOString()}] [WARN] [NUCLEI] [http-missing-headers] Security header 'X-Frame-Options' missing on endpoint /login`,
-      `[${new Date().toISOString()}] [CRITICAL] [NUCLEI] [CVE-2023-4863] Potential heap buffer overflow condition detected in libwebp parser`,
-      `[${new Date().toISOString()}] [INFO] [OPENGREP] Rule sast-hardcoded-secret triggered on /src/config.ts:18`,
-      `[${new Date().toISOString()}] [INFO] Active AST reachability analyzer calculating package call paths...`,
-
-    ];
-
-    if (status === "completed") {
-      defaultLogs.push(
-        `[${new Date().toISOString()}] [INFO] Scan execution completed successfully.`,
-        `[${new Date().toISOString()}] [SUCCESS] Report generated and findings registered to organization catalog.`
-      );
-    }
-
-    setLogs(defaultLogs);
-  }, [scanId, target, scanTypes, status, initialLogs]);
-
-  // Live log generator interval if scan is running
-  React.useEffect(() => {
-    if (status !== "running" && status !== "queued") return;
-
-    const interval = setInterval(() => {
-      const timestamps = new Date().toISOString();
-      const mockEvents = [
-        `[${timestamps}] [INFO] [NUCLEI] Probe matched response headers (HTTP 200 OK) on /api/v1/health`,
-        `[${timestamps}] [INFO] [TRIVY] Vulnerability lookup matched NVD dataset: CVE-2024-21626 (CVSS 8.6)`,
-        `[${timestamps}] [INFO] Active Probe Engine executing nucleis '-validate' active exploit verification...`,
-        `[${timestamps}] [SUCCESS] Exploit confirmation: Reachable AST path validated. Priority rank boosted.`,
-      ];
-      const randomLine = mockEvents[Math.floor(Math.random() * mockEvents.length)];
-      setLogs((prev) => [...prev, randomLine]);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [status]);
+  const isActive = status === "running" || status === "queued";
 
   // Auto-scroll to bottom on log append
   React.useEffect(() => {
@@ -197,6 +145,11 @@ export function LiveTerminal({
 
       {/* Terminal Viewport */}
       <div className="flex-1 p-4 overflow-y-auto space-y-1 text-[11.5px] leading-relaxed selection:bg-indigo-500 selection:text-white font-mono">
+        {logs.length === 0 && (
+          <div className="text-zinc-500">
+            {isActive ? "Waiting for scanner output…" : "No scanner output was recorded for this scan."}
+          </div>
+        )}
         {filteredLogs.map((line, idx) => {
           const isCritical = line.includes("[CRITICAL]") || line.includes("CVE-");
           const isWarn = line.includes("[WARN]") || line.includes("WARNING");
