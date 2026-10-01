@@ -49,7 +49,7 @@ export default function TermsPage() {
               <span className="text-cyan-400 font-mono text-xs">01</span> Platform Services
             </h2>
             <p className="mb-2">
-              SigmaSec provides automated vulnerability discovery, AST call-graph reachability analysis, threat intelligence correlation (CISA KEV, EPSS), sandbox exploit validation, and autonomous remediation generation services.
+              SigmaSec provides automated vulnerability discovery, threat intelligence correlation (CISA KEV, EPSS), dependency usage analysis, AI-generated explanations, and remediation pull requests for supported dependency upgrades.
             </p>
             <p>
               By accessing our platform or requesting pilot onboarding, you agree to comply with these terms.
@@ -85,7 +85,7 @@ export default function TermsPage() {
               <span className="text-cyan-400 font-mono text-xs">04</span> Service Level &amp; Pilot Disclaimer
             </h2>
             <p>
-              During evaluation and beta pilot periods, the platform is provided on an &quot;as-is&quot; basis. While SigmaSec executes rigorous AST reachability verification and sandbox validations, engineering teams must review all auto-generated pull requests before merging into production environments.
+              During evaluation and beta pilot periods, the platform is provided on an &quot;as-is&quot; basis. Findings, risk rankings and AI-generated explanations may be incomplete or wrong, and engineering teams must review all generated pull requests before merging into production environments.
             </p>
           </section>
 

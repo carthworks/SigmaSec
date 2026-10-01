@@ -5,6 +5,8 @@
 **Method:** read-only. No code was changed.
 
 > **Update — branch `fix/pre-pilot-trust`:** fixes S1–S5 and claim 22 (dashboard shows only real data), removes the fake "exploit validated" flag (claim 5, backend and scan dialog), stops the Opengrep file-exists "reachable" shortcut (claim 4), and adds a migration for eight `findings` columns that had none. Landing-page copy (claims 1–3, 6–21) is **not** changed yet.
+>
+> **Update — branch `fix/honest-copy`:** corrects the landing, privacy, terms and help copy for claims 1–21, removes invented fallback data from the finding drawer, scan terminal and settings, unifies the posture score, and clears stale `exploit_validated` flags. Facts only the founders can confirm are listed in `docs/FOUNDER_TODO.md`.
 
 Status key:
 - **Implemented** — the code does what the copy says.

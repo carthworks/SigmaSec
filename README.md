@@ -8,7 +8,7 @@
 
 **SigmaSec** is a unified, multi-tenant security posture and vulnerability intelligence platform designed for fast-moving engineering and security teams (20–500+ engineers). It eliminates scanner noise by integrating web, container, secret, SAST, and network scanners into a single prioritized intelligence pipeline.
 
-Every vulnerability is enriched with real-world threat signals (**CISA KEV**, **FIRST EPSS**, **NVD CVSS**), validated for exploitability, AST-checked for code reachability, and synthesized by **Anthropic Claude** into plain-English explanations, 1-click Jira tickets, and automated GitHub remediation PRs.
+Every vulnerability is enriched with real-world threat signals (**CISA KEV**, **FIRST EPSS**, **NVD CVSS**), checked (beta) for whether vulnerable dependencies are used in your code, and explained in plain English by **Anthropic Claude** or a local **Ollama** model, with 1-click Jira tickets and GitHub PRs for dependency upgrades.
 
 ---
 
@@ -92,7 +92,7 @@ npm run dev
 
 ### 5. Architectural Pipeline & Intelligence Flow
 ![Architectural Pipeline & Intelligence Flow](frontend/platform-ui/public/Unified_Security_Intelligence_Workflow.png)
-*End-to-end multi-engine intelligence architecture illustrating discovery, active enrichment with CISA KEV / FIRST EPSS, AST-based reachability filtering, Claude Sonnet 4.5 AI reasoning, and automated Jira/GitHub remediation actions.*
+*End-to-end multi-engine intelligence architecture illustrating discovery, enrichment with CISA KEV / FIRST EPSS, dependency usage checks, AI explanations, and Jira/GitHub remediation actions.*
 
 ---
 
@@ -151,8 +151,8 @@ The platform operates across 5 integrated stages:
 2. **ENRICH (Real-World Threat Intelligence):**
    Cross-references every finding with **CISA KEV** (Known Exploited Vulnerabilities catalog with due dates), **FIRST EPSS v3** (Exploitation Probability percentile), and **NVD CVSS v3.1** scores via Redis-cached O(1) lookups.
 3. **PRIORITIZE (Composite Risk Engine & Active Validation):**
-   - **AST Code Reachability:** Parses repository Abstract Syntax Trees to verify if vulnerable library functions are actually invoked in runtime paths.
-   - **Active Exploit Validation:** Executes targeted active validation probes (`nuclei -validate`) to confirm real-world exploitability.
+   - **Dependency usage check (beta):** Finds imports and direct call sites of a vulnerable package (Python via AST, other languages via text matching) and asks the LLM for a verdict. Not a call graph.
+   - **Active Exploit Validation:** Not implemented yet. Nuclei findings are template matches.
    - Computes dynamic priority scores weighted by asset criticality (Production vs Staging vs Internal).
 4. **UNDERSTAND (Anthropic Claude AI):**
    Synthesizes complex vulnerability data into plain-English explanations, attack scenario walkthroughs, root cause diagnoses, and bespoke remediation plans.
@@ -166,8 +166,8 @@ The platform operates across 5 integrated stages:
 ## ✨ Key Differentiators & Security Moats
 
 * **PR-Time Pre-Merge Scanning (FR-SCN-12):** Scans pull request diffs as a GitHub App before merge, posting inline line annotations and blocking risky merges.
-* **Exploit Validation (FR-SCN-13):** Actively confirms exploitability of critical vulnerabilities with live validation probes, boosting validated finding scores (+0.5).
-* **AST Source-Call Reachability (FR-AI-08):** Evaluates whether vulnerable dependency methods are called by source code, adjusting priority score dynamically (0.7x unreachable vs 1.2x reachable).
+* **Exploit Validation (FR-SCN-13):** Not implemented yet. The UI toggle is disabled and no finding is marked validated.
+* **Dependency usage check (FR-AI-08, beta):** Evaluates whether a vulnerable dependency is imported and called in source code. A confident (>= 0.8) 'unreachable' verdict lowers priority 0.7x; 'reachable' raises it 1.2x; anything else is 'uncertain' and leaves priority unchanged.
 * **ReAct Conversational Security Agent (FR-AI-10):** Interactive Claude agent equipped with database querying tools (`list_findings`, `get_finding`, `get_scan`, `get_asset`, `search_cves`) answering ad-hoc triage questions with live citation badges.
 * **Automated Compliance Hub (FR-CMP-01):** Automatically maps findings across **SOC 2 Type II** (CC6.1, CC6.6, CC6.8, CC7.1), **PCI-DSS v4.0** (Req 6.3, 6.4, 8.3, 11.3), **ISO 27001:2022** (A.8.8, A.8.28, A.8.24), and **NIST SP 800-53 R5** controls with CISO audit-ready PDF/CSV exports.
 * **Consolidated Fix PRs (FR-OUT-04):** Combines multiple CVE remediations into a single unified GitHub PR with code diff previews.
@@ -181,7 +181,6 @@ The platform operates across 5 integrated stages:
 * **Web Audio API Earcon Cues**: Synthesized non-blocking audio micro-chimes for long-running workflows (3-tone scan completion chime, cyber-shimmer AI recommendation arrival, and action confirmation pings) paired with a persistent TopBar mute toggle.
 * **Plain English Explanation Table Indicators**: Findings with generated AI executive summaries now render a subtle purple sparkle indicator in the findings DataGrid, with instant tooltip previews and guided fix breakdowns.
 * **Deep Threat Intelligence DataGrid (CVSS, EPSS & Tags)**: Fully populated and color-coded table columns for NVD CVSS base scores, FIRST EPSS 30-day exploitation percentiles, and deterministic hash-colored tags.
-* **Private Cloud Scanner Infrastructure (`infra/`)**: Production-ready Terraform infrastructure modules for provisioning isolated, zero-egress scanner runner clusters in private VPCs across AWS and Google Cloud (GCP).
 * **Custom Vectorized SVG Brand Identity & Favicon**: Added high-resolution dual-contrast security shield SVG favicon with gradient accenting.
 * **Opengrep SAST Static Code Analysis Integration**: Added native `OpengrepAdapter` (`backend/app/adapters/opengrep.py`) for static analysis AST scanning, ruleset customization, and code vulnerability detection.
 * **Nmap Network Port & Service Scanner Integration**: Added native network scanning adapter (`backend/app/adapters/nmap.py`) enabling port discovery, service enumeration, and open network attack surface assessment.
@@ -202,7 +201,7 @@ The platform operates across 5 integrated stages:
 
 ### 🔍 Month 1 Updates (Threat Intel & Posture Engine)
 * **Threat Intelligence Integrations**: Batch FIRST EPSS client (O(1) Redis caching), CISA KEV feeds with remediation due dates, and NVD CVSS enrichment.
-* **Exploit Validation**: Active confirmation flag integration boosting confirmed vulnerabilities.
+* **Exploit Validation**: Not implemented yet (roadmap).
 * **Rate Limiting & SSRF Protection**: `slowapi` rate limits (10 scans/hr/IP) and RFC1918 private IP blocking on target inputs.
 
 ---
@@ -211,10 +210,10 @@ The platform operates across 5 integrated stages:
 
 | Scanner / Engine | Category | Target Types | Output / Value |
 |---|---|---|---|
-| **Nuclei** | DAST / Web Vuln | URLs, Web Apps, APIs | Active web vulnerabilities, CVEs, misconfigurations, exploit validation |
+| **Nuclei** | DAST / Web Vuln | URLs, Web Apps, APIs | Web vulnerabilities, CVEs and misconfigurations (template matches) |
 | **Trivy** | Container / SCA | Container Images, Git Repos | Vulnerable dependencies, SBOM, OS package CVEs |
 | **Gitleaks** | Secret Detection | Git Repositories | Leaked API keys, private tokens, passwords, private keys |
-| **Opengrep** | SAST | Source Code (AST) | Static code flaws, unsafe functions, code reachability verification |
+| **Opengrep** | SAST | Source Code | Static code flaws and unsafe functions |
 | **Nmap** | Network Discovery | IPs, Hostnames, CIDRs | Open ports, exposed services, network service vulnerabilities |
 | **Anthropic Claude** | AI Reasoning | Enriched Findings | Plain-English explanations, attack narratives, remediation patches |
 
@@ -233,7 +232,7 @@ Where:
   * In CISA KEV: $1.5\times$
   * Confirmed Exploitable: $1.3\times$
   * EPSS $> 0.50$: $1.2\times$
-* **Reachability Factor ($R_i$):** Reachable via AST = $1.2\times$, Unreachable = $0.7\times$.
+* **Reachability Factor ($R_i$):** Dependency used in code = $1.2\times$; confidently unused (>= 0.8) = $0.7\times$; uncertain = $1.0\times$.
 * **Remediation Velocity Bonus ($B_{\text{remediation}}$):** $+1$ pt for every finding fixed within a 7-day SLA window (capped at $+15$).
 
 ---

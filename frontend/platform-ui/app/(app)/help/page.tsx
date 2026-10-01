@@ -39,7 +39,7 @@ const FAQS: FAQ[] = [
     id: "faq-2",
     category: "scoring",
     question: "What is the formula and rules for the organization Posture Score (0-100)?",
-    answer: "The Posture Score starts at a baseline of 100 and subtracts points for open vulnerabilities: -10 pts per Critical finding, -3 pts per High finding, and -1 pt per Medium finding, multiplied by the asset's criticality weight (1.0x to 2.0x for internet-facing targets). You earn +1 pt for every vulnerability fixed in the past 7 days (capped at +20 max). Resolved findings, False Positives, and Accepted Risks carry zero score penalty."
+    answer: "The Posture Score starts at 100 and subtracts 10 points per open Critical finding and 3 points per open High finding, each multiplied by the asset's weight (0.5x to 2.0x, set per asset). You earn +1 point for every finding fixed in the past 7 days (capped at +20). Medium and Low findings don't affect the score. Fixed findings, False Positives and suspected false positives carry no penalty; Accepted Risks still count until they are fixed. The dashboard and executive view use the same calculation."
   },
   {
     id: "faq-3",
@@ -86,8 +86,8 @@ const FAQS: FAQ[] = [
   {
     id: "faq-10",
     category: "scanning",
-    question: "What is Active Exploit Validation (FR-SCN-13)?",
-    answer: "Active Exploit Validation allows analysts to trigger active confirmation checks on web vulnerabilities. When launching a scan with this option enabled, the scanner engine invokes Nuclei's active '-validate' module. If Nuclei confirms that a vulnerability is actively exploitable, the finding's score receives an immediate priority boost."
+    question: "Does SigmaSec confirm that vulnerabilities are exploitable?",
+    answer: "Not yet. Active exploit validation is on the roadmap, and its toggle in the scan dialog is disabled. Today, web findings are Nuclei template matches, and prioritisation uses CISA KEV (known exploited), FIRST EPSS (likelihood of exploitation) and a beta check of whether vulnerable dependencies are used in your code."
   },
   {
     id: "faq-11",
@@ -123,25 +123,25 @@ const FAQS: FAQ[] = [
     id: "faq-16",
     category: "general",
     question: "How can I manage API Tokens, Organization coordinates, and Alert Notifications?",
-    answer: "API tokens, organization access details, and notification thresholds are managed under the **Settings** tab. The section is organized via shadcn Tabs: 1) **API Tokens** lets admins generate and revoke secure keys (with copy-to-clipboard access) for automation pipelines, 2) **Org Info** shows read-only identity records and access role permissions, and 3) **Notifications** configures custom email triggers for scans and vulnerability updates."
+    answer: "Organization details and integrations are under the **Settings** tab. **Org Info** shows read-only identity records and role permissions. **Jira**, **Slack** and **GitHub** tabs connect those integrations. **API Tokens** and email **Notifications** are not available yet: the tabs are placeholders, and the REST API currently authenticates with the session token from signing in. Slack scan summaries are the working notification channel today."
   },
   {
     id: "faq-17",
     category: "workflow",
     question: "What does the green 'Confirmed' / 'CONFIRMED EXPLOITABLE' badge mean on findings?",
-    answer: "The green 'Confirmed' badge sits next to the severity label on vulnerability cards. It indicates that the vulnerability's exploitability has been actively verified by the scanner engine (using custom outbound probes with `-validate` mode enabled). Findings that receive this active validation boost get their priority score increased by +0.5 to highlight actionable threats. Unvalidated findings receive a -0.2 penalty to reduce false confidence."
+    answer: "The badge is reserved for active exploit validation, which isn't available yet, so you won't see it on findings today. Earlier versions showed it on Nuclei findings after a template syntax check, which did not confirm exploitability; those flags have been cleared."
   },
   {
     id: "faq-18",
     category: "workflow",
     question: "How does the Security Reports template system work?",
-    answer: "The Reports page compiles real-time findings into audit-ready documents using three templates: 1) Executive Summary (high-level posture trends, threat-model risk summaries, and Claude-generated text), 2) Technical Vulnerabilities Ledger (detailed tabular registry of CVSS/EPSS vectors and CISA KEV listings), and 3) Compliance Mapping (framework readiness grids for SOC 2, ISO 27001, and PCI-DSS). Reports can be downloaded directly as CSV or JSON spreadsheets, or saved as formatted PDFs by launching the browser's system print dialog (which uses custom stylesheet resets to display only the report layout at 100% width)."
+    answer: "The Reports page compiles real-time findings into downloadable reports using three templates: 1) Executive Summary (high-level posture trends, threat-model risk summaries, and Claude-generated text), 2) Technical Vulnerabilities Ledger (detailed tabular registry of CVSS/EPSS vectors and CISA KEV listings), and 3) Compliance Mapping (findings tagged to SOC 2, ISO 27001 and PCI-DSS control families, as a starting point for audit preparation; evidence sections are templates you complete). Reports can be downloaded directly as CSV or JSON spreadsheets, or saved as formatted PDFs by launching the browser's system print dialog (which uses custom stylesheet resets to display only the report layout at 100% width)."
   },
   {
     id: "faq-19",
     category: "general",
     question: "How does the Automated Compliance Control Mapping Engine work?",
-    answer: "SigmaSec's Automated Compliance Control Mapping Engine automatically translates technical findings from Trivy (SCA), Gitleaks (Secrets), Nuclei (DAST), Opengrep (SAST), and Nmap (Network) into four major regulatory control frameworks: **SOC 2 Type II** (CC6.1, CC6.6, CC6.8, CC7.1), **PCI-DSS v4.0** (Req 6.3, 6.4, 8.3, 11.3), **ISO 27001:2022** (A.8.8, A.8.28, A.8.24, A.5.15), and **NIST SP 800-53 R5** (SI-2, RA-5, SA-11, IA-5). The **Compliance Hub** calculates real-time framework readiness scores and generates CISO audit-ready reports for external auditors."
+    answer: "SigmaSec tags technical findings from Trivy (SCA), Gitleaks (Secrets), Nuclei (DAST), Opengrep (SAST), and Nmap (Network) with related controls from four frameworks: **SOC 2 Type II** (CC6.1, CC6.6, CC6.8, CC7.1), **PCI-DSS v4.0** (Req 6.3, 6.4, 8.3, 11.3), **ISO 27001:2022** (A.8.8, A.8.28, A.8.24, A.5.15), and **NIST SP 800-53 R5** (SI-2, RA-5, SA-11, IA-5). The **Compliance Hub** shows which controls have open findings. It helps audit preparation but doesn't replace an auditor's assessment, and evidence sections still need to be completed by your team."
   },
   {
     id: "faq-21",
@@ -195,7 +195,7 @@ const FAQS: FAQ[] = [
     id: "faq-27",
     category: "workflow",
     question: "How do I configure GitHub App Integration?",
-    answer: "You can link your GitHub account or organization in the Settings page under the GitHub tab. You can click 'Install GitHub App / OAuth' to complete the automated authorization redirect flow (or use the simulated mock sandbox), or manually configure Installation IDs and Personal Access Tokens."
+    answer: "You can link your GitHub account or organization in the Settings page under the GitHub tab. You can click 'Install GitHub App / OAuth' to complete the automated authorization redirect flow , or manually configure Installation IDs and Personal Access Tokens."
   },
   {
     id: "faq-28",
@@ -242,8 +242,8 @@ const FAQS: FAQ[] = [
   {
     id: "faq-35",
     category: "scanning",
-    question: "How do I deploy scanner workers in my own AWS or GCP cloud with the infra/ folder?",
-    answer: "The repository includes an `infra/` folder containing production-grade Terraform configurations for deploying isolated, multi-cloud scanning infrastructure. It provides VPC network definitions, private subnet security groups, and automated runner provisioning for AWS (ECS/EC2) and Google Cloud (Cloud Run/GCE). This allows scanners to run directly inside your private VPCs without exposing internal network endpoints to the public internet."
+    question: "Can I run SigmaSec in my own cloud?",
+    answer: "Yes. The whole stack (API, scan workers, database, Redis and object storage) runs with Docker Compose on any VM you control, in any cloud region, including Indian regions. Pair it with a local Ollama model and no code or findings leave your infrastructure. Terraform modules for private-VPC deployment on AWS and GCP are on the roadmap; they aren't available yet."
   }
 ];
 
@@ -384,7 +384,7 @@ export default function HelpPage() {
               Mathematical Formula:
             </div>
             <div className="text-sm font-black text-primary p-2.5 rounded bg-background/80 border border-border/60 overflow-x-auto">
-              Posture Score = Clamp[0, 100] ( 100 − Σ [ Vulnerability Deductions × Asset Weight ] + Remediation Bonus )
+              Posture Score = Clamp[0, 100] ( 100 − Σ [ Critical/High Deductions × Asset Weight ] + Fix Bonus )
             </div>
           </div>
 
@@ -404,7 +404,7 @@ export default function HelpPage() {
                 <span className="h-2 w-2 rounded-full bg-red-500" /> Critical Penalty (-10 pts)
               </span>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Subtracted per open Critical severity finding (multiplied by asset exposure weight).
+                Subtracted per open Critical severity finding (multiplied by the asset&apos;s weight).
               </p>
             </div>
 
@@ -413,25 +413,25 @@ export default function HelpPage() {
                 <span className="h-2 w-2 rounded-full bg-amber-500" /> High Penalty (-3 pts)
               </span>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Subtracted per open High severity finding (multiplied by asset exposure weight).
+                Subtracted per open High severity finding (multiplied by the asset&apos;s weight).
               </p>
             </div>
 
             <div className="p-3.5 rounded-lg border border-blue-500/20 bg-blue-500/5 space-y-1.5">
               <span className="font-bold text-blue-500 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-blue-500" /> Medium Penalty (-1 pt)
+                <span className="h-2 w-2 rounded-full bg-blue-500" /> Medium &amp; Low (0 pts)
               </span>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Subtracted per open Medium severity finding (multiplied by asset exposure weight).
+                Medium and Low findings appear in your queue but don&apos;t change the score.
               </p>
             </div>
 
             <div className="p-3.5 rounded-lg border border-purple-500/20 bg-purple-500/5 space-y-1.5">
               <span className="font-bold text-purple-400 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-purple-500" /> Asset Weight (1.0x - 2.0x)
+                <span className="h-2 w-2 rounded-full bg-purple-500" /> Asset Weight (0.5x - 2.0x)
               </span>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Internet-facing or high-criticality assets multiply finding deductions up to 2.0x.
+                Set per asset (low, medium, high, critical). Higher-weight assets multiply deductions up to 2.0x.
               </p>
             </div>
 
@@ -453,8 +453,8 @@ export default function HelpPage() {
             <ul className="list-disc list-inside text-[11px] text-muted-foreground space-y-1 font-mono">
               <li><strong className="text-foreground">Fixed &amp; Remediated:</strong> Resolved findings are exempt from deductions and contribute to the 7-day bonus.</li>
               <li><strong className="text-foreground">False Positives:</strong> Findings marked False Positive carry zero score penalty.</li>
-              <li><strong className="text-foreground">Accepted Risks:</strong> Formally approved risk exceptions do not reduce your score.</li>
-              <li><strong className="text-foreground">KEV Acceleration:</strong> CISA KEV-listed vulnerabilities trigger priority escalation and high penalty multipliers.</li>
+              <li><strong className="text-foreground">Accepted Risks:</strong> Still count against the score until the finding is fixed.</li>
+              <li><strong className="text-foreground">CISA KEV:</strong> KEV-listed vulnerabilities rank higher in your queue; they don&apos;t change the score.</li>
             </ul>
           </div>
         </CardContent>
