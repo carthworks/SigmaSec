@@ -9,6 +9,8 @@ ARG NUCLEI_VERSION=3.3.8
 # NOTE: If bumping GITLEAKS_VERSION to >=8.19.0, note that the 'detect' subcommand was deprecated
 # in favor of 'git' / 'dir'. Update GitleaksAdapter in app/adapters/gitleaks.py accordingly.
 ARG GITLEAKS_VERSION=8.18.2
+# Opengrep isn't published on PyPI; the binary comes from its GitHub releases.
+ARG OPENGREP_VERSION=1.30.0
 
 
 # ============================================================
@@ -51,6 +53,7 @@ FROM debian:bookworm-slim AS tools-builder
 ARG TARGETARCH
 ARG NUCLEI_VERSION
 ARG GITLEAKS_VERSION
+ARG OPENGREP_VERSION
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -90,6 +93,17 @@ RUN case "${TARGETARCH:-amd64}" in \
     tar -xzf gitleaks.tar.gz gitleaks && \
     chmod +x gitleaks && \
     rm gitleaks.tar.gz
+
+RUN case "${TARGETARCH:-amd64}" in \
+        amd64) TOOL_ARCH="x86" ;; \
+        arm64) TOOL_ARCH="aarch64" ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac && \
+    curl --fail --location --silent --show-error \
+        --retry 3 \
+        --output opengrep \
+        "https://github.com/opengrep/opengrep/releases/download/v${OPENGREP_VERSION}/opengrep_manylinux_${TOOL_ARCH}" && \
+    chmod +x opengrep
 
 
 # ============================================================
@@ -143,6 +157,7 @@ COPY --from=python-builder /install /usr/local
 
 COPY --from=tools-builder /tools/nuclei /usr/local/bin/nuclei
 COPY --from=tools-builder /tools/gitleaks /usr/local/bin/gitleaks
+COPY --from=tools-builder /tools/opengrep /usr/local/bin/opengrep
 
 
 # ------------------------------------------------------------
