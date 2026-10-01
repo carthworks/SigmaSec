@@ -17,6 +17,10 @@ The platform currently scans web endpoints (Nuclei), container images (Trivy), a
 **Status:** ✅ Implemented in v1.0.x  
 Nmap port and service scanning is now available via the `network` scan type. The `NmapAdapter` runs `nmap -sV -sC --open` against a registered `host` asset, emitting one finding per open port with severity tiered by port risk (high: SSH/RDP/VNC/Telnet; medium: FTP/mail/SMB/databases; info: HTTP). OS detection (`-O`) is not enabled (no elevated container capabilities required).
 
+### Web and network scans require a verified target
+**Status:** By design  
+Nuclei (web) and Nmap (network) scans only run against domains and IPs the organisation has verified under **Assets → Verified targets**, using a DNS TXT record (`_sigmasec-challenge.<domain>`, covers subdomains) or a file at `/.well-known/sigmasec-verification.txt` (covers that exact host or IP). Verification lasts 90 days. Targets must also resolve only to public addresses, checked when the scan is created and again just before it runs. Web and network scans are capped per organisation per hour (`SIGMASEC_ACTIVE_SCANS_PER_HOUR`, default 20). Code, dependency, secret and image scans are not affected.
+
 ### No recurring / scheduled scans
 **Status:** Deferred to v1.1  
 Scans must be triggered manually via the UI or the `POST /scans` API. There is no built-in cron scheduler or recurring scan configuration.

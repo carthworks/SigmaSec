@@ -86,6 +86,12 @@ const FAQS: FAQ[] = [
   {
     id: "faq-10",
     category: "scanning",
+    question: "Why does my web or network scan say the target isn't verified?",
+    answer: "Web (Nuclei) and network (Nmap) scans send traffic to the target, so SigmaSec only runs them against domains and IPs your organisation has proven it controls. Go to Assets → Verified targets, add the domain or IP, and either create the DNS TXT record shown (covers the domain and all its subdomains) or serve the file shown at /.well-known/sigmasec-verification.txt (covers that exact host or IP). Click Check now; verification lasts 90 days. Targets that resolve to private, loopback or cloud-metadata addresses are always refused. Code, dependency, secret and container image scans don't need verification."
+  },
+  {
+    id: "faq-verify-2",
+    category: "scanning",
     question: "Does SigmaSec confirm that vulnerabilities are exploitable?",
     answer: "Not yet. Active exploit validation is on the roadmap, and its toggle in the scan dialog is disabled. Today, web findings are Nuclei template matches, and prioritisation uses CISA KEV (known exploited), FIRST EPSS (likelihood of exploitation) and a beta check of whether vulnerable dependencies are used in your code."
   },
