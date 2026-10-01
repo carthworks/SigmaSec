@@ -24,6 +24,7 @@ NMAP_BINARY = _env("NMAP_BINARY", "nmap")
 
 # --- Wall-clock ceilings per scan (seconds) ---
 NUCLEI_TIMEOUT = int(_env("NUCLEI_TIMEOUT", "600"))
+NUCLEI_RATE_LIMIT = int(_env("NUCLEI_RATE_LIMIT", "50"))  # requests per second
 TRIVY_TIMEOUT = int(_env("TRIVY_TIMEOUT", "600"))
 GITLEAKS_TIMEOUT = int(_env("GITLEAKS_TIMEOUT", "600"))
 OPENGREP_TIMEOUT = int(_env("OPENGREP_TIMEOUT", "600"))

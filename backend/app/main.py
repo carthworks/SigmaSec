@@ -21,6 +21,7 @@ from app.routers import (
     orgs,
     scans,
     users,
+    verifications,
 )
 from app.utils.encryption import DecryptionError
 
@@ -80,6 +81,7 @@ app.include_router(admin.router)
 app.include_router(executive.router)
 app.include_router(dashboard.router)
 app.include_router(compliance.router)
+app.include_router(verifications.router)
 
 
 

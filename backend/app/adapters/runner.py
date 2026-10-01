@@ -35,6 +35,8 @@ def _redact_sensitive(text: str) -> str:
 # Module-level pool: one pool per worker process, cheap Redis() handles per call.
 _pool: Optional[object] = None
 
+logger = logging.getLogger(__name__)
+
 
 def _redis():
     global _pool
@@ -199,3 +201,11 @@ def run_logged_command(
     sink.push(f"[system] completed. status={rc} timed_out={timed_out}")
     sink.flush()
     return CommandResult(stdout="".join(stdout_lines), returncode=rc, timed_out=timed_out)
+
+
+def refuse_target(scan_id: str, tool: str, reason: str) -> None:
+    """Record in the scan log that a scanner refused to run against a target."""
+    logger.warning("[%s] refusing target: %s", tool, reason)
+    sink = _LogSink(scan_id)
+    sink.push(f"[{tool}] Refused to scan: {reason}")
+    sink.flush()

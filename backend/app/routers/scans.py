@@ -62,6 +62,14 @@ BLOCKED_TARGETS = re.compile(
     re.IGNORECASE,
 )
 
+from app.security.enforcement import (  # noqa: E402
+    ACTIVE_SCAN_TYPES,
+    ActiveScanRateLimited,
+    OwnershipRequired,
+    preflight_active_scan,
+)
+from app.security.targets import TargetNotAllowed  # noqa: E402
+
 SIGMASEC_USER_AGENT = "SigmaSec-Scanner/0.1.0 (+https://sigmasec.ai/scanner)"
 
 
@@ -82,6 +90,8 @@ def write_scan_audit_log(
     org_id: uuid.UUID,
     target: str,
     scan_id: uuid.UUID,
+    scan_types: list | None = None,
+    verification_id: uuid.UUID | None = None,
 ):
     """Write an audit log entry for every scan creation."""
     try:
@@ -93,6 +103,8 @@ def write_scan_audit_log(
             target_id=str(scan_id),
             details={
                 "target": target,
+                "scan_types": scan_types or [],
+                "target_verification_id": str(verification_id) if verification_id else None,
                 "ts": datetime.utcnow().isoformat(),
             },
         )
@@ -100,6 +112,24 @@ def write_scan_audit_log(
         db.commit()
     except Exception as e:
         logger.error(f"Failed to write scan audit log: {e}")
+        db.rollback()
+
+
+def _write_blocked_scan_audit(db: Session, user_id, org_id, target: str, scan_types: list, reason: str):
+    """Record refused active scans: who tried to scan what, and why it was refused."""
+    try:
+        db.add(AuditLog(
+            org_id=org_id,
+            user_id=user_id,
+            action="scan_blocked",
+            target_type="scan_target",
+            target_id=target[:100],
+            details={"target": target, "scan_types": scan_types, "reason": reason,
+                     "ts": datetime.utcnow().isoformat()},
+        ))
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to write blocked-scan audit log: {e}")
         db.rollback()
 
 
@@ -148,6 +178,23 @@ def create_scan(
             detail=f"Invalid scan types: {invalid}. Valid: {valid_types}",
         )
 
+    # Web (Nuclei) and network (Nmap) scans send traffic to the target, so the
+    # target must resolve to public addresses and the org must have proven it
+    # controls it. Repo and image scans don't touch the target host.
+    verification = None
+    active_types = sorted(set(payload.scan_types) & ACTIVE_SCAN_TYPES)
+    if active_types:
+        try:
+            verification = preflight_active_scan(db, org_id, payload.target)
+        except (TargetNotAllowed, OwnershipRequired, ActiveScanRateLimited) as exc:
+            code = (
+                status.HTTP_422_UNPROCESSABLE_ENTITY if isinstance(exc, TargetNotAllowed)
+                else status.HTTP_403_FORBIDDEN if isinstance(exc, OwnershipRequired)
+                else status.HTTP_429_TOO_MANY_REQUESTS
+            )
+            _write_blocked_scan_audit(db, current_user.id, org_id, payload.target, active_types, str(exc))
+            raise HTTPException(status_code=code, detail=str(exc))
+
     asset_id = payload.asset_id
     if not asset_id:
         existing_asset = (
@@ -193,6 +240,8 @@ def create_scan(
         org_id=org_id,
         target=payload.target,
         scan_id=scan.id,
+        scan_types=payload.scan_types,
+        verification_id=verification.id if verification else None,
     )
 
     task = run_scan_task.delay(
