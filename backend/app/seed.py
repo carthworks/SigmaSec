@@ -16,6 +16,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds
 
 
 def seed():
+    """Create demo accounts with well-known passwords. Development only."""
+    from app.utils.runtime import is_development
+
+    if not is_development():
+        print("Refusing to seed demo accounts: ENVIRONMENT is not development.")
+        return
     db = SessionLocal()
     try:
         org = db.query(Org).filter((Org.slug == "SS") | (Org.slug == "CS")).first()

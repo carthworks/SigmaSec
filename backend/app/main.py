@@ -158,12 +158,18 @@ def on_startup():
             migration_status = f"alembic.ini not found at {ini_path}"
             print(f"Programmatic migrations: alembic.ini not found at {ini_path}")
 
-        # Seed default org and users (admin@sigmasec.com / analyst@sigmasec.com)
-        try:
-            from app.seed import seed
-            seed()
-        except Exception as e_seed:
-            print(f"Startup seeding error: {e_seed}")
+        # Seed demo org and users with well-known passwords — development only.
+        # In any other environment this would create (or reset) an admin account
+        # with a published password on every restart.
+        from app.utils.runtime import is_development
+        if is_development():
+            try:
+                from app.seed import seed
+                seed()
+            except Exception as e_seed:
+                print(f"Startup seeding error: {e_seed}")
+        else:
+            print("Skipping demo seeding (ENVIRONMENT is not development).")
 
     except Exception as e:
         migration_status = "Failed"
