@@ -125,8 +125,11 @@ def test_dashboard_reflects_real_findings(db):
     assert funnel["critical_high_count"] == 2
     assert funnel["reachable_count"] == 1
     assert funnel["exploitable_now_count"] == 1
-    # 100 - (10 + 3 + 1) + 10 (fewer than 5 open)
-    assert out["posture_score"] == 96
+    # Same formula as the executive view: 100 - 10 (critical) - 3 (high), asset weight 1.0,
+    # mediums don't count, no fixes this week.
+    from app.routers.executive import _compute_posture_score
+    assert out["posture_score"] == 87.0
+    assert out["posture_score"] == _compute_posture_score(rows, {str(asset.id): 1.0})
     assert "1 open finding on CISA KEV" in out["posture_driver"]
 
     titles = [i["title"] for i in out["do_this_next"]]
