@@ -41,8 +41,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
+!frontend/platform-ui/lib/
+!frontend/platform-ui/lib/**
 parts/
 sdist/
 var/

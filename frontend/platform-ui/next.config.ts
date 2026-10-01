@@ -6,6 +6,16 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
+  turbopack: {
+    resolveAlias: {
+      "@/lib": "./lib",
+      "@/components": "./components",
+      "@/app": "./app",
+      "@/types": "./types",
+      "@": ".",
+    },
+  },
+
   // API rewrites: proxy /api/backend/* → FastAPI backend (INTERNAL_API_URL for server-side).
   // Function timeout for Vercel is configured in vercel.json (maxDuration: 60).
   async rewrites() {
