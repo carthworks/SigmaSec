@@ -327,7 +327,7 @@ npm run build
 # Backend Linting & Test Suite
 cd ../../backend
 ruff check .
-pytest tests/test_integration.py tests/test_multitenancy.py
+pytest tests -q   # needs a *_test database, see Testing below
 ```
 
 ---
@@ -359,13 +359,26 @@ pytest tests/test_integration.py tests/test_multitenancy.py
 
 ## 🧪 Testing & Quality Assurance
 
-```bash
-# Run backend integration tests and multitenancy property tests
-cd backend
-pytest -v
+CI (`.github/workflows/ci.yml`) runs on every pull request and push to `main`:
+backend tests against Postgres 16 and Redis 7, a build of `backend/Dockerfile.dev`,
+and the frontend typecheck and unit tests.
 
-# Run frontend Vitest unit test suite
-cd frontend/platform-ui
+To run the backend tests locally you need Postgres and Redis. The test harness
+**drops and rebuilds the schema**, so it refuses to run unless the database name
+contains `test`:
+
+```bash
+# One-time: a separate test database (never point tests at your dev database)
+createdb sigmasec_test
+
+cd backend
+export DATABASE_URL=postgresql://<user>:<password>@localhost:5432/sigmasec_test
+export REDIS_URL=redis://localhost:6379/0
+pytest tests -q            # migrations are applied from scratch by tests/conftest.py
+
+# Frontend
+cd ../frontend/platform-ui
+npm run typecheck
 npm test
 ```
 

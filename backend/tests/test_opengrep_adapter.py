@@ -117,13 +117,14 @@ def test_opengrep_compliance_mapping():
     assert "SA-11" in controls["nist_800_53"]
 
 
-def test_opengrep_reconciliation_pass(setup_db):
+def test_opengrep_reconciliation_pass(setup_db, create_parents):
     from app.tasks.scan_tasks import save_findings
     db = setup_db
     org_id = str(uuid.uuid4())
     scan_id_1 = str(uuid.uuid4())
     scan_id_2 = str(uuid.uuid4())
     asset_id = str(uuid.uuid4())
+    create_parents(db, org_id, asset_id, scan_id_1, scan_id_2)
 
     adapter = OpengrepAdapter()
     fp_1 = adapter.make_fingerprint("opengrep", asset_id, "check.rule.1", "src/auth.py", "10")

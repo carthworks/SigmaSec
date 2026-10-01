@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: sigmasec_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app -d sigmasec_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # The test harness (tests/conftest.py) refuses any database whose name lacks "test".
+      DATABASE_URL: postgresql://app:app@localhost:5432/sigmasec_test
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      ENVIRONMENT: test
+      JWT_SECRET: ci-only-jwt-secret
+      # ENCRYPTION_KEY is generated per run by tests/conftest.py; nothing secret is committed.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"  # matches backend/Dockerfile.dev
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check for undefined names
+        run: ruff check --select F821 app tests
+
+      - name: Run tests (migrations are applied from scratch by the harness)
+        run: |
+          set -o pipefail
+          pytest tests -q -rfE 2>&1 | tee pytest.log
+
+      # Surface the end of the pytest output as an annotation on the PR, so a
+      # failure is readable without opening the raw job log.
+      - name: Report test failures
+        if: failure()
+        run: |
+          python - <<'EOF'
+          import os
+          if not os.path.exists("pytest.log"):
+              raise SystemExit(0)
+          lines = open("pytest.log", errors="replace").read().splitlines()[-60:]
+          esc = [l.replace("%", "%25").replace("\r", "") for l in lines]
+          print("::error title=pytest output (last 60 lines)::" + "%0A".join(esc))
+          EOF
+
+  backend-image:
+    name: Backend image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Builds every stage, including downloading the scanners and the final
+      # `nuclei/gitleaks/trivy/nmap/opengrep --version` check. Not pushed anywhere.
+      - name: Build backend/Dockerfile.dev
+        run: docker build -f backend/Dockerfile.dev -t sigmasec-backend:ci backend
+
+  frontend:
+    name: Frontend typecheck and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend/platform-ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/platform-ui/package-lock.json
+
+      - name: Install dependencies
+        # The repo root declares a workspace; install this package on its own lockfile.
+        run: npm ci --workspaces=false --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
