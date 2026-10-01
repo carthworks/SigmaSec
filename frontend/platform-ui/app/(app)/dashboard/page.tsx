@@ -42,37 +42,37 @@ import { cn } from "@/lib/utils";
 interface DashboardSummary {
   timeframe: string;
   num_days: number;
-  posture_score: number;
-  points_changed_this_week: number;
+  posture_score: number | null;
+  points_changed_this_week: number | null;
   posture_driver: string;
   funnel: {
     total_findings: number;
     critical_high_count: number;
-    critical_high_pct: number;
+    critical_high_pct: number | null;
     reachable_count: number;
-    reachable_pct: number;
+    reachable_pct: number | null;
     exploitable_now_count: number;
-    exploitable_pct: number;
+    exploitable_pct: number | null;
   };
   do_this_next: Array<{
     id: string;
     badge: string;
     title: string;
     why_now: string;
-    sla_status: string;
+    sla_status: string | null;
     sla_breaching: boolean;
     action_type: string;
     action_label: string;
     action_href: string;
   }>;
   kpis: {
-    mttr_days: number;
-    mttr_change_days: number;
+    mttr_days: number | null;
+    mttr_change_days: number | null;
     prs_open: number;
     jira_linked: number;
     sla_breaches: number;
     accepted_risks: number;
-    assets_scanned_7d_pct: number;
+    assets_scanned_7d_pct: number | null;
   };
   trend_data: Array<{
     date: string;
@@ -80,10 +80,10 @@ interface DashboardSummary {
     remediated: number;
   }>;
   intel_coverage: {
-    cisa_kev: { indexed: number; matches: number; last_sync: string };
-    epss: { scored: number; total: number; above_threshold: number; last_sync: string };
-    ast_reachability: { analyzed: number; total_assets: number; reachable_count: number; pending: number };
-    exploit_validation: { sandbox_confirmed: number; inconclusive: number };
+    cisa_kev: { indexed: number | null; matches: number; last_sync: string | null };
+    epss: { scored: number; total: number; above_threshold: number; last_sync: string | null };
+    ast_reachability: { analyzed: number; total_assets: number; reachable_count: number; pending: number | null };
+    exploit_validation: { available?: boolean; sandbox_confirmed: number; inconclusive: number };
   };
   recent_scans: Array<{
     id: string;
@@ -110,9 +110,17 @@ interface DashboardSummary {
     db_connected: boolean;
     scan_engine_idle: boolean;
     total_scans: number;
-    intel_synced_at: string;
+    intel_synced_at: string | null;
   };
 }
+
+// Show "—" for values the API doesn't know yet, rather than inventing one.
+const dash = (v: number | null | undefined, suffix = "") => (v === null || v === undefined ? "—" : `${v}${suffix}`);
+const syncedLabel = (iso: string | null | undefined) => {
+  if (!iso) return "not synced yet";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -170,19 +178,7 @@ export default function DashboardPage() {
     }
   };
 
-  const defaultTrendData = React.useMemo(() => [
-    { date: "Jul 01", open: 142, remediated: 28 },
-    { date: "Jul 05", open: 135, remediated: 45 },
-    { date: "Jul 09", open: 128, remediated: 62 },
-    { date: "Jul 13", open: 119, remediated: 84 },
-    { date: "Jul 17", open: 104, remediated: 110 },
-    { date: "Jul 21", open: 86, remediated: 138 },
-    { date: "Jul 22", open: 74, remediated: 162 },
-  ], []);
-
-  const activeTrendData = React.useMemo(() => {
-    return (summary?.trend_data && summary.trend_data.length > 0) ? summary.trend_data : defaultTrendData;
-  }, [summary?.trend_data, defaultTrendData]);
+  const activeTrendData = React.useMemo(() => summary?.trend_data ?? [], [summary?.trend_data]);
 
   const maxVal = React.useMemo(() => {
     if (!activeTrendData.length) return 100;
@@ -209,41 +205,43 @@ export default function DashboardPage() {
     }).join(" ");
   }, [activeTrendData, maxVal]);
 
-  const postureScore = summary?.posture_score ?? 68;
-  const postureDriver = summary?.posture_driver ?? "Driven by two KEV-listed findings introduced in earthworks/libraDigit_web on Jul 18.";
+  const postureScore = summary?.posture_score ?? null;
+  const pointsChanged = summary?.points_changed_this_week ?? null;
+  const postureDriver = summary?.posture_driver ?? "Couldn't load dashboard data.";
   const funnel = summary?.funnel || {
-    total_findings: 1204,
-    critical_high_count: 399,
-    critical_high_pct: 33,
-    reachable_count: 86,
-    reachable_pct: 78,
-    exploitable_now_count: 14,
-    exploitable_pct: 100,
+    total_findings: 0,
+    critical_high_count: 0,
+    critical_high_pct: null,
+    reachable_count: 0,
+    reachable_pct: null,
+    exploitable_now_count: 0,
+    exploitable_pct: null,
   };
+  const funnelWidth = (n: number) => (funnel.total_findings ? `${Math.max(2, (n / funnel.total_findings) * 100)}%` : "0%");
   const doThisNext = summary?.do_this_next || [];
   const kpis = summary?.kpis || {
-    mttr_days: 4.2,
-    mttr_change_days: -1.1,
-    prs_open: 7,
-    jira_linked: 12,
-    sla_breaches: 3,
-    accepted_risks: 2,
-    assets_scanned_7d_pct: 94,
+    mttr_days: null,
+    mttr_change_days: null,
+    prs_open: 0,
+    jira_linked: 0,
+    sla_breaches: 0,
+    accepted_risks: 0,
+    assets_scanned_7d_pct: null,
   };
   const intelCoverage = summary?.intel_coverage || {
-    cisa_kev: { indexed: 1647, matches: 9, last_sync: "3h ago" },
-    epss: { scored: 1204, total: 1204, above_threshold: 31, last_sync: "3h ago" },
-    ast_reachability: { analyzed: 18, total_assets: 20, reachable_count: 86, pending: 2 },
-    exploit_validation: { sandbox_confirmed: 6, inconclusive: 3 },
+    cisa_kev: { indexed: null, matches: 0, last_sync: null },
+    epss: { scored: 0, total: 0, above_threshold: 0, last_sync: null },
+    ast_reachability: { analyzed: 0, total_assets: 0, reachable_count: 0, pending: null },
+    exploit_validation: { available: false, sandbox_confirmed: 0, inconclusive: 0 },
   };
   const recentScans = summary?.recent_scans || [];
   const remediationPipeline = summary?.remediation_pipeline || [];
   const systemStatus = summary?.system_status || {
-    api_version: "v0.1.0",
-    db_connected: true,
+    api_version: "—",
+    db_connected: false,
     scan_engine_idle: true,
-    total_scans: 24,
-    intel_synced_at: "21 Jul, 21:06",
+    total_scans: 0,
+    intel_synced_at: null,
   };
 
   if (isLoading) {
@@ -287,12 +285,17 @@ export default function DashboardPage() {
               POSTURE SCORE
             </span>
             <div className="flex items-baseline gap-1 mt-2">
-              <span className="text-5xl font-extrabold tracking-tight text-foreground">{postureScore}</span>
-              <span className="text-sm font-semibold text-muted-foreground">/100</span>
+              <span className="text-5xl font-extrabold tracking-tight text-foreground">{dash(postureScore)}</span>
+              {postureScore !== null && <span className="text-sm font-semibold text-muted-foreground">/100</span>}
             </div>
-            <div className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/10 text-amber-500">
-              ↓ 6 points this week
-            </div>
+            {pointsChanged !== null && pointsChanged !== 0 && (
+              <div className={cn(
+                "inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded text-[11px] font-extrabold",
+                pointsChanged < 0 ? "bg-amber-500/10 text-amber-500" : "bg-emerald-500/10 text-emerald-500"
+              )}>
+                {pointsChanged < 0 ? "↓" : "↑"} {Math.abs(pointsChanged)} points this week
+              </div>
+            )}
           </div>
           <p className="text-[11px] text-muted-foreground leading-normal">
             {postureDriver}
@@ -325,15 +328,15 @@ export default function DashboardPage() {
             >
               <div className="text-2xl font-extrabold text-foreground group-hover:text-amber-500 transition-colors">{funnel.critical_high_count}</div>
               <div className="text-xs font-semibold text-foreground mt-0.5">Critical or high</div>
-              <div className="text-[10px] text-muted-foreground">{funnel.critical_high_pct}% by severity</div>
+              <div className="text-[10px] text-muted-foreground">{dash(funnel.critical_high_pct, "%")} of all findings</div>
             </div>
             <div 
               onClick={() => router.push("/findings?reachability=reachable")}
               className="p-3 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/50 transition-all cursor-pointer group"
             >
               <div className="text-2xl font-extrabold text-foreground group-hover:text-purple-400 transition-colors">{funnel.reachable_count}</div>
-              <div className="text-xs font-semibold text-foreground mt-0.5">Reachable in code</div>
-              <div className="text-[10px] text-muted-foreground">{funnel.reachable_pct}% by AST reachability</div>
+              <div className="text-xs font-semibold text-foreground mt-0.5">Dependency used in code</div>
+              <div className="text-[10px] text-muted-foreground">Import-level check (beta)</div>
             </div>
             <div 
               onClick={() => router.push("/findings")}
@@ -341,16 +344,16 @@ export default function DashboardPage() {
             >
               <div className="text-2xl font-extrabold text-red-500 group-hover:scale-105 transition-transform">{funnel.exploitable_now_count}</div>
               <div className="text-xs font-bold text-red-400 mt-0.5">Exploitable now</div>
-              <div className="text-[10px] text-muted-foreground">KEV + EPSS + validated</div>
+              <div className="text-[10px] text-muted-foreground">On CISA KEV or EPSS ≥ 0.5</div>
             </div>
           </div>
 
           {/* Color Progress Bar */}
           <div className="h-2 w-full bg-muted rounded-full overflow-hidden flex gap-0.5">
-            <div className="h-full bg-slate-600 w-[50%]" />
-            <div className="h-full bg-amber-500 w-[25%]" />
-            <div className="h-full bg-purple-500 w-[15%]" />
-            <div className="h-full bg-red-500 w-[10%]" />
+            <div className="h-full bg-slate-600" style={{ width: funnelWidth(Math.max(0, funnel.total_findings - funnel.critical_high_count)) }} />
+            <div className="h-full bg-amber-500" style={{ width: funnelWidth(funnel.critical_high_count) }} />
+            <div className="h-full bg-purple-500" style={{ width: funnelWidth(funnel.reachable_count) }} />
+            <div className="h-full bg-red-500" style={{ width: funnelWidth(funnel.exploitable_now_count) }} />
           </div>
         </Card>
 
@@ -364,13 +367,15 @@ export default function DashboardPage() {
               Do this next
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              Ranked by exploitability, reachability, and asset criticality
+              Ranked by CISA KEV, priority score and severity
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-              3 breaching SLA
-            </span>
+            {kpis.sla_breaches > 0 && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                {kpis.sla_breaches} past KEV due date
+              </span>
+            )}
             <Link href="/findings?status=open" className="text-xs font-bold text-indigo-400 hover:underline">
               View all {funnel.exploitable_now_count} →
             </Link>
@@ -379,6 +384,11 @@ export default function DashboardPage() {
 
         {/* Action Rows */}
         <div className="space-y-3">
+          {doThisNext.length === 0 && (
+            <p className="text-xs text-muted-foreground py-4 text-center">
+              Nothing to act on yet. Open findings from your scans will be ranked here.
+            </p>
+          )}
           {doThisNext.map((item) => (
             <div key={item.id} className="p-3.5 rounded-xl border border-border/60 bg-muted/20 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex items-start gap-3">
@@ -398,12 +408,14 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-                <span className={cn(
-                  "text-[10px] font-bold mr-2",
-                  item.sla_breaching ? (item.sla_status.includes("Overdue") ? "text-red-500" : "text-amber-500") : "text-muted-foreground"
-                )}>
-                  {item.sla_status}
-                </span>
+                {item.sla_status && (
+                  <span className={cn(
+                    "text-[10px] font-bold mr-2",
+                    item.sla_breaching ? "text-red-500" : "text-muted-foreground"
+                  )}>
+                    {item.sla_status}
+                  </span>
+                )}
                 <Button size="xs" asChild className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-8 text-xs px-3 rounded-md cursor-pointer">
                   <Link href={item.action_href}>{item.action_label}</Link>
                 </Button>
@@ -426,9 +438,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Link href="/reports">
           <Card className="p-4 border border-border/70 bg-card hover:bg-muted/30 transition-all cursor-pointer">
-            <div className="text-xl font-extrabold text-foreground">{kpis.mttr_days} days</div>
+            <div className="text-xl font-extrabold text-foreground">{kpis.mttr_days === null ? "—" : `${kpis.mttr_days} days`}</div>
             <div className="text-[11px] text-muted-foreground font-medium mt-0.5">
-              Mean time to remediate <span className="text-emerald-500 font-bold">↓ 1.1d</span>
+              Mean time to remediate
+              {kpis.mttr_change_days !== null && kpis.mttr_change_days !== 0 && (
+                <span className={cn("font-bold ml-1", kpis.mttr_change_days < 0 ? "text-emerald-500" : "text-amber-500")}>
+                  {kpis.mttr_change_days < 0 ? "↓" : "↑"} {Math.abs(kpis.mttr_change_days)}d
+                </span>
+              )}
             </div>
           </Card>
         </Link>
@@ -447,7 +464,7 @@ export default function DashboardPage() {
         <Link href="/findings?status=breached">
           <Card className="p-4 border border-border/70 bg-card hover:bg-muted/30 transition-all cursor-pointer">
             <div className="text-xl font-extrabold text-red-500">{kpis.sla_breaches}</div>
-            <div className="text-[11px] text-muted-foreground font-medium mt-0.5">SLA breaches</div>
+            <div className="text-[11px] text-muted-foreground font-medium mt-0.5">Past KEV due date</div>
           </Card>
         </Link>
         <Link href="/findings?status=accepted_risk">
@@ -458,7 +475,7 @@ export default function DashboardPage() {
         </Link>
         <Link href="/assets">
           <Card className="p-4 border border-border/70 bg-card hover:bg-muted/30 transition-all cursor-pointer">
-            <div className="text-xl font-extrabold text-foreground">{kpis.assets_scanned_7d_pct}%</div>
+            <div className="text-xl font-extrabold text-foreground">{dash(kpis.assets_scanned_7d_pct, "%")}</div>
             <div className="text-[11px] text-muted-foreground font-medium mt-0.5">Assets scanned in last 7d</div>
           </Card>
         </Link>
@@ -471,9 +488,11 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-bold text-foreground">Open vs remediated</h3>
-                <span className="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  MTTR: {kpis.mttr_days}d ({kpis.mttr_change_days > 0 ? `+${kpis.mttr_change_days}` : kpis.mttr_change_days}d)
-                </span>
+                {kpis.mttr_days !== null && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    MTTR: {kpis.mttr_days}d
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 Vulnerability lifecycle trajectory & MTTR velocity
@@ -510,7 +529,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="w-full relative select-none">
+          {activeTrendData.length === 0 && (
+            <p className="text-xs text-muted-foreground py-16 text-center">No findings in this timeframe yet.</p>
+          )}
+          <div className={cn("w-full relative select-none", activeTrendData.length === 0 && "hidden")}>
             <svg viewBox="0 0 600 200" className="w-full h-[220px] overflow-visible cursor-crosshair" onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
@@ -623,40 +645,35 @@ export default function DashboardPage() {
                 <span className="font-bold text-foreground">CISA KEV</span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-500/20 text-red-400">{intelCoverage.cisa_kev.matches} matches</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">{intelCoverage.cisa_kev.indexed.toLocaleString()} exploited CVEs indexed · synced {intelCoverage.cisa_kev.last_sync}</p>
-              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-red-500 w-[75%]" />
-              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {intelCoverage.cisa_kev.indexed !== null ? `${intelCoverage.cisa_kev.indexed.toLocaleString()} exploited CVEs indexed · ` : ""}synced {syncedLabel(intelCoverage.cisa_kev.last_sync)}
+              </p>
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-foreground">FIRST EPSS</span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-400">{intelCoverage.epss.above_threshold} above 0.5</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">Scored {intelCoverage.epss.scored.toLocaleString()} of {intelCoverage.epss.total.toLocaleString()} findings · synced {intelCoverage.epss.last_sync}</p>
+              <p className="text-[10px] text-muted-foreground">Scored {intelCoverage.epss.scored.toLocaleString()} of {intelCoverage.epss.total.toLocaleString()} CVE findings · synced {syncedLabel(intelCoverage.epss.last_sync)}</p>
               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 w-[60%]" />
+                <div className="h-full bg-amber-500" style={{ width: intelCoverage.epss.total ? `${(intelCoverage.epss.scored / intelCoverage.epss.total) * 100}%` : "0%" }} />
               </div>
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-foreground">AST reachability</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-500/20 text-purple-400">{intelCoverage.ast_reachability.reachable_count} reachable</span>
+                <span className="font-bold text-foreground">Dependency usage <span className="text-[10px] font-semibold text-muted-foreground">beta</span></span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-500/20 text-purple-400">{intelCoverage.ast_reachability.reachable_count} used in code</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">Analyzed {intelCoverage.ast_reachability.analyzed} of {intelCoverage.ast_reachability.total_assets} assets · {intelCoverage.ast_reachability.pending} pending language support</p>
-              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 w-[85%]" />
-              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {intelCoverage.ast_reachability.analyzed} findings with a verdict · import-level check, Python dependencies only
+              </p>
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-foreground">Exploit validation</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400">{intelCoverage.exploit_validation.sandbox_confirmed} confirmed</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-muted text-muted-foreground">Coming soon</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">Sandbox confirmed {intelCoverage.exploit_validation.sandbox_confirmed} · {intelCoverage.exploit_validation.inconclusive} inconclusive</p>
-              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 w-[45%]" />
-              </div>
+              <p className="text-[10px] text-muted-foreground">Not available yet. Web findings are Nuclei template matches; nothing is exploited or confirmed.</p>
             </div>
           </div>
         </Card>
@@ -670,6 +687,9 @@ export default function DashboardPage() {
             <Link href="/scans" className="text-xs font-bold text-indigo-400 hover:underline">All {systemStatus.total_scans} runs →</Link>
           </div>
           <div className="space-y-3">
+            {recentScans.length === 0 && (
+              <p className="text-xs text-muted-foreground py-4 text-center">No scans in this timeframe.</p>
+            )}
             {recentScans.map((scan) => (
               <div 
                 key={scan.id} 
@@ -695,7 +715,7 @@ export default function DashboardPage() {
             ))}
           </div>
           <div className="pt-2 flex items-center justify-between text-xs font-semibold border-t border-border/40">
-            <span className="text-muted-foreground">2 more targets queued.</span>
+            <span className="text-muted-foreground">{systemStatus.scan_engine_idle ? "Scan engine idle." : "A scan is running."}</span>
             <Link href="/assets" className="text-indigo-400 hover:underline">Add an asset →</Link>
           </div>
         </Card>
@@ -706,6 +726,9 @@ export default function DashboardPage() {
             <Link href="/remediation-hub" className="text-xs font-bold text-indigo-400 hover:underline">Open hub →</Link>
           </div>
           <div className="space-y-4 text-xs">
+            {remediationPipeline.length === 0 && (
+              <p className="text-muted-foreground py-4 text-center">No fix PRs or Jira tickets in flight.</p>
+            )}
             {remediationPipeline.map((group, gIdx) => (
               <div key={gIdx} className="space-y-2">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">{group.group}</span>
@@ -746,7 +769,7 @@ export default function DashboardPage() {
           <span>● PostgreSQL {systemStatus.db_connected ? "connected" : "disconnected"}</span>
           <span>● Scan engine {systemStatus.scan_engine_idle ? "idle" : "running"} · {systemStatus.total_scans} runs</span>
         </div>
-        <div>Intelligence feeds synced {systemStatus.intel_synced_at}</div>
+        <div>Intelligence feeds synced {syncedLabel(systemStatus.intel_synced_at)}</div>
       </div>
       {/* ── Assign Remediation Owner Modal ── */}
       <Dialog open={!!assigningItem} onOpenChange={(open) => !open && setAssigningItem(null)}>
@@ -770,7 +793,7 @@ export default function DashboardPage() {
                 Trigger: <span className="text-foreground">{assigningItem?.why_now}</span>
               </div>
               <div className="font-mono text-[10px] font-semibold text-muted-foreground">
-                SLA Deadline: <span className="text-amber-500 font-bold">{assigningItem?.sla_status}</span>
+                KEV due date: <span className="text-amber-500 font-bold">{assigningItem?.sla_status ?? "None"}</span>
               </div>
             </div>
 
