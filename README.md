@@ -15,6 +15,7 @@ Every vulnerability is enriched with real-world threat signals (**CISA KEV**, **
 ## 🖼️ From Security Noise to Actionable Intelligence
 
 ![SigmaSec: From Security Noise to Actionable Intelligence](poster.png)
+*Unified Security Posture Architecture: 5-engine scanner suite (Nuclei, Trivy, Gitleaks, Opengrep SAST, Nmap), multi-signal threat intelligence (CISA KEV, EPSS v3, CVSS), Noise-to-Signal Funnel, Claude Sonnet 4.5 AI triage, live terminal streamer, and automated 1-click remediation.*
 
 ---
 
