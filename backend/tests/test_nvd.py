@@ -86,10 +86,10 @@ def test_nvd_client_cache_miss_api_success(mock_redis, mock_httpx):
     assert result["cwe"] == ["CWE-89"]
 
     # Verify caching happened
-    mock_redis.set.assert_called_once()
-    cache_key, cache_val = mock_redis.set.call_args[0]
-    assert cache_key == "nvd:CVE-2023-1234"
-    assert json.loads(cache_val) == result
+    # The client also records nvd:last_refresh; check the CVE was cached.
+    cve_calls = [c for c in mock_redis.set.call_args_list if c.args[0] == "nvd:CVE-2023-1234"]
+    assert len(cve_calls) == 1
+    assert json.loads(cve_calls[0].args[1]) == result
 
 def test_nvd_client_fallback_to_v30(mock_redis, mock_httpx):
     mock_redis.get.return_value = None

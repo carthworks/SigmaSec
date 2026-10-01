@@ -79,7 +79,8 @@ def test_opengroup_adapter_run_local_and_config(monkeypatch):
             from app.adapters.runner import CommandResult
             return CommandResult(stdout=mock_json_out, returncode=0, timed_out=False)
 
-        monkeypatch.setattr("app.adapters.opengroup.run_logged_command", mock_run_logged_command)
+        # OpenGroupAdapter inherits OpengrepAdapter, which calls run_logged_command from its own module.
+        monkeypatch.setattr("app.adapters.opengrep.run_logged_command", mock_run_logged_command)
 
         findings = adapter.run(
             target=tmp_dir,
@@ -96,12 +97,13 @@ def test_opengroup_adapter_run_local_and_config(monkeypatch):
         assert findings[0]["tool"] == "opengroup"
 
 
-def test_save_findings_upsert_and_reconciliation(setup_db):
+def test_save_findings_upsert_and_reconciliation(setup_db, create_parents):
     db = setup_db
     org_id = str(uuid.uuid4())
     scan_id_1 = str(uuid.uuid4())
     scan_id_2 = str(uuid.uuid4())
     asset_id = str(uuid.uuid4())
+    create_parents(db, org_id, asset_id, scan_id_1, scan_id_2)
 
     adapter = OpenGroupAdapter()
     fp_1 = adapter.make_fingerprint("opengroup", asset_id, "check.rule.1", "src/auth.py", "10")

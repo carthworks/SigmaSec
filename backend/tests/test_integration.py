@@ -63,14 +63,8 @@ def setup_data(db_session):
         "token_b": token_b
     }
 
-    # Database cleanup post-test execution
-    db_session.query(Finding).filter(Finding.org_id.in_([org_a.id, org_b.id])).delete(synchronize_session=False)
-    db_session.query(Scan).filter(Scan.org_id.in_([org_a.id, org_b.id])).delete(synchronize_session=False)
-    db_session.delete(user_a)
-    db_session.delete(user_b)
-    db_session.delete(org_a)
-    db_session.delete(org_b)
-    db_session.commit()
+    # No manual cleanup: tests/conftest.py empties every table before each module,
+    # which also covers rows created through the API (assets, audit logs, ...).
 
 
 def test_full_scan_lifecycle(setup_data, db_session):
@@ -86,9 +80,18 @@ def test_full_scan_lifecycle(setup_data, db_session):
         "active_validation": False,
         "docker_image": "nginx:1.24"
     }
-    
-    # Mock the Celery run_scan_task delay call
-    with patch("app.routers.scans.run_scan_task.delay") as mock_delay:
+
+    # Web scans need a verified, publicly resolvable target (see test_scan_authorisation.py).
+    from datetime import datetime, timezone
+    from app.models import TargetVerification
+    db_session.add(TargetVerification(org_id=setup_data["org_a"].id, scope="test-org-a.com", method="dns_txt",
+                                      token="t", verified_at=datetime.now(timezone.utc)))
+    db_session.commit()
+
+    # Mock the Celery run_scan_task delay call and DNS
+    with patch("app.routers.scans.run_scan_task.delay") as mock_delay, \
+         patch("app.security.enforcement.assert_public_target", return_value=["93.184.216.34"]), \
+         patch("app.security.enforcement.check_rate_limit"):
         mock_task = MagicMock()
         mock_task.id = "mock-celery-task-id-123"
         mock_delay.return_value = mock_task
@@ -310,7 +313,7 @@ def test_gitleaks_deduplication():
     assert finding["tool"] == "gitleaks"
     
     metadata = finding["metadata"]
-    assert metadata["fingerprint"] is not None
+    assert finding["fingerprint"] is not None  # fingerprint lives on the finding, not in metadata
     assert len(metadata["occurrences"]) == 2
     assert metadata["occurrences"][0]["commit"] == "commit123"
     assert metadata["occurrences"][1]["commit"] == "commit456"
@@ -553,7 +556,7 @@ def test_opengroup_scan_creation(client, setup_data):
     headers_a = {"Authorization": f"Bearer {setup_data['token_a']}"}
     payload = {
         "target": "github.com/org/repo-with-sast",
-        "scan_types": ["opengroup", "vuln"],
+        "scan_types": ["opengroup", "sca"],  # code scans; a web scan of github.com would need verification
     }
     with patch("app.routers.scans.run_scan_task.delay") as mock_delay:
         mock_task = MagicMock()
@@ -579,7 +582,7 @@ def test_opengrep_scan_creation(client, setup_data):
     headers_a = {"Authorization": f"Bearer {setup_data['token_a']}"}
     payload = {
         "target": "github.com/org/repo-with-opengrep",
-        "scan_types": ["opengrep", "vuln"],
+        "scan_types": ["opengrep", "sca"],  # code scans; a web scan of github.com would need verification
     }
     with patch("app.routers.scans.run_scan_task.delay") as mock_delay:
         mock_task = MagicMock()

@@ -203,5 +203,5 @@ def test_cross_org_endpoints_return_forbidden(setup_tenants):
     assert res.status_code == 403, f"Expected 403, got {res.status_code}"
 
     # 12. PATCH /assets/{asset_id}
-    res = client.patch(f"/assets/{asset_b_id}", json={"asset_weight": 2.5}, headers=headers_a)
+    res = client.patch(f"/assets/{asset_b_id}", json={"asset_weight": 2.0}, headers=headers_a)  # valid weight, so only org isolation can refuse it
     assert res.status_code == 403, f"Expected 403, got {res.status_code}"
