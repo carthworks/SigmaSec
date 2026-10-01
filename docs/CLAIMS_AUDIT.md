@@ -4,6 +4,8 @@
 **Scope:** every public claim on the landing page (`frontend/platform-ui/app/page.tsx`), `/privacy`, `/help`, the README, and the customer-facing dashboard API — checked against the backend code.
 **Method:** read-only. No code was changed.
 
+> **Update — branch `fix/pre-pilot-trust`:** fixes S1–S5 and claim 22 (dashboard shows only real data), removes the fake "exploit validated" flag (claim 5, backend and scan dialog), stops the Opengrep file-exists "reachable" shortcut (claim 4), and adds a migration for eight `findings` columns that had none. Landing-page copy (claims 1–3, 6–21) is **not** changed yet.
+
 Status key:
 - **Implemented** — the code does what the copy says.
 - **Partial** — something real exists, but the copy overstates it.
