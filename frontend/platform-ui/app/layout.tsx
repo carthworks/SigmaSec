@@ -24,11 +24,12 @@ export const metadata: Metadata = {
     template: "%s | SigmaSec",
   },
   description:
-    "Unified vulnerability scanning, AST call-graph reachability analysis, real-world exploit validation, and autonomous remediation pull requests.",
+    "Five open-source scanners in one queue, prioritised with CISA KEV and EPSS, with plain-English explanations and dependency-upgrade pull requests. Self-hostable, with a local AI option.",
   keywords: [
     "Application Security",
     "ASPM",
-    "AST Reachability",
+    "CISA KEV",
+    "EPSS",
     "Vulnerability Management",
     "Opengrep",
     "Trivy",
@@ -57,7 +58,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     title: "SigmaSec — From Security Noise to Actionable Intelligence",
     description:
-      "Stop triaging noise. Start fixing what is exploitable. Automated AST reachability analysis and 1-click remediation pull requests.",
+      "One prioritised queue from Nuclei, Trivy, Gitleaks, Opengrep and Nmap, ranked with CISA KEV and EPSS, with fix PRs for dependency upgrades.",
     siteName: "SigmaSec",
     images: [
       {
@@ -72,7 +73,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SigmaSec — From Security Noise to Actionable Intelligence",
     description:
-      "Stop triaging noise. Start fixing what is exploitable. Automated AST reachability analysis and 1-click remediation.",
+      "One prioritised queue from five open-source scanners, ranked with CISA KEV and EPSS, with fix PRs for dependency upgrades.",
     images: ["/Unified_Security_Intelligence_Workflow.png"],
     creator: "@sigmasec",
   },

@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy & Data Handling — SigmaSec",
-  description: "How SigmaSec handles source code, scanning telemetry, zero-retention AI processing, and DPDP / GDPR compliance.",
+  description: "How SigmaSec handles source code, scan results, AI processing and where data is stored.",
 };
 
 export default function PrivacyPage() {
@@ -47,17 +47,17 @@ export default function PrivacyPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
           <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-lg">
             <Shield className="w-5 h-5 text-emerald-400 mb-2" />
-            <h3 className="text-sm font-bold text-white mb-1">Code Stays Yours</h3>
+            <h3 className="text-sm font-bold text-white mb-1">Self-Host Option</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Scanners run in your environment. We receive finding fingerprints, not full proprietary repositories.
+              Self-host SigmaSec and your code never leaves your infrastructure. On the hosted service, repositories are cloned only for the duration of a scan.
             </p>
           </div>
 
           <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-lg">
             <Lock className="w-5 h-5 text-cyan-400 mb-2" />
-            <h3 className="text-sm font-bold text-white mb-1">Zero AI Training</h3>
+            <h3 className="text-sm font-bold text-white mb-1">No AI Training</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Customer data is never used to train or fine-tune models. LLM inference runs under strict zero-retention terms.
+              SigmaSec doesn&apos;t train or fine-tune models on customer data. AI can run fully local (Ollama) or on Claude via Anthropic&apos;s API.
             </p>
           </div>
 
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
             <Globe className="w-5 h-5 text-purple-400 mb-2" />
             <h3 className="text-sm font-bold text-white mb-1">Data Residency</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Localised storage options available in India (DPDP Act 2023) or custom European/US cloud regions.
+              Self-hosted deployments keep data wherever you run them, including Indian cloud regions. For the hosted service, ask us for the current region.
             </p>
           </div>
         </div>
@@ -77,13 +77,15 @@ export default function PrivacyPage() {
               <span className="text-emerald-400 font-mono text-xs">01</span> Information We Collect
             </h2>
             <p className="mb-3">
-              SigmaSec collects only the telemetry necessary to provide autonomous vulnerability triage, reachability analysis, and automated remediation workflows:
+              SigmaSec collects only what it needs to scan, prioritise and help remediate vulnerabilities:
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-slate-300 text-xs font-mono">
               <li>Account information (name, work email address, organization identity, authentication credentials).</li>
-              <li>Vulnerability finding metadata (CVE IDs, EPSS scores, CVSS vectors, and tool execution logs).</li>
-              <li>AST call-graph reachability paths extracted by local parser engines (e.g. function call references).</li>
-              <li>Audit trails of accepted or rejected pull requests and remediation actions.</li>
+              <li>Vulnerability finding metadata (CVE IDs, EPSS scores, CVSS vectors, file paths and tool execution logs).</li>
+              <li>Short code snippets around a vulnerable dependency&apos;s call sites, used for the dependency usage check.</li>
+              <li>For committed secrets, a masked value and a hash only; raw secret values are never stored.</li>
+              <li>Audit records of actions such as scans started, settings changed and fix pull requests opened.</li>
+              <li>On the hosted service, repository contents are cloned temporarily during a scan and deleted afterwards.</li>
             </ul>
           </section>
 
@@ -92,11 +94,13 @@ export default function PrivacyPage() {
               <span className="text-emerald-400 font-mono text-xs">02</span> AI Inference &amp; Model Data Usage
             </h2>
             <p className="mb-3">
-              SigmaSec uses Anthropic Claude and local Ollama inference models to analyze exploitability and synthesize patch diffs:
+              SigmaSec uses an AI model to explain findings in plain English and suggest remediation. You choose the model: a local Ollama model, or Anthropic&apos;s Claude API.
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-slate-300 text-xs font-mono">
-              <li>Zero Data Retention: Model inference requests are processed ephemerally and discarded immediately after response synthesis.</li>
-              <li>No Model Training: Customer code fragments, vulnerability logs, and prompt contexts are strictly prohibited from being used to train, evaluate, or improve any public or private artificial intelligence models.</li>
+              <li>Local option: with Ollama, prompts never leave your deployment.</li>
+              <li>Claude option: prompts are sent to Anthropic&apos;s API and handled under Anthropic&apos;s commercial terms.</li>
+              <li>Before any prompt is sent, recognisable secrets (API keys, tokens, private keys, JWTs) are redacted.</li>
+              <li>SigmaSec does not use customer code, findings or prompts to train or fine-tune models.</li>
             </ul>
           </section>
 
@@ -105,13 +109,13 @@ export default function PrivacyPage() {
               <span className="text-emerald-400 font-mono text-xs">03</span> Data Storage &amp; Security Controls
             </h2>
             <p className="mb-3">
-              All stored telemetry is protected with defense-in-depth controls:
+              Current controls (self-hosted deployments inherit the controls of the infrastructure you run them on):
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-slate-300 text-xs font-mono">
-              <li>Encryption in Transit: Mandatory TLS 1.3 encryption across all public and internal service boundaries.</li>
-              <li>Encryption at Rest: AES-256 encryption applied to all database records and storage volumes.</li>
-              <li>Tenant Isolation: Cryptographic row-level security ensuring complete multi-tenant tenant isolation.</li>
-              <li>Audit Logging: Immutable tamper-evident audit logs recording all data access and administrative operations.</li>
+              <li>Encryption in transit: traffic to the SigmaSec web app and API is served over HTTPS.</li>
+              <li>Integration credentials: GitHub, Jira and Slack tokens are encrypted at the application layer before storage.</li>
+              <li>Tenant isolation: every query is scoped to your organisation in the application layer.</li>
+              <li>Audit logging: scans, settings changes and integration actions are recorded in an audit log.</li>
             </ul>
           </section>
 

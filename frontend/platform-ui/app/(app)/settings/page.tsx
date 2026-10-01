@@ -209,24 +209,10 @@ export default function SettingsPage() {
   };
 
   // ─── API Token State ──────────────────────────────────────────────────────
-  const [tokens, setTokens] = React.useState<ApiToken[]>([
-    {
-      id: "tok_1",
-      name: "CI/CD Pipeline",
-      prefix: "csk_live_8f2a",
-      created: "2026-06-15",
-      lastUsed: "2026-07-08",
-      scopes: ["scans:write", "findings:read"],
-    },
-    {
-      id: "tok_2",
-      name: "Monitoring Dashboard",
-      prefix: "csk_live_c91b",
-      created: "2026-07-01",
-      lastUsed: null,
-      scopes: ["findings:read", "assets:read"],
-    },
-  ]);
+  // API tokens aren't implemented in the backend yet, so the list starts empty and
+  // creation is disabled in the UI (a client-generated key would not authenticate).
+  const [tokens, setTokens] = React.useState<ApiToken[]>([]);
+  const API_TOKENS_AVAILABLE = false;
   const [newTokenName, setNewTokenName] = React.useState("");
   const [showTokenSecret, setShowTokenSecret] = React.useState<string | null>(null);
   const [generatedSecret, setGeneratedSecret] = React.useState<string | null>(null);
@@ -702,7 +688,8 @@ export default function SettingsPage() {
                 Create New API Token
               </CardTitle>
               <CardDescription className="text-xs">
-                Generate a token to authenticate CI/CD pipelines, CLI tools, or external dashboards.
+                Coming soon. API tokens for CI/CD pipelines and CLI tools aren&apos;t available yet; the REST API
+                currently authenticates with the session token you get when you sign in.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
@@ -712,9 +699,10 @@ export default function SettingsPage() {
                   onChange={(e) => setNewTokenName(e.target.value)}
                   placeholder="Token name (e.g. GitHub Actions)"
                   className="bg-background/50 border-border/80 text-xs h-9 flex-1"
-                  onKeyDown={(e) => e.key === "Enter" && handleCreateToken()}
+                  disabled={!API_TOKENS_AVAILABLE}
+                  onKeyDown={(e) => e.key === "Enter" && API_TOKENS_AVAILABLE && handleCreateToken()}
                 />
-                <Button size="sm" onClick={handleCreateToken} className="font-semibold text-xs h-9 px-4">
+                <Button size="sm" onClick={handleCreateToken} disabled={!API_TOKENS_AVAILABLE} className="font-semibold text-xs h-9 px-4">
                   Generate Token
                 </Button>
               </div>

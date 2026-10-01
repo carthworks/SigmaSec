@@ -63,15 +63,15 @@ const C = {
 } as const;
 
 const FINDING_NAMES = [
-  "Weak key exchange on SSH service · api-internal-22",
-  "AWS access key live in public commit · infra-scripts",
-  "Authentication bypass in gnutls · reachable from login handler",
-  "Use-after-free in libxslt · reachable from XML parser",
+  "Weak SSH key exchange (diffie-hellman-group1-sha1) · api-internal-22",
+  "AWS access key in public commit · infra-scripts",
+  "Authentication bypass in gnutls · used in login code",
+  "Use-after-free in libxslt · used in XML import",
   "Exposed admin panel · no authentication · admin.staging",
-  "Prototype pollution in lodash · reachable from request body parser",
+  "Prototype pollution in lodash · used in request parsing",
   "Stripe restricted key in build log · ci-runner",
   "Path traversal in file upload handler · media-service",
-  "Deserialisation flaw in jackson-databind · reachable from webhook",
+  "Deserialisation flaw in jackson-databind · used in webhook handler",
   "SSRF in image proxy · fetches arbitrary internal hosts",
   "Postgres superuser credential in Helm values · prod cluster",
   "Regex denial of service in email validator · signup path",
@@ -80,10 +80,10 @@ const FINDING_NAMES = [
 ];
 
 const HERO_LINES = [
-  { pre: "Your scanners found 1,204 problems last week.", benefit: " Fourteen were real." },
-  { pre: "Stop triaging noise.", benefit: " Start fixing what is exploitable." },
-  { pre: "Exploitability confirmed", benefit: " before an engineer sees it." },
-  { pre: "From 1,204 findings to", benefit: " 7 pull requests." },
+  { pre: "Five scanners.", benefit: " One ranked queue." },
+  { pre: "Stop triaging noise.", benefit: " Start with what attackers actually exploit." },
+  { pre: "CISA KEV and EPSS on every CVE,", benefit: " before an engineer sees it." },
+  { pre: "Dependency fixes,", benefit: " opened as pull requests." },
 ];
 
 const PANEL_TABS = ["Review patch diff", "Open pull request", "Create Jira ticket", "Ask the agent"] as const;
@@ -503,7 +503,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     num: "1",
     title: "DISCOVER",
     subtitle: "Unified Scanners",
-    tag: "800+ Raw CVEs",
+    tag: "5 open-source engines",
     color: "#38bdf8", // cyan
     iconSvg: (
       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -513,7 +513,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
         <circle cx="12" cy="12" r="2" fill="currentColor" />
       </svg>
     ),
-    activeDesc: "Scanning 142 repos across code, containers, and ports...",
+    activeDesc: "Scanning code, dependencies, containers, secrets and ports...",
   },
   {
     id: "enrich",
@@ -527,27 +527,27 @@ const PIPELINE_STEPS: PipelineStep[] = [
         <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
       </svg>
     ),
-    activeDesc: "Cross-referencing real-world exploit feeds and live KEV lists...",
+    activeDesc: "Matching CVEs against CISA KEV, FIRST EPSS and NVD...",
   },
   {
     id: "prioritize",
     num: "3",
     title: "PRIORITIZE",
-    subtitle: "AST Reachability",
-    tag: "Only ~1% Critical",
+    subtitle: "Risk Ranking",
+    tag: "KEV · EPSS · Usage",
     color: "#f59e0b", // amber
     iconSvg: (
       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
       </svg>
     ),
-    activeDesc: "AST call-path reachability sieve: 99% false alarm noise dropped!",
+    activeDesc: "Ranking by KEV, EPSS, severity and whether the dependency is used in your code...",
   },
   {
     id: "understand",
     num: "4",
     title: "UNDERSTAND",
-    subtitle: "Claude AI",
+    subtitle: "AI Explanation",
     tag: "Plain-English Triage",
     color: "#ec4899", // pink/rose
     iconSvg: (
@@ -557,14 +557,14 @@ const PIPELINE_STEPS: PipelineStep[] = [
         <circle cx="15" cy="12" r="1" fill="currentColor" />
       </svg>
     ),
-    activeDesc: "Claude AI confirms memory corruption & explains root cause...",
+    activeDesc: "Explaining the risk and the fix in plain English (Claude or a local model)...",
   },
   {
     id: "action",
     num: "5",
     title: "TAKE ACTION",
-    subtitle: "1-Click AutoFix",
-    tag: "PR #402 Ready",
+    subtitle: "Fix PRs",
+    tag: "Dependency PRs",
     color: "#10b981", // emerald
     iconSvg: (
       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -574,7 +574,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
         <path d="M18 9a9 9 0 0 1-9 9" />
       </svg>
     ),
-    activeDesc: "AutoFix PR #402 generated with passing CI. Posture score ➔ 88!",
+    activeDesc: "Opening a dependency-upgrade pull request for your review...",
   },
 ];
 
@@ -782,15 +782,15 @@ function HeroAppAnimation() {
       <div className="pipeline-outcomes-footer">
         <div className="pipeline-kpi-chip">
           <span className="kpi-bullet" />
-          <span><b>-99% Noise Dropped</b> (Only ~1% critical)</span>
+          <span><b>One ranked queue</b> (five engines, deduplicated)</span>
         </div>
         <div className="pipeline-kpi-chip">
           <span className="kpi-bullet purple" />
-          <span><b>Claude AI Verified</b> (Zero false alarms)</span>
+          <span><b>Plain-English explanations</b> (Claude or local model)</span>
         </div>
         <div className="pipeline-kpi-chip highlight">
-          <span className="kpi-score">88</span>
-          <span><b>Posture Score</b> · SOC 2 Ready</span>
+          <span className="kpi-score">0–100</span>
+          <span><b>Posture Score</b> · tracked per scan</span>
         </div>
       </div>
     </div>
@@ -1554,9 +1554,9 @@ export default function HomeLandingPage() {
 
                 <p className="lede">
                   SigmaSec runs Nuclei, Trivy, Gitleaks, Opengrep, and Nmap against your code and infrastructure,
-                  then spends the rest of its time taking findings away — matching each one against exploit
-                  intelligence, checking whether the vulnerable path is reachable, and confirming it before an
-                  engineer ever sees it.
+                  then ranks what they find — matching each CVE against CISA KEV and EPSS, checking whether the
+                  vulnerable dependency is used in your code, and explaining each finding in plain English before
+                  an engineer ever sees it.
                 </p>
 
                 <div className="cta-row">
@@ -1569,9 +1569,9 @@ export default function HomeLandingPage() {
                 </div>
 
                 <ul className="assur">
-                  <li>Your code stays in your environment</li>
+                  <li>Self-host the full stack</li>
                   <li>No training on customer data</li>
-                  <li>India data residency available</li>
+                  <li>Run AI fully local with Ollama</li>
                 </ul>
               </Rise>
 
@@ -1587,7 +1587,7 @@ export default function HomeLandingPage() {
           <div className="wrap">
             <Rise>
               <p className="eyebrow" id="sieve-h">
-                One repository, one week — every mark is one finding
+                Illustrative example — every mark is one finding
               </p>
             </Rise>
 
@@ -1595,7 +1595,7 @@ export default function HomeLandingPage() {
               <Rise delay={0} className="gate">
                 <h3>Discover</h3>
                 <span className="gate-n">1,204</span>
-                <p className="gate-cap">Four engines run in parallel across code, containers and endpoints.</p>
+                <p className="gate-cap">Five engines run across code, dependencies, containers, secrets and endpoints.</p>
                 <TickCanvas count={1204} color={C.tick1} />
               </Rise>
 
@@ -1609,21 +1609,21 @@ export default function HomeLandingPage() {
               <Rise delay={110} className="gate">
                 <h3>Prioritise</h3>
                 <span className="gate-n">86</span>
-                <p className="gate-cap">The vulnerable function is actually reachable from your entry points.</p>
+                <p className="gate-cap">The vulnerable dependency is imported and called in your code.</p>
                 <TickCanvas count={86} color={C.ochre} />
               </Rise>
 
               <Rise delay={165} className="gate">
-                <h3>Confirm</h3>
+                <h3>Decide</h3>
                 <span className="gate-n">14</span>
-                <p className="gate-cap">Exploited in a sandbox against your build. Evidence attached.</p>
+                <p className="gate-cap">On CISA KEV or likely to be exploited (EPSS), and used in your code.</p>
                 <TickButtons count={14} variant="confirmed" selected={readoutIdx} onPick={setReadoutIdx} />
               </Rise>
 
               <Rise delay={220} className="gate">
                 <h3>Act</h3>
                 <span className="gate-n">7</span>
-                <p className="gate-cap">Already had a pull request open when the engineer arrived.</p>
+                <p className="gate-cap">Dependency upgrades opened as pull requests, ready for review.</p>
                 <TickButtons count={7} variant="resolved" />
               </Rise>
             </div>
@@ -1635,11 +1635,11 @@ export default function HomeLandingPage() {
               </li>
               <li>
                 <i style={{ background: C.ochre }} />
-                Reachable — needs a decision
+                Used in your code — needs a decision
               </li>
               <li>
                 <i style={{ background: C.clay }} />
-                Exploitable — confirmed
+                Known or likely exploited
               </li>
               <li>
                 <i style={{ background: C.emerald }} />
@@ -1652,7 +1652,7 @@ export default function HomeLandingPage() {
                 {readoutIdx === null ? "Select a confirmed finding to read it." : FINDING_NAMES[readoutIdx]}
               </p>
               <p className="sieve-note">
-                Every other platform shows you the first bar. The product is the last one.
+                Raw scanner output is the first bar. The work starts at the last one.
               </p>
             </div>
           </div>
@@ -1689,13 +1689,13 @@ export default function HomeLandingPage() {
                   <tr>
                     <td>Trivy</td>
                     <td>Lockfiles, manifests, container image layers</td>
-                    <td>Dependency graph and SBOM</td>
+                    <td>Vulnerable dependencies and image packages</td>
                     <td><span className="chip now">Live</span></td>
                   </tr>
                   <tr>
                     <td>Gitleaks</td>
-                    <td>Working tree and full commit history</td>
-                    <td>Credential validation queue</td>
+                    <td>Last 50 commits of the default branch</td>
+                    <td>Secrets queue (masked; raw values never stored)</td>
                     <td><span className="chip now">Live</span></td>
                   </tr>
                   <tr>
@@ -1706,8 +1706,8 @@ export default function HomeLandingPage() {
                   </tr>
                   <tr>
                     <td>Opengrep</td>
-                    <td>Your own source, as an AST</td>
-                    <td>Reachability from entry points</td>
+                    <td>Your own source code</td>
+                    <td>Code-level (SAST) findings</td>
                     <td><span className="chip now">Live</span></td>
                   </tr>
                   <tr>
@@ -1731,8 +1731,8 @@ export default function HomeLandingPage() {
                 <h2 id="answer-h">A finding is not an answer.</h2>
                 <p className="lede" style={{ marginTop: 22 }}>
                   A CVE identifier and a severity label tell an engineer almost nothing about what to do next.
-                  Every finding that reaches your queue arrives with the reasoning behind its rank, the specific
-                  fix, and the patch already written.
+                  Every finding that reaches your queue arrives with the reasoning behind its rank and the specific
+                  fix — and, for dependency upgrades, a pull request ready to review.
                 </p>
                 <p className="lede" style={{ marginTop: 16 }}>
                   This is what your team reads at nine in the morning — not a spreadsheet export.
@@ -1742,26 +1742,25 @@ export default function HomeLandingPage() {
               <Rise delay={80}>
                 <div className="panel">
                   <div className="panel-hd">
-                    <span className="sev">Exploitable</span>
+                    <span className="sev">High</span>
                     <b>Weak key exchange on SSH service</b>
                   </div>
                   <div className="panel-meta">
-                    <span>CVE-2024-31497</span>
-                    <span>EPSS 0.82</span>
-                    <span>KEV listed</span>
+                    <span>Example</span>
+                    <span>Nmap + Nuclei</span>
                     <span>api-internal-22</span>
                     <span>Internet-facing</span>
                   </div>
                   <div className="panel-body">
                     <p>
-                      This SSH server accepts a key exchange algorithm your client will negotiate down to. An
-                      attacker positioned between client and server can bypass session key establishment and
-                      intercept the connection. We confirmed it against your staging build on 18 Aug.
+                      This SSH server still offers <code>diffie-hellman-group1-sha1</code>, a 1024-bit key exchange
+                      that is considered breakable. An attacker who can sit between client and server could force
+                      a weak session. Detected by a Nuclei template against api-internal-22.
                     </p>
                     <p>
                       Remediation: remove <code>diffie-hellman-group1-sha1</code> from{" "}
-                      <code>/etc/ssh/sshd_config</code> and restart. No client compatibility impact expected —
-                      all observed clients negotiated a stronger algorithm in the last 90 days.
+                      <code>/etc/ssh/sshd_config</code> and restart. Check that no legacy clients still depend on
+                      it before rolling out.
                     </p>
                   </div>
 
@@ -1798,8 +1797,8 @@ export default function HomeLandingPage() {
                       {activeTab === "Review patch diff" && (
                         <>
                           <p>
-                            Patch generated for <code>diffie-hellman-group1-sha1</code> removal. Changes scoped
-                            to sshd_config only — no application code touched.
+                            Suggested change to remove <code>diffie-hellman-group1-sha1</code>. Config files aren&apos;t
+                            patched automatically yet, so the pull request carries this as an advisory.
                           </p>
                           <pre>
                             <span className="diff-rem">- KexAlgorithms +diffie-hellman-group1-sha1</span>
@@ -1807,7 +1806,7 @@ export default function HomeLandingPage() {
                               + KexAlgorithms curve25519-sha256,ecdh-sha2-nistp256
                             </span>
                           </pre>
-                          <p>1 file changed, 1 insertion, 1 deletion. Ready to open as a pull request.</p>
+                          <p>Apply it yourself, or open a pull request with the advisory in REMEDIATION.md.</p>
                         </>
                       )}
 
@@ -1816,12 +1815,12 @@ export default function HomeLandingPage() {
                           <div className="field-row">
                             <span className="field-label">Title</span>
                             <span className="field-val">
-                              fix: remove weak SSH key exchange algorithm (CVE-2024-31497)
+                              Security advisory: weak SSH key exchange on api-internal-22
                             </span>
                           </div>
                           <div className="field-row">
                             <span className="field-label">Branch</span>
-                            <span className="field-val">sigmasec/fix-cve-2024-31497</span>
+                            <span className="field-val">fix/weak-ssh-kex</span>
                           </div>
                           <div className="field-row">
                             <span className="field-label">Base</span>
@@ -1829,7 +1828,7 @@ export default function HomeLandingPage() {
                           </div>
                           <div className="field-row">
                             <span className="field-label">Files</span>
-                            <span className="field-val">infra/sshd_config</span>
+                            <span className="field-val">REMEDIATION.md</span>
                           </div>
                           <div className="field-row">
                             <span className="field-label">Labels</span>
@@ -1853,12 +1852,12 @@ export default function HomeLandingPage() {
                           </div>
                           <div className="field-row">
                             <span className="field-label">Priority</span>
-                            <span className="field-val">Critical</span>
+                            <span className="field-val">High</span>
                           </div>
                           <div className="field-row">
                             <span className="field-label">Summary</span>
                             <span className="field-val">
-                              CVE-2024-31497 — weak SSH key exchange on api-internal-22 (KEV listed, EPSS 0.82)
+                              Weak SSH key exchange (diffie-hellman-group1-sha1) on api-internal-22
                             </span>
                           </div>
                           <div className="field-row">
@@ -1869,7 +1868,7 @@ export default function HomeLandingPage() {
                             <span className="field-label">Labels</span>
                             <span className="field-val">
                               <span className="chip-jira">sigmasec-auto</span>
-                              <span className="chip-jira">kev-listed</span>
+                              <span className="chip-jira">ssh</span>
                             </span>
                           </div>
                         </>
@@ -1895,8 +1894,8 @@ export default function HomeLandingPage() {
                           <div className="agent-line">
                             <span className="agent-q">A</span>
                             <p>
-                              Unlikely. SSH session logs show no client negotiated
-                              diffie-hellman-group1-sha1 in the past 90 days.
+                              SigmaSec can&apos;t see your SSH logs. Check sshd&apos;s logs for clients negotiating
+                              diffie-hellman-group1-sha1 before you remove it.
                             </p>
                           </div>
                         </>
@@ -1930,11 +1929,11 @@ export default function HomeLandingPage() {
                 <div>
                   <p>
                     Web endpoints, container images, dependencies, committed secrets and application code all
-                    resolve to a single finding shape, coordinated in one run. Duplicates across engines
-                    collapse into one record instead of stacking up four times in your queue.
+                    resolve to a single finding shape, coordinated in one run. A finding seen again in a later
+                    scan stays one record instead of stacking up in your queue.
                   </p>
                   <ul>
-                    <li>Deterministic dedup by fingerprint</li>
+                    <li>Deterministic dedup by fingerprint, per engine</li>
                     <li>One severity scale</li>
                     <li>Asset-linked, not scan-linked</li>
                   </ul>
@@ -1948,16 +1947,15 @@ export default function HomeLandingPage() {
                 </div>
                 <div>
                   <p>
-                    Severity tells you a vulnerability could exist. We tell you whether it can be reached and
-                    exploited in your code — which is what actually determines whether anyone should care.
-                    Findings that survive both tests rise to the top of the queue.
+                    Severity tells you a vulnerability could exist. We add whether it is known to be exploited,
+                    how likely exploitation is, and whether the vulnerable dependency is used in your code.
+                    Findings that score high on those rise to the top of the queue.
                   </p>
                   <ul>
                     <li>CISA KEV — known exploited</li>
                     <li>FIRST EPSS — probability of exploitation</li>
                     <li>NVD CVSS — baseline severity</li>
-                    <li>AST reachability from entry points</li>
-                    <li>Sandbox exploit validation</li>
+                    <li>Dependency usage check (beta, Python first)</li>
                   </ul>
                 </div>
               </Rise>
@@ -1970,14 +1968,14 @@ export default function HomeLandingPage() {
                 <div>
                   <p>
                     Not a summary of the CVE description. A plain-English explanation of the risk in your
-                    context, the specific remediation, and a pull request you can review and merge. Every
-                    generated change carries an audit trail back to the evidence that produced it.
+                    context and the specific remediation — and, for dependency upgrades, a pull request you
+                    can review and merge.
                   </p>
                   <ul>
-                    <li>Plain-English explanation with table sparkle indicators</li>
-                    <li>Step-by-step remediation with audio completion earcons</li>
-                    <li>NVD CVSS & FIRST EPSS threat intelligence resolution</li>
-                    <li>Patch scoped to your findings with diff preview before merge</li>
+                    <li>Plain-English explanation of the risk in context</li>
+                    <li>Step-by-step remediation</li>
+                    <li>Dependency-upgrade PRs for npm, pip and Go</li>
+                    <li>Runs on Claude or a local model (Ollama)</li>
                   </ul>
                 </div>
               </Rise>
@@ -2015,44 +2013,46 @@ export default function HomeLandingPage() {
                   <tr>
                     <td>Where does scanning run?</td>
                     <td>
-                      Scanning and reachability analysis run inside your own infrastructure. We provide native
-                      Terraform modules (`infra/`) for private VPC deployment across AWS and GCP. We receive finding
-                      metadata, not your repository.
+                      Self-host the full stack with Docker Compose and scanning runs on your infrastructure — your
+                      code never leaves it. On our hosted service, repositories are cloned into scan workers for the
+                      duration of a scan. Private-VPC Terraform modules are on the roadmap.
                     </td>
-                    <td><span className="chip now">Available today</span></td>
+                    <td><span className="chip now">Self-host today</span></td>
                   </tr>
                   <tr>
                     <td>Do you train on our data?</td>
                     <td>
-                      No. Customer data is never used to train models. Inference runs under zero-retention terms
-                      with our model providers.
+                      No. SigmaSec doesn&apos;t train models on customer data. AI explanations can run on a local model
+                      (Ollama) so nothing leaves your deployment, or on Claude via Anthropic&apos;s API under its
+                      commercial terms.
                     </td>
-                    <td><span className="chip now">Contractual</span></td>
+                    <td><span className="chip now">Your choice</span></td>
                   </tr>
                   <tr>
                     <td>Where is metadata stored?</td>
                     <td>
-                      You choose. India-region hosting for DPDP Act 2023 obligations, or a region of your choice.
+                      Self-hosted: wherever you run it, including Indian cloud regions for DPDP Act 2023
+                      obligations. Hosted: ask us for the current hosting region.
                     </td>
-                    <td><span className="chip now">Available today</span></td>
+                    <td><span className="chip soon">Ask us</span></td>
                   </tr>
                   <tr>
                     <td>Are you SOC 2 audited?</td>
                     <td>
-                      Cryptographic audit logging and access controls are in place. The Type II audit is
-                      scheduled — we will not claim certification before we hold it.
+                      Not yet. Audit logging and role-based access control are in place. We will not claim
+                      certification before we hold it.
                     </td>
-                    <td><span className="chip soon">In progress</span></td>
+                    <td><span className="chip soon">Not yet</span></td>
                   </tr>
                 </tbody>
               </table>
 
               <p style={{ marginTop: 22, fontSize: 14 }}>
-                <Link href="/help" style={{ borderBottom: `1px solid ${C.ink}`, textDecoration: "none" }}>
-                  Read the full trust documentation
+                <Link href="/privacy" style={{ borderBottom: `1px solid ${C.ink}`, textDecoration: "none" }}>
+                  Read the privacy policy
                 </Link>{" "}
                 <span style={{ color: C.ink3 }}>
-                  — architecture diagram, subprocessor list, retention policy, incident response.
+                  — or <Link href="/contact" style={{ color: "inherit" }}>contact us</Link> for architecture and subprocessor details.
                 </span>
               </p>
             </Rise>
@@ -2076,16 +2076,15 @@ export default function HomeLandingPage() {
                   <h3>Platform architecture</h3>
                   <span className="team-role">Co-founders</span>
                   <p>
-                    Ex-AppSec leads and systems engineers who built autonomous triage and reachability analysis
-                    for internal use before it was a product.
+                    Security, applied cryptography and AI engineering, with hands-on work in post-quantum TLS
+                    and embedded systems.
                   </p>
                 </div>
                 <div>
                   <h3>Engineering</h3>
                   <span className="team-role">Co-founders</span>
                   <p>
-                    Program analysis, AST graph generation and agentic tool execution, with a background in
-                    sandboxed build infrastructure.
+                    15+ years building frontends and products for banking, SaaS and AI teams.
                   </p>
                 </div>
                 <div>
@@ -2146,7 +2145,7 @@ export default function HomeLandingPage() {
                 SigmaSec <s>Posture Intelligence</s>
               </a>
               <p style={{ maxWidth: "34ch" }}>
-                Unified scanning, real exploitability intelligence, and AI-authored remediation for teams tired
+                Unified scanning, CISA KEV and EPSS prioritisation, and plain-English remediation for teams tired
                 of triaging noise.
               </p>
             </div>
@@ -2171,7 +2170,7 @@ export default function HomeLandingPage() {
           </div>
           <div className="foot-btm">
             <span>© {new Date().getFullYear()} SigmaSec</span>
-            <span>Data isolated. Encrypted. Never shared.</span>
+            <span>Self-hostable. Never used for training.</span>
             <span>sigmasec.ai</span>
           </div>
         </div>

@@ -619,7 +619,7 @@ export default function ReportsPage() {
 
         <Card className="border border-border/80 bg-card/60">
           <CardHeader className="p-4 pb-1.5">
-            <CardDescription className="text-[10px] font-semibold uppercase tracking-wider">Confirmed Exploits</CardDescription>
+            <CardDescription className="text-[10px] font-semibold uppercase tracking-wider">Confirmed Exploits · coming soon</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-black text-amber-500 flex items-center gap-1.5">
@@ -764,7 +764,7 @@ export default function ReportsPage() {
                     onChange={(e) => setOnlyExploited(e.target.checked)}
                     className="h-4 w-4 rounded border-input text-primary accent-primary"
                   />
-                  <span>Show only active exploit validated findings (FR-SCN-13)</span>
+                  <span>Show only exploit-validated findings (not available yet)</span>
                 </label>
               </div>
 

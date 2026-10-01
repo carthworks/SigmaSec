@@ -119,17 +119,18 @@ def get_dashboard_summary(
     open_findings = [f for f in findings if f.status not in [FindingStatus.fixed, FindingStatus.false_positive]]
     crit_count = sum(1 for f in open_findings if _sev_str(f) == "critical")
     high_count = sum(1 for f in open_findings if _sev_str(f) == "high")
-    med_count = sum(1 for f in open_findings if _sev_str(f) == "medium")
     kev_open = [f for f in open_findings if f.kev_listed]
 
-    # Posture score (0-100): 100 - (10 x critical + 3 x high + 1 x medium) over open findings,
-    # +10 when fewer than 5 findings are open (unchanged from v1).
+    # Posture score: the same formula and inputs as the executive view (all org
+    # findings, weighted by asset), so both screens always show the same number.
     # Null until the org has scanned something, so a new account doesn't show a score.
     posture_score = None
     if scans or findings:
-        raw_deduction = (crit_count * 10) + (high_count * 3) + (med_count * 1)
-        bonus = 10 if len(open_findings) < 5 else 0
-        posture_score = round(max(0.0, min(100.0, 100.0 - raw_deduction + bonus)), 0)
+        from app.routers.executive import _compute_posture_score
+
+        all_org_findings = db.query(Finding).filter(Finding.org_id == org_id).all()
+        asset_weights = {str(a.id): float(a.asset_weight or 1.0) for a in assets}
+        posture_score = _compute_posture_score(all_org_findings, asset_weights)
 
     if not (scans or findings):
         posture_driver = "No scans yet. Run a scan to calculate your posture score."
