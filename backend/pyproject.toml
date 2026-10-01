@@ -13,6 +13,8 @@ line-length = 88
 target-version = ["py312"]
 
 [tool.pytest.ini_options]
+# Make `import app` work when running the `pytest` command (not only `python -m pytest`).
+pythonpath = ["."]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
