@@ -252,12 +252,20 @@ def determine_cve_reachability(finding: Any, repo_path: str, client: Optional[AI
     import_graph = scan_results["import_graph"]
     call_sites = scan_results["call_sites"]
 
-    # If package is not imported anywhere, it is unreachable
+    # Not finding an import by the package's name is NOT evidence of unreachability:
+    # the package may be an OS package in a container image, a transitive dependency
+    # used through another library, or imported under a different name
+    # (PyYAML -> yaml, Pillow -> PIL, beautifulsoup4 -> bs4). Report uncertainty
+    # rather than demoting a real risk.
     if not import_graph:
         return ReachabilityClassification(
-            reachability="unreachable",
-            confidence=1.0,
-            reasoning=f"The package '{package_name}' is not imported anywhere in the repository code."
+            reachability="uncertain",
+            confidence=0.3,
+            reasoning=(
+                f"No direct import of '{package_name}' was found in first-party code. "
+                "It may still be used as a transitive dependency, an OS/runtime package, "
+                "or under a different import name, so reachability is unknown."
+            ),
         )
 
     # 2. Extract potential vuln methods

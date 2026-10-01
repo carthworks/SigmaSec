@@ -30,6 +30,9 @@ from app.intel.epss import EPSSClient
 
 logger = logging.getLogger(__name__)
 
+# Minimum confidence for an "unreachable" verdict to lower a finding's priority.
+UNREACHABLE_MIN_CONFIDENCE = 0.8
+
 
 def update_progress(scan_id: str, pct: int, step: str):
     redis_client.hset(
@@ -290,11 +293,15 @@ def enrich_findings_task(scan_id: str):
                             f.reachability = Reachability(val)
                         else:
                             f.reachability = Reachability.uncertain
-                            
+
                         f.reachability_reason = reach_res.reasoning
-                        
-                        if val == "unreachable":
+
+                        # Only change priority on a confident verdict. A low-confidence
+                        # "unreachable" must never push a real vulnerability down the queue.
+                        if val == "unreachable" and reach_res.confidence >= UNREACHABLE_MIN_CONFIDENCE:
                             reachability_multiplier = 0.7
+                        elif val == "unreachable":
+                            f.reachability = Reachability.uncertain
                         elif val == "reachable":
                             reachability_multiplier = 1.2
                     except Exception as reach_err:
@@ -302,18 +309,14 @@ def enrich_findings_task(scan_id: str):
                         f.reachability = Reachability.uncertain
                         f.reachability_reason = f"Reachability analysis execution error: {reach_err}"
                 elif f.tool in ("opengroup", "opengrep"):
-                    meta = f.scan_metadata or {}
-                    rel_file = meta.get("file_path") or f.url or ""
-                    clean_rel = rel_file.split("#")[0].lstrip("/")
-                    abs_file = os.path.join(repo_dir, clean_rel) if clean_rel else None
-                    if abs_file and os.path.isfile(abs_file):
-                        f.reachability = Reachability.reachable
-                        f.reachability_reason = f"Source code file '{clean_rel}' is present in repository codebase."
-                        reachability_multiplier = 1.2
-                    else:
-                        f.reachability = Reachability.unreachable
-                        f.reachability_reason = f"Source code file '{clean_rel}' not found in repository codebase."
-                        reachability_multiplier = 0.7
+                    # SAST findings are already in first-party code. The file existing in
+                    # the repo says nothing about whether the flagged path is reachable
+                    # from an entry point, so don't claim it either way.
+                    f.reachability = Reachability.uncertain
+                    f.reachability_reason = (
+                        "SAST finding in first-party code. Entry-point reachability is not "
+                        "analysed for code findings yet."
+                    )
             else:
                 f.reachability = Reachability.uncertain
                 if not repo_dir:
@@ -1083,7 +1086,10 @@ def post_slack_summary(scan_id: str):
             logger.info(f"No Slack webhook configured for org {scan.org_id}. Skipping summary.")
             return {"status": "skipped_no_config"}
 
-        webhook_url = decrypt_value(config.webhook_url)
+        try:
+            webhook_url = decrypt_value(config.webhook_url)
+        except Exception:
+            webhook_url = ""
         if not webhook_url:
             logger.error(f"Failed to decrypt Slack webhook URL for org {scan.org_id}.")
             return {"status": "error", "message": "decryption failed"}
