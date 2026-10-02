@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SigmaSec — Five Scanners. One Ranked Queue. Continuous Exposure Management</title>
+  <meta name="description" content="Open-source continuous exposure management. Correlate Nuclei, Trivy, Gitleaks, Opengrep, and Nmap findings with CISA KEV, EPSS, and AST reachability analysis." />
+  <meta name="keywords" content="vulnerability management, appsec, devsecops, reachability, trivy, nuclei, gitleaks, opengrep, nmap, cisa kev, epss" />
+  
+  <!-- Open Graph / Social Cards -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="SigmaSec — Five Scanners. One Ranked Queue." />
+  <meta property="og:description" content="Orchestrate Trivy, Gitleaks, Nuclei, Opengrep & Nmap into a unified, prioritized exposure queue backed by CISA KEV, EPSS, and code reachability." />
+  <meta property="og:url" content="https://carthworks.github.io/SigmaSec/" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="SigmaSec — Continuous Security Posture Intelligence" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── PALETTE & DESIGN SYSTEM (Matching SigmaSec Platform UI) ── */
+    :root {
+      --paper: #FBFBFC;
+      --paper-2: #FFFFFF;
+      --paper-3: #F2F3F5;
+      --ink: #0B0D0F;
+      --ink-2: #4A5158;
+      --ink-3: #838A91;
+      --rule: #E2E4E7;
+      --rule-2: #EDEEF0;
+      
+      --dark: #0B0D0F;
+      --dark-2: #14171A;
+      --dark-3: #1A1F26;
+      --dark-rule: #23272C;
+      --dark-tx: #E4E6E9;
+      --dark-tx-2: #8C939A;
+      
+      --ochre: #916008;
+      --clay: #A32B1C;
+      --emerald: #0B6647;
+      --blue: #2563EB;
+      --cyan: #0284C7;
+      --purple: #7C3AED;
+      
+      --display: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+      
+      --pad: clamp(20px, 5vw, 64px);
+      --nav-h: 58px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    code, pre { font-family: var(--mono); }
+    :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+    [id] { scroll-margin-top: calc(var(--nav-h) + 20px); }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-left: var(--pad);
+      padding-right: var(--pad);
+    }
+
+    /* ── TYPOGRAPHY ── */
+    h1, h2, h3, h4 {
+      font-family: var(--display);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.08;
+    }
+    h1 { font-size: clamp(38px, 5.4vw, 66px); }
+    h2 { font-size: clamp(28px, 3.8vw, 46px); }
+    h3 { font-size: 20px; letter-spacing: -0.015em; line-height: 1.25; }
+    
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 22px;
+      height: 1px;
+      background: currentColor;
+    }
+    .eyebrow.on-dark { color: var(--dark-tx-2); }
+
+    .lede {
+      font-size: clamp(16.5px, 1.4vw, 19.5px);
+      color: var(--ink-2);
+      max-width: 62ch;
+      line-height: 1.55;
+    }
+    .lede.on-dark { color: var(--dark-tx-2); }
+
+    /* ── BUTTONS & CHIPS ── */
+    .btn-lp {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      font-family: var(--body);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 22px;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--paper-2);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.16s, transform 0.16s, box-shadow 0.16s;
+    }
+    .btn-lp:hover {
+      background: #000;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .btn-lp.ghost {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--rule);
+    }
+    .btn-lp.ghost:hover {
+      border-color: var(--ink);
+      background: var(--paper-2);
+    }
+    .btn-lp.pale {
+      background: var(--paper-2);
+      color: var(--ink);
+      border-color: var(--paper-2);
+    }
+    .btn-lp.pale:hover {
+      background: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .btn-lp.sm {
+      font-size: 13.5px;
+      padding: 7px 14px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border: 1px solid var(--rule);
+      color: var(--ink-3);
+      white-space: nowrap;
+      border-radius: 3px;
+    }
+    .chip.now { border-color: var(--ink); color: var(--ink); }
+    .chip.ochre { border-color: var(--ochre); color: var(--ochre); background: rgba(145, 96, 8, 0.06); }
+    .chip.clay { border-color: var(--clay); color: var(--clay); background: rgba(163, 43, 28, 0.06); }
+    .chip.emerald { border-color: var(--emerald); color: var(--emerald); background: rgba(11, 102, 71, 0.06); }
+
+    /* ── REFINED TOP NAVIGATION ── */
+    .lp-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(251, 251, 252, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--rule);
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .lp-nav.scrolled {
+      background: rgba(251, 251, 252, 0.96);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+    .lp-nav .wrap {
+      display: flex;
+      align-items: center;
+      height: var(--nav-h);
+      gap: 20px;
+    }
+    
+    .brand-mark {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 17.5px;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      flex-shrink: 0;
+    }
+    .brand-mark svg {
+      width: 21px;
+      height: 21px;
+    }
+    .brand-mark .tag-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      background: var(--paper-3);
+      border: 1px solid var(--rule);
+      padding: 1.5px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* Clean, Pill-Group Nav Links */
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: 12px;
+    }
+    .nav-link {
+      font-family: var(--body);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink-2);
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: color 0.15s ease, background 0.15s ease;
+      white-space: nowrap;
+    }
+    .nav-link:hover {
+      color: var(--ink);
+      background: rgba(11, 13, 15, 0.05);
+    }
+    .nav-link.is-active {
+      color: var(--ink);
+      font-weight: 600;
+      background: rgba(11, 13, 15, 0.07);
+    }
+
+    /* Nav Actions */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+    .github-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--rule);
+      background: var(--paper-2);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-2);
+      transition: border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+      white-space: nowrap;
+    }
+    .github-pill-btn:hover {
+      border-color: var(--ink);
+      color: var(--ink);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .github-pill-btn .star-icon {
+      color: #F59E0B;
+    }
+
+    .nav-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 15px;
+      background: var(--ink);
+      color: var(--paper-2);
+      border: 1px solid var(--ink);
+      border-radius: 6px;
+      font-family: var(--body);
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+      white-space: nowrap;
+    }
+    .nav-cta-btn:hover {
+      background: #000;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+    }
+
+    /* Mobile Menu Toggle */
+    .mobile-toggle-btn {
+      display: none;
+      background: transparent;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: var(--ink);
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .mobile-toggle-btn svg { display: block; }
+
+    /* Mobile Drawer */
+    .mobile-drawer {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--paper);
+      border-bottom: 1px solid var(--rule);
+      padding: 16px 20px 20px;
+      box-shadow: 0 16px 32px rgba(0,0,0,0.08);
+    }
+    .mobile-drawer.is-open {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mobile-drawer .nav-link {
+      font-size: 15px;
+      padding: 9px 12px;
+    }
+    .mobile-drawer .drawer-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--rule-2);
+    }
+
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .nav-actions { display: none; }
+      .mobile-toggle-btn { display: flex; }
+    }
+
+    /* ── SECTIONS ── */
+    .band { padding: clamp(64px, 8vw, 108px) 0; }
+    .band--tight { padding: clamp(40px, 5vw, 64px) 0; }
+    .band--dark { background: var(--dark); color: var(--dark-tx); }
+    .band--dark h2, .band--dark h3 { color: #FFFFFF; }
+    .band--rule { border-top: 1px solid var(--rule); }
+    .band--gray { background: var(--paper-3); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+
+    /* ── HERO SECTION ── */
+    .hero-lp {
+      position: relative;
+      padding: clamp(60px, 7vw, 96px) 0 clamp(40px, 5vw, 64px);
+      overflow: hidden;
+      border-bottom: 1px solid var(--rule);
+    }
+    .hero-canvas-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .hero-lp .wrap {
+      position: relative;
+      z-index: 2;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.15fr);
+      gap: clamp(32px, 4vw, 60px);
+      align-items: center;
+    }
+    @media (max-width: 1024px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+    }
+
+    .hero-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .live-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 0 rgba(11, 102, 71, 0.4);
+      animation: pulseGreen 2s infinite;
+    }
+    @keyframes pulseGreen {
+      0% { box-shadow: 0 0 0 0 rgba(11, 102, 71, 0.6); }
+      70% { box-shadow: 0 0 0 8px rgba(11, 102, 71, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(11, 102, 71, 0); }
+    }
+
+    .hero-headline {
+      margin-bottom: 20px;
+    }
+    .hero-headline span.accent {
+      background: linear-gradient(135deg, var(--ink) 30%, #3B82F6 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-cta-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+      align-items: center;
+    }
+
+    .assur-list {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--rule-2);
+      font-size: 13.5px;
+      color: var(--ink-2);
+    }
+    .assur-list li {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .assur-list svg { color: var(--emerald); flex-shrink: 0; }
+
+    /* ── PIPELINE DEMO RAIL (HERO RIGHT) ── */
+    .pipeline-card {
+      border: 1px solid var(--dark-rule);
+      background: var(--dark-2);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px -20px rgba(0,0,0,0.6);
+      color: var(--dark-tx);
+    }
+    .pipeline-header {
+      padding: 12px 18px;
+      background: #090C10;
+      border-bottom: 1px solid var(--dark-rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pipeline-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dark-tx-2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pipeline-status-chip {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 2px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .pipeline-track-area {
+      padding: 26px 18px 20px;
+      position: relative;
+    }
+    .pipeline-nodes-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      position: relative;
+      z-index: 2;
+    }
+    .pipeline-node-btn {
+      background: transparent;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      text-align: center;
+      padding: 4px;
+      transition: transform 0.16s;
+    }
+    .pipeline-node-btn:hover { transform: translateY(-2px); }
+    .pipeline-node-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #090D16;
+      border: 2px solid var(--dark-rule);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--dark-tx-2);
+      position: relative;
+      transition: all 0.25s;
+    }
+    .pipeline-node-btn.is-active .pipeline-node-circle {
+      border-color: #38bdf8;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+      color: #FFFFFF;
+      transform: scale(1.08);
+    }
+    .pipeline-node-num {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      color: #000;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pipeline-node-name {
+      font-family: var(--display);
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 8px;
+      color: var(--dark-tx-2);
+    }
+    .pipeline-node-btn.is-active .pipeline-node-name { color: #FFFFFF; }
+    .pipeline-node-sub {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: #64748B;
+      margin-top: 2px;
+    }
+
+    .pipeline-console {
+      margin: 18px 0 0;
+      padding: 14px 16px;
+      background: #060910;
+      border: 1px solid var(--dark-rule);
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .console-line {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .console-line:last-child { margin-bottom: 0; }
+    .console-prompt { color: #64748B; flex-shrink: 0; }
+    .console-highlight { color: #38BDF8; font-weight: 600; }
+    .console-warn { color: #F59E0B; }
+    .console-success { color: #34D399; }
+    .console-danger { color: #F87171; }
+
+    .pipeline-footer-bar {
+      padding: 10px 16px;
+      background: #090C10;
+      border-top: 1px solid var(--dark-rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--dark-tx-2);
+    }
+
+    /* ── THE SIEVE (NOISE REDUCTION FUNNEL) ── */
+    .sieve-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 20px;
+      margin-top: 40px;
+    }
+    @media (max-width: 900px) {
+      .sieve-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .sieve-gate {
+      border-top: 2px solid var(--ink);
+      padding-top: 18px;
+    }
+    .sieve-gate.focus { border-top-color: var(--clay); }
+    .sieve-gate.resolved { border-top-color: var(--emerald); }
+    .sieve-n {
+      font-family: var(--mono);
+      font-size: clamp(24px, 3vw, 38px);
+      font-weight: 700;
+      line-height: 1.1;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .sieve-gate.focus .sieve-n { color: var(--clay); }
+    .sieve-gate.resolved .sieve-n { color: var(--emerald); }
+    .sieve-cap {
+      font-size: 13px;
+      color: var(--ink-2);
+      line-height: 1.4;
+      min-height: 2.8em;
+    }
+    .sieve-bar-wrapper {
+      height: 6px;
+      background: var(--rule);
+      border-radius: 3px;
+      margin-top: 14px;
+      overflow: hidden;
+    }
+    .sieve-bar-fill {
+      height: 100%;
+      background: var(--ink);
+      border-radius: 3px;
+    }
+    .sieve-gate.focus .sieve-bar-fill { background: var(--clay); }
+    .sieve-gate.resolved .sieve-bar-fill { background: var(--emerald); }
+
+    /* ── 5 ENGINES GRID ── */
+    .engines-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-top: 40px;
+    }
+    .engine-card {
+      border: 1px solid var(--rule);
+      background: var(--paper-2);
+      border-radius: 6px;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
+    }
+    .engine-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--ink);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .engine-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: var(--paper-3);
+      margin-bottom: 16px;
+    }
+    .engine-card h3 { font-size: 18px; margin-bottom: 6px; }
+    .engine-target {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+    .engine-desc {
+      font-size: 13.5px;
+      color: var(--ink-2);
+      line-height: 1.5;
+      margin-bottom: 16px;
+      flex-grow: 1;
+    }
+    .engine-pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--emerald);
+      background: rgba(11, 102, 71, 0.08);
+      padding: 4px 8px;
+      border-radius: 3px;
+      align-self: flex-start;
+    }
+
+    /* ── FINDINGS & REMEDIATION DRAWER (INTERACTIVE TABS) ── */
+    .drawer-split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr);
+      gap: clamp(32px, 5vw, 64px);
+      align-items: start;
+      margin-top: 40px;
+    }
+    @media (max-width: 960px) {
+      .drawer-split { grid-template-columns: 1fr; }
+    }
+
+    .findings-list-panel {
+      border: 1px solid var(--dark-rule);
+      background: var(--dark-2);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .findings-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--dark-rule);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dark-tx-2);
+      display: flex;
+      justify-content: space-between;
+    }
+    .finding-item-btn {
+      width: 100%;
+      text-align: left;
+      padding: 14px 18px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--dark-rule);
+      cursor: pointer;
+      color: var(--dark-tx);
+      display: block;
+      transition: background 0.15s;
+    }
+    .finding-item-btn:hover { background: rgba(255, 255, 255, 0.04); }
+    .finding-item-btn.is-active {
+      background: #19202C;
+      border-left: 3px solid #38BDF8;
+    }
+    .finding-item-title {
+      font-family: var(--body);
+      font-size: 14px;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .finding-item-meta {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--dark-tx-2);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Interactive Output Panel */
+    .drawer-view-panel {
+      border: 1px solid var(--dark-rule);
+      background: var(--dark-2);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .drawer-view-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--dark-rule);
+      background: #090C10;
+      overflow-x: auto;
+    }
+    .drawer-tab-btn {
+      padding: 12px 18px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--dark-tx-2);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .drawer-tab-btn:hover { color: #FFFFFF; }
+    .drawer-tab-btn.is-active {
+      color: #38BDF8;
+      border-bottom-color: #38BDF8;
+      background: rgba(56, 189, 248, 0.04);
+    }
+    .drawer-tab-content {
+      padding: 22px;
+      font-size: 14px;
+      color: var(--dark-tx);
+    }
+    .diff-block {
+      background: #060910;
+      border: 1px solid var(--dark-rule);
+      border-radius: 4px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+    .diff-add { color: #34D399; background: rgba(52, 211, 153, 0.1); display: block; }
+    .diff-del { color: #F87171; background: rgba(248, 113, 113, 0.1); display: block; }
+    .diff-hunk { color: #38BDF8; }
+
+    /* ── ARCHITECTURE SECTION ── */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 40px;
+    }
+    @media (max-width: 860px) {
+      .arch-grid { grid-template-columns: 1fr; }
+    }
+    .arch-box {
+      border: 1px solid var(--rule);
+      background: var(--paper-2);
+      padding: 26px;
+      border-radius: 6px;
+    }
+    .arch-box h3 {
+      font-size: 17px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .arch-box p {
+      font-size: 14px;
+      color: var(--ink-2);
+      line-height: 1.5;
+    }
+
+    /* ── TRUST & DATA PRIVACY TABLE ── */
+    .trust-table-wrapper {
+      margin-top: 40px;
+      overflow-x: auto;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      background: var(--paper-2);
+    }
+    table.trust-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14.5px;
+    }
+    table.trust-table th {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      padding: 14px 20px;
+      background: var(--paper-3);
+      border-bottom: 1px solid var(--rule);
+      font-weight: 500;
+    }
+    table.trust-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--rule-2);
+      color: var(--ink-2);
+      vertical-align: top;
+    }
+    table.trust-table tr:last-child td { border-bottom: none; }
+    table.trust-table td.strong {
+      color: var(--ink);
+      font-weight: 600;
+      font-family: var(--display);
+    }
+
+    /* ── QUICK START BLOCK ── */
+    .quickstart-box {
+      background: var(--dark-2);
+      border: 1px solid var(--dark-rule);
+      border-radius: 6px;
+      padding: 24px;
+      color: var(--dark-tx);
+      margin-top: 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .quickstart-cmd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #060910;
+      border: 1px solid var(--dark-rule);
+      border-radius: 4px;
+      padding: 12px 18px;
+      font-family: var(--mono);
+      font-size: 13.5px;
+      color: #38BDF8;
+    }
+    .copy-btn {
+      background: #14171A;
+      border: 1px solid var(--dark-rule);
+      color: var(--dark-tx);
+      padding: 6px 12px;
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: #23272C; }
+
+    /* ── CTA / PILOT REQUEST ── */
+    .cta-band {
+      background: linear-gradient(180deg, var(--paper-3) 0%, var(--paper) 100%);
+      border-top: 1px solid var(--rule);
+      text-align: center;
+      padding: clamp(60px, 8vw, 100px) 0;
+    }
+    .cta-inner {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .cta-form {
+      display: flex;
+      gap: 10px;
+      margin-top: 28px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .cta-input {
+      padding: 12px 18px;
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      font-family: var(--body);
+      font-size: 15px;
+      min-width: 280px;
+      outline: none;
+      background: var(--paper-2);
+    }
+    .cta-input:focus { border-color: var(--ink); }
+
+    /* ── FOOTER ── */
+    footer.lp-footer {
+      background: var(--dark);
+      color: var(--dark-tx-2);
+      border-top: 1px solid var(--dark-rule);
+      padding: 64px 0 32px;
+      font-size: 14px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    }
+    .footer-col h4 {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #FFFFFF;
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col a:hover { color: #FFFFFF; }
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 28px;
+      border-top: 1px solid var(--dark-rule);
+      font-family: var(--mono);
+      font-size: 12px;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── SLEEK TOP NAVIGATION ── -->
+  <nav class="lp-nav" id="mainNav" aria-label="Main Navigation">
+    <div class="wrap">
+      <a href="#top" class="brand-mark" aria-label="SigmaSec Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L3 7v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7l-9-5z"/>
+          <path d="M9.5 12l2 2 4.5-4.5"/>
+        </svg>
+        <span>SigmaSec</span>
+        <span class="tag-badge">OSS</span>
+      </a>
+
+      <!-- Desktop Navigation Links (Concise, Clean Pill Group) -->
+      <div class="nav-links" id="desktopNavLinks">
+        <a href="#pipeline" class="nav-link">Pipeline</a>
+        <a href="#sieve" class="nav-link">The Sieve</a>
+        <a href="#engines" class="nav-link">Engines</a>
+        <a href="#drawer" class="nav-link">Explorer</a>
+        <a href="#architecture" class="nav-link">Architecture</a>
+        <a href="#trust" class="nav-link">Trust</a>
+      </div>
+
+      <!-- Desktop Action Buttons -->
+      <div class="nav-actions">
+        <a href="https://github.com/carthworks/SigmaSec" target="_blank" rel="noopener noreferrer" class="github-pill-btn" title="View Source on GitHub">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+          <span class="star-icon">★</span>
+        </a>
+        <a href="#pilot" class="nav-cta-btn">
+          <span>Request Pilot</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+
+      <!-- Mobile Hamburger Button -->
+      <button type="button" class="mobile-toggle-btn" id="mobileMenuBtn" aria-label="Toggle navigation menu" onclick="toggleMobileMenu()">
+        <svg id="menuIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <svg id="closeIcon" style="display:none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Mobile Dropdown Drawer -->
+    <div class="mobile-drawer" id="mobileDrawer">
+      <a href="#pipeline" class="nav-link" onclick="closeMobileMenu()">Pipeline</a>
+      <a href="#sieve" class="nav-link" onclick="closeMobileMenu()">The Sieve</a>
+      <a href="#engines" class="nav-link" onclick="closeMobileMenu()">5 Engines</a>
+      <a href="#drawer" class="nav-link" onclick="closeMobileMenu()">Live Explorer</a>
+      <a href="#architecture" class="nav-link" onclick="closeMobileMenu()">Architecture</a>
+      <a href="#trust" class="nav-link" onclick="closeMobileMenu()">Trust &amp; Privacy</a>
+      <div class="drawer-actions">
+        <a href="https://github.com/carthworks/SigmaSec" target="_blank" rel="noopener noreferrer" class="github-pill-btn" style="justify-content:center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>Star on GitHub</span>
+          <span class="star-icon">★</span>
+        </a>
+        <a href="#pilot" class="nav-cta-btn" style="justify-content:center;" onclick="closeMobileMenu()">
+          <span>Request Pilot Scan</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── HERO SECTION ── -->
+  <header class="hero-lp" id="top">
+    <div class="hero-canvas-bg" id="heroCanvasWrap">
+      <canvas id="heroCyberCanvas"></canvas>
+    </div>
+
+    <div class="wrap">
+      <div class="hero-grid">
+        <!-- Hero Text -->
+        <div>
+          <div class="hero-badge-row">
+            <span class="live-pulse-dot"></span>
+            <span class="eyebrow" style="margin-bottom: 0;">Continuous Exposure Management</span>
+          </div>
+
+          <h1 class="hero-headline">
+            Five scanners.<br />
+            <span class="accent">One ranked queue.</span>
+          </h1>
+
+          <p class="lede">
+            SigmaSec runs <strong>Nuclei, Trivy, Gitleaks, Opengrep, and Nmap</strong> against your code and infrastructure, then ranks what they find — matching each CVE against <strong>CISA KEV and EPSS</strong>, checking whether the vulnerable dependency is actively imported, and explaining each finding in plain English before an engineer ever sees it.
+          </p>
+
+          <div class="hero-cta-row">
+            <a href="#pilot" class="btn-lp">
+              Request a pilot scan
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+            <a href="#quickstart" class="btn-lp ghost">
+              Run in 5 minutes
+            </a>
+          </div>
+
+          <ul class="assur-list">
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Self-host full stack (Docker Compose)
+            </li>
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              No AI training on customer code
+            </li>
+            <li>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Run AI fully local via Ollama
+            </li>
+          </ul>
+        </div>
+
+        <!-- Interactive Animated Pipeline Rail -->
+        <div>
+          <div class="pipeline-card" id="pipeline" role="region" aria-label="Interactive Scan Pipeline Demo">
+            <div class="pipeline-header">
+              <div class="pipeline-title">
+                <span class="live-pulse-dot"></span>
+                UNIFIED INTELLIGENCE PIPELINE
+              </div>
+              <div class="pipeline-status-chip" id="pipeStateChip">STAGE 1/5: INGESTION</div>
+            </div>
+
+            <div class="pipeline-track-area">
+              <!-- 5 Stage Stations -->
+              <div class="pipeline-nodes-row" id="pipelineNodes">
+                <button type="button" class="pipeline-node-btn is-active" data-step="0">
+                  <div class="pipeline-node-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg>
+                    <span class="pipeline-node-num">1</span>
+                  </div>
+                  <div class="pipeline-node-name">Discover</div>
+                  <div class="pipeline-node-sub">5 Engines</div>
+                </button>
+
+                <button type="button" class="pipeline-node-btn" data-step="1">
+                  <div class="pipeline-node-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+                    <span class="pipeline-node-num">2</span>
+                  </div>
+                  <div class="pipeline-node-name">Dedup</div>
+                  <div class="pipeline-node-sub">Fingerprint</div>
+                </button>
+
+                <button type="button" class="pipeline-node-btn" data-step="2">
+                  <div class="pipeline-node-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    <span class="pipeline-node-num">3</span>
+                  </div>
+                  <div class="pipeline-node-name">Reachability</div>
+                  <div class="pipeline-node-sub">Code Usage</div>
+                </button>
+
+                <button type="button" class="pipeline-node-btn" data-step="3">
+                  <div class="pipeline-node-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <span class="pipeline-node-num">4</span>
+                  </div>
+                  <div class="pipeline-node-name">Threat Intel</div>
+                  <div class="pipeline-node-sub">KEV &amp; EPSS</div>
+                </button>
+
+                <button type="button" class="pipeline-node-btn" data-step="4">
+                  <div class="pipeline-node-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span class="pipeline-node-num">5</span>
+                  </div>
+                  <div class="pipeline-node-name">AutoFix PR</div>
+                  <div class="pipeline-node-sub">1-Click PR</div>
+                </button>
+              </div>
+
+              <!-- Console Simulation Feed -->
+              <div class="pipeline-console" id="pipelineConsole">
+                <div class="console-line">
+                  <span class="console-prompt">&gt;</span>
+                  <span class="console-highlight">[adapters] Running Trivy v0.58.2, Gitleaks v8.18, Nuclei v3.3...</span>
+                </div>
+                <div class="console-line">
+                  <span class="console-prompt">&gt;</span>
+                  <span>Discovered 1,204 raw findings across target codebase and containers.</span>
+                </div>
+                <div class="console-line">
+                  <span class="console-prompt">&gt;</span>
+                  <span class="console-success">Normalized into canonical schema with deterministic SHA-256 fingerprints.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="pipeline-footer-bar">
+              <span>ACTIVE ORG: SIGMASEC DEMO</span>
+              <span id="pipeMetric">NOISE DROPPED: 98.8%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── THE SIEVE (NOISE REDUCTION FUNNEL) ── -->
+  <section class="band band--gray" id="sieve">
+    <div class="wrap">
+      <div class="eyebrow">Illustrative triage example — every metric represents true reduction</div>
+      <h2>The Noise Reduction Sieve</h2>
+      <p class="lede">
+        Traditional AppSec tools overwhelm engineers with hundreds of unexploitable CVEs. SigmaSec’s multi-stage filtration isolates the handful of vulnerabilities attackers can actually leverage.
+      </p>
+
+      <div class="sieve-grid">
+        <!-- 1. Discover -->
+        <div class="sieve-gate">
+          <h3>1. Discover</h3>
+          <span class="sieve-n">1,204</span>
+          <p class="sieve-cap">Raw findings across code, dependencies, containers, secrets, and public ports.</p>
+          <div class="sieve-bar-wrapper">
+            <div class="sieve-bar-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- 2. Deduplicate -->
+        <div class="sieve-gate">
+          <h3>2. Deduplicate</h3>
+          <span class="sieve-n">399</span>
+          <p class="sieve-cap">Deterministic fingerprint collapse across repeat scans and redundant alerts.</p>
+          <div class="sieve-bar-wrapper">
+            <div class="sieve-bar-fill" style="width: 33%;"></div>
+          </div>
+        </div>
+
+        <!-- 3. Reachability -->
+        <div class="sieve-gate">
+          <h3>3. Reachable</h3>
+          <span class="sieve-n">86</span>
+          <p class="sieve-cap">Python/JS AST import checks verify the package is actually called in code.</p>
+          <div class="sieve-bar-wrapper">
+            <div class="sieve-bar-fill" style="width: 15%;"></div>
+          </div>
+        </div>
+
+        <!-- 4. Threat Intel (KEV) -->
+        <div class="sieve-gate focus">
+          <h3>4. Exploitable</h3>
+          <span class="sieve-n">14</span>
+          <p class="sieve-cap">Actively exploited in the wild (CISA KEV catalog) or top FIRST EPSS scores.</p>
+          <div class="sieve-bar-wrapper">
+            <div class="sieve-bar-fill" style="width: 5%;"></div>
+          </div>
+        </div>
+
+        <!-- 5. One-Click Fixes -->
+        <div class="sieve-gate resolved">
+          <h3>5. Actioned</h3>
+          <span class="sieve-n">7</span>
+          <p class="sieve-cap">Automated dependency version-bump pull requests ready for engineer review.</p>
+          <div class="sieve-bar-wrapper">
+            <div class="sieve-bar-fill" style="width: 2.5%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 5 SECURITY ENGINES ── -->
+  <section class="band" id="engines">
+    <div class="wrap">
+      <div class="eyebrow">Unified Multi-Engine Orchestration</div>
+      <h2>Five battle-tested open source engines.</h2>
+      <p class="lede">
+        You don't need five fragmented vendor dashboards. SigmaSec drives best-in-class open source security engines natively, normalizing all telemetry into one unified posture score.
+      </p>
+
+      <div class="engines-grid">
+        <!-- Trivy -->
+        <div class="engine-card">
+          <div class="engine-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <h3>Trivy</h3>
+          <div class="engine-target">SCA &amp; Container Security</div>
+          <p class="engine-desc">
+            Scans container images, filesystem packages, npm, pip, and Go modules. Enriched with NVD CVSS vectors and upstream patch intelligence.
+          </p>
+          <span class="engine-pill">Dependency Graph</span>
+        </div>
+
+        <!-- Gitleaks -->
+        <div class="engine-card">
+          <div class="engine-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3>Gitleaks</h3>
+          <div class="engine-target">Secret Leak Detection</div>
+          <p class="engine-desc">
+            Detects committed AWS keys, GitHub PATs, Stripe secrets, and Slack tokens. Stores only masked values and SHA-256 hashes—never raw credentials.
+          </p>
+          <span class="engine-pill">Zero Plaintext Stored</span>
+        </div>
+
+        <!-- Nuclei -->
+        <div class="engine-card">
+          <div class="engine-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+          </div>
+          <h3>Nuclei</h3>
+          <div class="engine-target">Web Exposure Templates</div>
+          <p class="engine-desc">
+            Fast, template-based vulnerability assessment against public URLs. Enforces domain verification challenge before any traffic is dispatched.
+          </p>
+          <span class="engine-pill">Verified Targets Only</span>
+        </div>
+
+        <!-- Opengrep -->
+        <div class="engine-card">
+          <div class="engine-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <h3>Opengrep</h3>
+          <div class="engine-target">Static Code Analysis (SAST)</div>
+          <p class="engine-desc">
+            Identifies code injection, SQLi, SSRF, and authentication flaws directly in your repository syntax tree with deep semantic pattern matching.
+          </p>
+          <span class="engine-pill">AST Rule Matching</span>
+        </div>
+
+        <!-- Nmap -->
+        <div class="engine-card">
+          <div class="engine-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+          </div>
+          <h3>Nmap</h3>
+          <div class="engine-target">Network Perimeter Discovery</div>
+          <p class="engine-desc">
+            Audits open ports, exposed services, and TLS cipher configurations. Automatically validates that targets are public and owned by your organization.
+          </p>
+          <span class="engine-pill">Perimeter Guard</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── INTERACTIVE FINDING DRAWER & REMEDIATION (DARK BAND) ── -->
+  <section class="band band--dark" id="drawer">
+    <div class="wrap">
+      <div class="eyebrow on-dark">In-Product Experience</div>
+      <h2>Ranked findings. Clear evidence. Instant remediation.</h2>
+      <p class="lede on-dark">
+        Click a finding below to see how SigmaSec pairs threat intelligence with code reachability and generates concrete fix pull requests.
+      </p>
+
+      <div class="drawer-split">
+        <!-- Findings Selector -->
+        <div class="findings-list-panel">
+          <div class="findings-header">
+            <span>PRIORITIZED EXPOSURE QUEUE</span>
+            <span>SORTED BY RISK</span>
+          </div>
+
+          <!-- Item 1 -->
+          <button type="button" class="finding-item-btn is-active" data-finding="0">
+            <div class="finding-item-title">
+              <span>CVE-2024-21626 · runc container escape</span>
+              <span class="chip clay">KEV ACTIVE</span>
+            </div>
+            <div class="finding-item-meta">
+              <span>ENGINE: TRIVY</span>
+              <span>EPSS: 0.94</span>
+              <span>STATUS: REACHABLE</span>
+            </div>
+          </button>
+
+          <!-- Item 2 -->
+          <button type="button" class="finding-item-btn" data-finding="1">
+            <div class="finding-item-title">
+              <span>AWS Secret Access Key in staging repo</span>
+              <span class="chip clay">CRITICAL</span>
+            </div>
+            <div class="finding-item-meta">
+              <span>ENGINE: GITLEAKS</span>
+              <span>SHA-256 HASHED</span>
+              <span>ZERO PLAINTEXT</span>
+            </div>
+          </button>
+
+          <!-- Item 3 -->
+          <button type="button" class="finding-item-btn" data-finding="2">
+            <div class="finding-item-title">
+              <span>Prototype Pollution in lodash</span>
+              <span class="chip ochre">REACHABLE</span>
+            </div>
+            <div class="finding-item-meta">
+              <span>ENGINE: OPENGREP</span>
+              <span>USED IN 4 FILES</span>
+              <span>FIX READY</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Output Details Panel -->
+        <div class="drawer-view-panel">
+          <div class="drawer-view-tabs" id="drawerTabs">
+            <button type="button" class="drawer-tab-btn is-active" data-tab="diff">Review Patch Diff</button>
+            <button type="button" class="drawer-tab-btn" data-tab="pr">Open Pull Request</button>
+            <button type="button" class="drawer-tab-btn" data-tab="jira">Jira Ticket</button>
+            <button type="button" class="drawer-tab-btn" data-tab="ai">Ask AI Security Agent</button>
+          </div>
+
+          <!-- Tab Content Display -->
+          <div class="drawer-tab-content" id="tabContent">
+            <!-- Dynamic Content injected via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ARCHITECTURE & DEPLOYMENT ── -->
+  <section class="band" id="architecture">
+    <div class="wrap">
+      <div class="eyebrow">Enterprise Grade Architecture</div>
+      <h2>Your code stays in your environment.</h2>
+      <p class="lede">
+        Engineered for security-conscious teams who cannot transmit source code to multi-tenant third-party clouds.
+      </p>
+
+      <div class="arch-grid">
+        <div class="arch-box">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            Self-Hosted Isolation
+          </h3>
+          <p>
+            Deploy the entire platform inside your own VPC using Docker Compose. Workers execute scanners locally and retain findings within your private PostgreSQL database.
+          </p>
+        </div>
+
+        <div class="arch-box">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Local Ollama AI Support
+          </h3>
+          <p>
+            No external LLM required. Run vulnerability explanations and plain-English risk assessments entirely on-premises using local Ollama models with zero outbound calls.
+          </p>
+        </div>
+
+        <div class="arch-box">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Fernet Encryption &amp; Auth
+          </h3>
+          <p>
+            All integration tokens (GitHub, Jira, Slack) are encrypted with symmetric Fernet keys (<code style="font-size:11px;">ENCRYPTION_KEY</code>). Scans against web endpoints require verified DNS or HTTP tokens.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TRUST & COMPLIANCE ── -->
+  <section class="band band--gray" id="trust">
+    <div class="wrap">
+      <div class="eyebrow">Defensible Trust Framework</div>
+      <h2>Claims backed by code, not marketing.</h2>
+      <p class="lede">
+        We adhere to strict transparency: our public statements reflect what the open source software actually enforces.
+      </p>
+
+      <div class="trust-table-wrapper">
+        <table class="trust-table">
+          <thead>
+            <tr>
+              <th>Security Question</th>
+              <th>SigmaSec Implementation</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="strong">Do you train on customer data?</td>
+              <td>Never. Data is never used for training. Deploy with local Ollama for zero data egress, or use Claude under standard commercial terms.</td>
+              <td><span class="chip emerald">Guaranteed</span></td>
+            </tr>
+            <tr>
+              <td class="strong">Where is source code processed?</td>
+              <td>Scanners and reachability checks run on your designated workers. Source repositories are cloned temporarily into ephemeral worker volumes and purged immediately.</td>
+              <td><span class="chip now">Ephemeral</span></td>
+            </tr>
+            <tr>
+              <td class="strong">How are integration secrets protected?</td>
+              <td>Stored GitHub PATs, Jira API keys, and Slack webhooks are encrypted at rest using AES-128-CBC + HMAC (Fernet). The server refuses to start in production without a secret key.</td>
+              <td><span class="chip emerald">Encrypted</span></td>
+            </tr>
+            <tr>
+              <td class="strong">Can users scan unauthorized third parties?</td>
+              <td>No. Web and network scans strictly enforce proof of ownership via DNS TXT record or HTTP challenge file. Loopback and internal private IPs are blocked.</td>
+              <td><span class="chip now">Enforced</span></td>
+            </tr>
+            <tr>
+              <td class="strong">What about DPDP Act 2023 &amp; regional hosting?</td>
+              <td>Self-hosted instances deploy into any regional datacenter (e.g. AWS Mumbai, GCP Delhi). Hosted instances offer dedicated geographic isolation on request.</td>
+              <td><span class="chip ochre">Self-Host</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── QUICK START / CODE BLOCK ── -->
+  <section class="band" id="quickstart">
+    <div class="wrap">
+      <div class="eyebrow">Developer Quick Start</div>
+      <h2>Up and running in 5 minutes.</h2>
+      <p class="lede">
+        Clone the repository, bring up the database, workers, and modern Next.js interface with a single command.
+      </p>
+
+      <div class="quickstart-box">
+        <div style="font-size: 14px; color: var(--dark-tx-2);">Run locally with Docker Compose:</div>
+        <div class="quickstart-cmd">
+          <code id="cmdText">git clone https://github.com/carthworks/SigmaSec.git &amp;&amp; cd SigmaSec &amp;&amp; docker-compose up -d</code>
+          <button type="button" class="copy-btn" id="copyBtn" onclick="copyCommand()">Copy</button>
+        </div>
+        <div style="font-size: 12.5px; color: #64748B;">
+          Prerequisites: Docker &amp; Docker Compose. Once running, open <code style="color:#FFF;">http://localhost:3000</code> to access the dashboard.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PILOT REQUEST / CTA ── -->
+  <section class="cta-band" id="pilot">
+    <div class="wrap">
+      <div class="cta-inner">
+        <div class="eyebrow" style="justify-content: center;">Enterprise Pilot Program</div>
+        <h2>Request a pilot scan for your organization.</h2>
+        <p class="lede" style="margin: 14px auto 0;">
+          Experience noise-free exposure management on your repository. Our team will configure a scoped pilot scan and walk through the evidence chain.
+        </p>
+
+        <form class="cta-form" id="pilotForm" onsubmit="handlePilotSubmit(event)">
+          <input type="email" class="cta-input" id="pilotEmail" placeholder="security@yourcompany.com" required />
+          <button type="submit" class="btn-lp" id="pilotBtn">
+            Request Pilot Scan
+          </button>
+        </form>
+        <p style="font-size: 12.5px; color: var(--ink-3); margin-top: 14px;" id="pilotStatus">
+          Zero obligation. We respond with a personalized technical setup within 1 business day.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="lp-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-mark" style="color:#FFF; margin-bottom: 14px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L3 7v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7l-9-5z"/>
+              <path d="M9.5 12l2 2 4.5-4.5"/>
+            </svg>
+            SigmaSec
+          </div>
+          <p style="max-width: 38ch; line-height: 1.6;">
+            Open-source continuous exposure management. Correlating Trivy, Gitleaks, Nuclei, Opengrep, and Nmap findings into a single prioritized queue.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#pipeline">Pipeline Overview</a></li>
+            <li><a href="#sieve">The Sieve Ranking</a></li>
+            <li><a href="#engines">Supported Scanners</a></li>
+            <li><a href="#drawer">Live Finding Demo</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Architecture</h4>
+          <ul>
+            <li><a href="#architecture">Docker Deployment</a></li>
+            <li><a href="#architecture">Ollama Local AI</a></li>
+            <li><a href="#trust">Data Governance</a></li>
+            <li><a href="#quickstart">Quick Start Guide</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Project</h4>
+          <ul>
+            <li><a href="https://github.com/carthworks/SigmaSec" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+            <li><a href="https://github.com/carthworks/SigmaSec/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security Policy</a></li>
+            <li><a href="https://github.com/carthworks/SigmaSec/issues" target="_blank" rel="noopener noreferrer">Issue Tracker</a></li>
+            <li><a href="#pilot">Enterprise Early Access</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 SigmaSec. Open source continuous exposure management.</div>
+        <div>Data isolated · Encrypted at rest · Self-hostable</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ── SCRIPTS FOR INTERACTIVE SHOWCASES & NAVIGATION ── -->
+  <script>
+    // ── 0. NAVIGATION INTERACTIONS & SCROLLSPY ──
+    const mainNav = document.getElementById("mainNav");
+    const mobileDrawer = document.getElementById("mobileDrawer");
+    const menuIcon = document.getElementById("menuIcon");
+    const closeIcon = document.getElementById("closeIcon");
+    const navLinks = document.querySelectorAll(".nav-link");
+
+    // Scroll elevation shadow
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 20) {
+        mainNav.classList.add("scrolled");
+      } else {
+        mainNav.classList.remove("scrolled");
+      }
+      updateActiveNavLink();
+    }, { passive: true });
+
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+      const isOpen = mobileDrawer.classList.toggle("is-open");
+      menuIcon.style.display = isOpen ? "none" : "block";
+      closeIcon.style.display = isOpen ? "block" : "none";
+    }
+
+    function closeMobileMenu() {
+      mobileDrawer.classList.remove("is-open");
+      menuIcon.style.display = "block";
+      closeIcon.style.display = "none";
+    }
+
+    // Scrollspy indicator
+    const sections = ["pipeline", "sieve", "engines", "drawer", "architecture", "trust"];
+    function updateActiveNavLink() {
+      const scrollPos = window.scrollY + 100;
+      let currentSection = "";
+
+      for (let i = 0; i < sections.length; i++) {
+        const el = document.getElementById(sections[i]);
+        if (el && el.offsetTop <= scrollPos) {
+          currentSection = sections[i];
+        }
+      }
+
+      navLinks.forEach(link => {
+        const href = link.getAttribute("href");
+        if (href === "#" + currentSection) {
+          link.classList.add("is-active");
+        } else {
+          link.classList.remove("is-active");
+        }
+      });
+    }
+
+    // ── 1. HERO PARTICLES & CYBER RADAR CANVAS ──
+    (function initCyberCanvas() {
+      const canvas = document.getElementById("heroCyberCanvas");
+      const wrap = document.getElementById("heroCanvasWrap");
+      if (!canvas || !wrap) return;
+
+      const ctx = canvas.getContext("2d");
+      let width, height;
+      let particles = [];
+      const particleCount = 42;
+
+      function resize() {
+        width = canvas.width = wrap.offsetWidth;
+        height = canvas.height = wrap.offsetHeight;
+      }
+      window.addEventListener("resize", resize);
+      resize();
+
+      class Node {
+        constructor() {
+          this.x = Math.random() * width;
+          this.y = Math.random() * height;
+          this.vx = (Math.random() - 0.5) * 0.45;
+          this.vy = (Math.random() - 0.5) * 0.45;
+          this.r = Math.random() * 2 + 1.5;
+        }
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          if (this.x < 0 || this.x > width) this.vx *= -1;
+          if (this.y < 0 || this.y > height) this.vy *= -1;
+        }
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(11, 13, 15, 0.18)";
+          ctx.fill();
+        }
+      }
+
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Node());
+      }
+
+      function loop() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < particles.length; i++) {
+          particles[i].update();
+          particles[i].draw();
+
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 110) {
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.strokeStyle = `rgba(11, 13, 15, ${0.12 * (1 - dist / 110)})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(loop);
+      }
+      loop();
+    })();
+
+    // ── 2. PIPELINE AUTOMATION SIMULATION ──
+    const PIPELINE_DATA = [
+      {
+        step: 0,
+        chip: "STAGE 1/5: INGESTION",
+        metric: "NOISE DROPPED: 0%",
+        lines: [
+          { p: ">", text: "[adapters] Running Trivy v0.58.2, Gitleaks v8.18, Nuclei v3.3, Opengrep, Nmap...", cls: "console-highlight" },
+          { p: ">", text: "Discovered 1,204 raw findings across target codebase and containers.", cls: "" },
+          { p: ">", text: "Normalized into canonical schema with deterministic SHA-256 fingerprints.", cls: "console-success" }
+        ]
+      },
+      {
+        step: 1,
+        chip: "STAGE 2/5: DEDUPLICATION",
+        metric: "NOISE DROPPED: 66.8%",
+        lines: [
+          { p: ">", text: "[engine:dedup] Grouping duplicate alerts by fingerprint & package hash...", cls: "console-highlight" },
+          { p: ">", text: "1,204 raw findings collapsed into 399 unique issues.", cls: "" },
+          { p: ">", text: "Cross-scan dedup confirmed: 0 redundant alerts escalated.", cls: "console-success" }
+        ]
+      },
+      {
+        step: 2,
+        chip: "STAGE 3/5: REACHABILITY",
+        metric: "NOISE DROPPED: 92.8%",
+        lines: [
+          { p: ">", text: "[ast:reachability] Parsing Python AST & JS import call sites in repository...", cls: "console-highlight" },
+          { p: ">", text: "86 packages are actively imported; 313 dependencies never invoked at runtime.", cls: "console-warn" },
+          { p: ">", text: "Unreachable findings safely deprioritized to backlog with audit note.", cls: "console-success" }
+        ]
+      },
+      {
+        step: 3,
+        chip: "STAGE 4/5: THREAT INTEL",
+        metric: "NOISE DROPPED: 98.8%",
+        lines: [
+          { p: ">", text: "[intel:enrichment] Querying CISA KEV catalog & FIRST EPSS v3 API...", cls: "console-highlight" },
+          { p: ">", text: "ALERT: CVE-2024-21626 listed in CISA KEV (EPSS: 0.942 — 94th percentile).", cls: "console-danger" },
+          { p: ">", text: "14 critical findings classified as active exploit hazards requiring immediate triage.", cls: "console-danger" }
+        ]
+      },
+      {
+        step: 4,
+        chip: "STAGE 5/5: AUTO-REMEDIATION",
+        metric: "NOISE DROPPED: 99.4%",
+        lines: [
+          { p: ">", text: "[remediation:autofix] Generating deterministic package.json version bumps...", cls: "console-highlight" },
+          { p: ">", text: "AutoFix PR #402 drafted with pinned vulnerability upgrade.", cls: "console-success" },
+          { p: ">", text: "Jira ticket SEC-891 opened with CISA KEV reference and code diff attached.", cls: "console-success" }
+        ]
+      }
+    ];
+
+    let currentStep = 0;
+    const nodeBtns = document.querySelectorAll(".pipeline-node-btn");
+    const pipeChip = document.getElementById("pipeStateChip");
+    const pipeMetric = document.getElementById("pipeMetric");
+    const pipeConsole = document.getElementById("pipelineConsole");
+
+    function renderPipelineStep(stepIdx) {
+      currentStep = stepIdx;
+      nodeBtns.forEach((btn, idx) => {
+        btn.classList.toggle("is-active", idx === stepIdx);
+      });
+      const data = PIPELINE_DATA[stepIdx];
+      pipeChip.textContent = data.chip;
+      pipeMetric.textContent = data.metric;
+
+      pipeConsole.innerHTML = data.lines
+        .map(l => `<div class="console-line"><span class="console-prompt">${l.p}</span><span class="${l.cls}">${l.text}</span></div>`)
+        .join("");
+    }
+
+    nodeBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        renderPipelineStep(parseInt(btn.getAttribute("data-step"), 10));
+      });
+    });
+
+    setInterval(() => {
+      const next = (currentStep + 1) % PIPELINE_DATA.length;
+      renderPipelineStep(next);
+    }, 4500);
+
+    // ── 3. INTERACTIVE FINDINGS DRAWER DATA ──
+    const FINDING_DETAILS = [
+      {
+        id: 0,
+        title: "CVE-2024-21626 · runc container escape",
+        diff: `--- a/Dockerfile
++++ b/Dockerfile
+@@ -14,7 +14,7 @@
+-FROM golang:1.21-alpine3.18
++FROM golang:1.22-alpine3.19
+ 
+ RUN apk add --no-cache \\
+-    runc=1.1.11-r0
++    runc=1.1.12-r0
+ 
+ WORKDIR /app`,
+        pr: `### AutoFix PR #402: Upgrade runc to 1.1.12-r0
+**Remediates:** CVE-2024-21626 (CISA KEV Listed · EPSS 0.94)
+**Target:** \`Dockerfile\` base image package upgrade
+
+- [x] Pinned package version bump to patched release
+- [x] Dependency license verified
+- [x] Container image builds with zero regression
+- [x] CI tests: Passing (All 42 checks green)`,
+        jira: `**Issue:** SEC-891 · [Critical] Container Escape in Base Image
+**Assignee:** Platform Engineering
+**Component:** Dockerfile / CI Build Pipeline
+**CISA KEV Date:** Feb 2024 · EPSS Probability: 94.2%
+**Remediation SLA:** 24 Hours (Active Exploit Vector)`,
+        ai: `**SigmaSec AI Analysis:**
+CVE-2024-21626 allows an attacker who controls a container process to exploit file descriptor leaks (\`/proc/self/fd/7\`) during \`runc exec\` to access host filesystem resources. Because your build uses multi-tenant runners, upgrading to \`runc 1.1.12-r0\` eliminates the file descriptor leak prior to execution.`
+      },
+      {
+        id: 1,
+        title: "AWS Secret Access Key in staging repo",
+        diff: `--- a/deploy/staging-config.yaml
++++ b/deploy/staging-config.yaml
+@@ -8,3 +8,3 @@
+-aws_secret_key: AKIAIOSFODNN7EXAMPLE
++aws_secret_key: "\${AWS_SECRET_ACCESS_KEY}"`,
+        pr: `### AutoFix PR #403: Extract Plaintext AWS Key to Environment Variable
+**Remediates:** Hardcoded Credential Leak (Gitleaks Engine)
+**Action Taken:** Plaintext credential replaced with secure environment variable interpolation.
+**Notice:** Stored in SigmaSec as masked hash \`AKIA...MPLE\` (SHA-256). Rotate key in AWS IAM immediately.`,
+        jira: `**Issue:** SEC-892 · [High] Hardcoded AWS Credentials Detected
+**Severity:** Critical (Immediate Rotation Required)
+**Finding Origin:** Git commit history (\`infra-scripts/staging.yaml\`)
+**Credential Status:** Masked in platform database; zero plaintext stored.`,
+        ai: `**SigmaSec AI Analysis:**
+Gitleaks caught a committed AWS Access Key. Although SigmaSec masked the credential to prevent second-order exposure, the commit exists in Git ref history. You should invalidate the key in AWS IAM, audit CloudTrail logs for unexpected calls, and pull secrets via runtime vaults or AWS IAM Roles for Service Accounts (IRSA).`
+      },
+      {
+        id: 2,
+        title: "Prototype Pollution in lodash",
+        diff: `--- a/frontend/package.json
++++ b/frontend/package.json
+@@ -34,3 +34,3 @@
+-    "lodash": "4.17.20"
++    "lodash": "4.17.21"`,
+        pr: `### AutoFix PR #404: Bump lodash to 4.17.21
+**Remediates:** Prototype Pollution in \`lodash.template\` and object merge utilities.
+**Verification:** AST analysis confirms \`lodash.merge\` is invoked in 4 request parsing handlers.
+**Tests:** Automated regression tests completed successfully.`,
+        jira: `**Issue:** SEC-893 · [Medium] Prototype Pollution in Lodash
+**Reachability Status:** Confirmed Reachable (Invoked in \`api/handlers/request.ts\`)
+**Remediation Type:** Automated Version Bump PR opened.`,
+        ai: `**SigmaSec AI Analysis:**
+While prototype pollution in lodash is frequently dismissed as low-risk scanner noise, our AST check identified direct calls to \`_.merge()\` with unvalidated JSON request bodies in your webhook route. Upgrading to \`4.17.21\` resolves the property traversal sanitization issue.`
+      }
+    ];
+
+    let activeFinding = 0;
+    let activeTab = "diff";
+
+    function updateDrawerView() {
+      const item = FINDING_DETAILS[activeFinding];
+      const container = document.getElementById("tabContent");
+
+      if (activeTab === "diff") {
+        container.innerHTML = `
+          <div style="font-weight:600; margin-bottom:10px; color:#FFF;">Target: Source Repository Diff</div>
+          <pre class="diff-block"><code>${escapeHtml(item.diff)}</code></pre>
+        `;
+      } else if (activeTab === "pr") {
+        container.innerHTML = `
+          <div style="background:#060910; border:1px solid var(--dark-rule); padding:16px; border-radius:4px; line-height:1.6;">
+            <pre style="white-space:pre-wrap; font-family:var(--body); font-size:13.5px;">${escapeHtml(item.pr)}</pre>
+            <div style="margin-top:16px; display:flex; gap:10px;">
+              <span class="btn-lp sm" style="background:#238636; border-color:#238636; cursor:default;">Merge Pull Request</span>
+              <span class="btn-lp ghost sm" style="color:#FFF; border-color:var(--dark-rule); cursor:default;">View on GitHub</span>
+            </div>
+          </div>
+        `;
+      } else if (activeTab === "jira") {
+        container.innerHTML = `
+          <div style="background:#060910; border:1px solid var(--dark-rule); padding:16px; border-radius:4px; line-height:1.6;">
+            <pre style="white-space:pre-wrap; font-family:var(--mono); font-size:13px; color:#E2E8F0;">${escapeHtml(item.jira)}</pre>
+          </div>
+        `;
+      } else if (activeTab === "ai") {
+        container.innerHTML = `
+          <div style="background:#060910; border:1px solid var(--dark-rule); padding:18px; border-radius:4px; line-height:1.6;">
+            <div style="color:#38BDF8; font-family:var(--mono); font-size:11.5px; margin-bottom:8px;">[AI AGENT ADVISORY · ZERO LOCAL EGRESS]</div>
+            <p style="font-size:14px; color:#E2E8F0;">${escapeHtml(item.ai)}</p>
+          </div>
+        `;
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    document.querySelectorAll(".finding-item-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".finding-item-btn").forEach(b => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
+        activeFinding = parseInt(btn.getAttribute("data-finding"), 10);
+        updateDrawerView();
+      });
+    });
+
+    document.querySelectorAll(".drawer-tab-btn").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".drawer-tab-btn").forEach(t => t.classList.remove("is-active"));
+        tab.classList.add("is-active");
+        activeTab = tab.getAttribute("data-tab");
+        updateDrawerView();
+      });
+    });
+
+    // Initial drawer render
+    updateDrawerView();
+
+    // ── 4. QUICK START COPY BUTTON ──
+    function copyCommand() {
+      const text = document.getElementById("cmdText").innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById("copyBtn");
+        btn.textContent = "Copied!";
+        setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+      });
+    }
+
+    // ── 5. PILOT SUBMISSION SIMULATION ──
+    function handlePilotSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById("pilotEmail").value;
+      const btn = document.getElementById("pilotBtn");
+      const status = document.getElementById("pilotStatus");
+
+      btn.disabled = true;
+      btn.textContent = "Scheduling...";
+
+      setTimeout(() => {
+        btn.textContent = "Request Received";
+        status.innerHTML = `<span style="color:var(--emerald); font-weight:600;">✓ Request registered for ${escapeHtml(email)}. A technical lead will contact you to configure your scoped pilot scan.</span>`;
+      }, 700);
+    }
+  </script>
+</body>
+</html>
