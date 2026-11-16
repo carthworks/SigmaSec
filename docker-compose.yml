@@ -1,3 +1,7 @@
+# Pinned so Docker keeps using the existing volumes after the folder was renamed
+# from security-platform-main to sigmasec.
+name: security-platform-main
+
 # =====================================================
 # Common Configuration
 # =====================================================
